@@ -1,0 +1,43 @@
+.cropList {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    margin: -15px;
+  }
+  
+  .crop {
+    flex: 1 0 20%; /* change as needed, 20% will fit 5 in a row */
+    margin: 15px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .cropName {
+    margin: 0;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  .cropDetails {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .cropDates {
+    margin-top: 10px;
+  }
+  
+  .cropImage {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    margin-top: 10px;
+  }
+  
+  .additionalInfo {
+    margin-top: 10px;
+  }
+  
