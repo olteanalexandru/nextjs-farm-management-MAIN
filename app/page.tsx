@@ -11,7 +11,6 @@ export default function Home() {
 
   const titleClasses = classNames('h1', 'font-weight-bold', 'mb-4','align-items-center', 'justify-content-center');
 
-console.log("cevae wer wer we rwe r");
 
   return (
     <Container >

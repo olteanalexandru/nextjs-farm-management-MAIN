@@ -28,6 +28,7 @@
     "eslint-config-next": "14.1.4",
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
+    "mongoose": "^8.3.1",
     "next": "^14.1.4",
     "next-connect": "^1.0.0",
     "openai": "^4.29.2",

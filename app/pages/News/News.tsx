@@ -1,45 +1,48 @@
-"use client"
-import React from 'react';
+import React, { useEffect } from 'react';
 import Spinner from '../../Crud/Spinner';
 import { useGlobalContextPost } from '../../Context/postStore';
 import Continut from '../../Crud/GetAllPosts/page';
-import { useEffect } from 'react';
-import Card from 'react-bootstrap/Card'; // Import Card from react-bootstrap
+import Card from 'react-bootstrap/Card';
 
 export default function Noutati() {
   const { data, loading, getAllPosts, clearData } = useGlobalContextPost();
-  
+
   useEffect(() => {
-    clearData();
-    getAllPosts(0);
+    const fetchData = async () => {
+      clearData();
+
+
+      await getAllPosts(0);
+    };
+
+    fetchData();
   }, []);
 
   if (loading) {
     return <Spinner />;
   }
 
-  // Sort the data to get the two most recent posts
-  const latestPosts = [...data].sort((a, b) => b.date - a.date).slice(0, 2);
+  // const data = allData.posts;
+  console.log(data, 'data');
 
-  // If there are no posts, return null
-  if (latestPosts.length === 0) {
+  // Check if data is available before rendering
+  if (!data) {
     return null;
   }
 
+  // Sort the data to get the two most recent posts
+  const latestPosts = [...data].sort((a, b) => b.date - a.date).slice(0, 2);
+
   return (
-    
-    <div className="container" >
-        <br />
-        <br />
-        <p>
-          Latest in our newsfeed:
-        </p>
-   
-      {/* <h4 className="mb-4">News</h4> */}
+    <div className="container">
+      <br />
+      <br />
+      <p>Latest in our newsfeed:</p>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
         {latestPosts.map((post) => {
           return (
-            <Card key={post._id} style={{  marginBottom: '20px' }}>
+            <Card key={post._id} style={{ marginBottom: '20px' }}>
               <Card.Body>
                 <Continut data={post} />
                 <p>{new Date(post.date).toLocaleDateString()}</p>
@@ -48,7 +51,6 @@ export default function Noutati() {
           );
         })}
       </div>
-    
     </div>
   );
 }

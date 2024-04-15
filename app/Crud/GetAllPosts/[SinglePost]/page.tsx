@@ -9,12 +9,14 @@ export default function SinglePost() {
     const _id = useSearchParams().get("post") as string
 
   const {
-    data,
+    data: allData,
     loading,
     getPost,
     deletePost,
     updatePost,
   } = useGlobalContextPost();
+
+  const data = allData.posts
 
   const { data: user } = useGlobalContext();
   const token = user.token;

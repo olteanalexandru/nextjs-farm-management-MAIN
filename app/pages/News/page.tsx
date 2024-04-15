@@ -10,14 +10,17 @@ export default function Noutati() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-  useEffect(() => {
-    //clear data
 
-    clearData();
+  useEffect(() => {
+    const fetchData = async () => {
+  clearData();
+   await loadMorePosts();
+      
+    };
   
-      loadMorePosts();
-    
+    fetchData();
   }, []);
+  
 
 
   useEffect(() => {
@@ -38,6 +41,7 @@ export default function Noutati() {
     setLoadingMore(true);
 
     if (error === "No more posts") {
+      console.log("erarea" + error)
       setHasMore(false);
     } else {
       await getAllPosts(page);

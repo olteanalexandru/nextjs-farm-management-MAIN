@@ -2,8 +2,7 @@
 import { createContext, useContext, Dispatch , SetStateAction , useState } from 'react';
 import axios from 'axios'
 
-const API_URL = 'http://localhost:5000/api/posts/'
-const API_URL_post = 'http://localhost:5000/api/posts/posts/'
+const API_URL = 'http://localhost:3000/api/Controllers/Post'
 
 type DataType = {
     id: string;
@@ -123,8 +122,6 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
  
 
 
-    //include bearer token in header
-
     const deletePost = async (_id: string, token:string) => {
         setLoading(true);
         try {
@@ -153,7 +150,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     const getPost = async (id: string) => {
         setLoading(true);
         try {
-            const response = await axios.get(API_URL_post + id);
+            const response = await axios.get(API_URL + "/post/id/" + id);
             const data = await response.data;
             if (data.error) {
                 setError(data.error);
@@ -172,11 +169,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     const getAllPosts = async (count: number) => {
         setLoading(true);
         try {
-            const response = await axios.get(API_URL_post, {
-                params: {
-                    count: count,
-                },
-            });
+            const response = await axios.get(API_URL + "/posts/count/" + count );
             const data = await response.data;
             console.log("it did trigger")
             if (data.error) {
@@ -188,9 +181,9 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
             } else {
                 setData((prevData: any) => {
                     if (Array.isArray(prevData)) {
-                        return [...prevData, ...data];
+                        return [...prevData, ...data.posts];
                     } else {
-                        return [...data];
+                        return [...data.posts];
                     }
                 });
                 setLoading(false);
@@ -204,6 +197,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
     const clearData = () => {
         setData([]);
+        setError('');
     }
 
     
