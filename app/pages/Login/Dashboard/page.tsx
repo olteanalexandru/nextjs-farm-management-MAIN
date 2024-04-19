@@ -36,9 +36,9 @@ export default function Dashboard() {
   useEffect(() => {
     if (!data) {
       navigate.push('/login');
-    } else if (data.rol === 'Admin' ) {
+    } else if (data.role === 'Admin' ) {
       fetchFermierUsers(token);
-    } else if (data.rol === 'Farmer') {
+    } else if (data.role === 'Farmer') {
       getCrops(token);
     }
   }, [data, token]);

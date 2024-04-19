@@ -1,6 +1,9 @@
 "use client";
 import { createContext, useContext, Dispatch , SetStateAction , useState } from 'react';
 import axios from 'axios'
+import { getSession } from '@auth0/nextjs-auth0';
+
+
 
 const API_URL = 'http://localhost:3000/api/Controllers/Post'
 
@@ -63,18 +66,18 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     const [hasMore, setHasMore] = useState<boolean>(true);
 
 
-    const createPost = async ({ title, brief, description, image }: any, token: string) => {
+    const createPost = async ({ title, brief, description, image }: any) => {
+   
         setLoading(true);
         try {
-          const response = await axios.post(API_URL, {
+         const { user } = await getSession();
+          const response = await axios.post(API_URL + "/post" + "/new"+ user.sub, {
             title,
             brief,
             description,
             image,
           }, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            }
+      
           });
           const data = await response.data;
           if (data.error) {
@@ -93,18 +96,17 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
       }
 
 
-    const updatePost = async (id: string, { title, brief, description, image }: any, token: string) => {
+    const updatePost = async (postId: string, { title, brief, description, image }: any) => {
         setLoading(true);
         try {
-            const response = await axios.put(API_URL + id, {
+            const { user } = await getSession();
+            const response = await axios.put(API_URL + "/post" + postId + user.sub , {
                 title,
                 brief,
                 description,
                 image,
             }, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                }
+  
             });
             const data = await response.data;
             if (data.error) {
@@ -122,14 +124,12 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
  
 
 
-    const deletePost = async (_id: string, token:string) => {
+    const deletePost = async (postId: string) => {
         setLoading(true);
         try {
-            const response = await axios.delete(API_URL + _id, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                }
-            });
+            const { user } = await getSession();
+            const response = await axios.delete(API_URL + "/post" + postId + user.sub); {
+            }
             const data = await response.data;
             if (data.error) {
                 setError(data.error);
@@ -169,6 +169,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     const getAllPosts = async (count: number) => {
         setLoading(true);
         try {
+     
             const response = await axios.get(API_URL + "/posts/count/" + count );
             const data = await response.data;
             console.log("it did trigger")
@@ -188,6 +189,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
                 });
                 setLoading(false);
             }
+            
         } catch (error: any) {
             setError(error.response.data.message);
             setLoading(false);

@@ -7,6 +7,7 @@ import Container from 'react-bootstrap/Container';
 import Noutati from './pages/News/News';
 
 
+
 export default function Home() {
 
   const titleClasses = classNames('h1', 'font-weight-bold', 'mb-4','align-items-center', 'justify-content-center');
@@ -43,6 +44,7 @@ export default function Home() {
               and to help you achieve the best results on your farm. If you have any questions or issues, feel free
               to contact us through the platform.
             </Card.Text>
+ 
           </Card.Body>
         </Card>
       </div>

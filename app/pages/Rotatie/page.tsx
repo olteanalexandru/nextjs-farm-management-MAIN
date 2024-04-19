@@ -16,10 +16,6 @@ export default function Rotatie() {
     areThereCrops,
   } = useGlobalContextCrop();
 
-
-
-
-
   useEffect(() => {
     if (isError) {
       console.log(message)

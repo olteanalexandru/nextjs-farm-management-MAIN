@@ -1,14 +1,10 @@
 "use client";
 import { createContext, useContext, Dispatch, SetStateAction, useState, useCallback } from 'react';
 import axios from 'axios';
-import { set } from 'lodash';
 
-const API_URL = 'http://localhost:5000/api/crops/';
-const API_URL_crop = 'http://localhost:5000/api/crops/crops/';
-const API_URL_cropRotation = 'http://localhost:5000/api/crops/cropRotation/';
-const API_URL_cropRecommendations = 'http://localhost:5000/api/crops/cropRecommendations';
-const API_URL_SELECT = 'http://localhost:5000/api/crops/cropSelect/';
-const API_URL_CropFields = 'http://localhost:5000/api/crops/cropRotation/fields';
+
+const API_URL = 'http://localhost:3000/api/Controllers/Crop/';
+
 
 type DataType = {
   _id: string;
@@ -122,10 +118,10 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const [areThereCrops, setAreThereCrops] = useState(false);
 
 
-  const createCrop = async (data: DataType, token: string) => {
+  const createCrop = async (user:string , data: DataType, token: string) => {
     setIsLoading(true);
     try {
-      const response = await axios.post(API_URL, data, {
+      const response = await axios.post(`${API_URL}/crop/single/${user}`, data, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -144,10 +140,10 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     setIsLoading(false);
   };
 
-  const updateCrop = async (id: string, data: DataType, token: string) => {
+  const updateCrop = async (cropId: string, userId:string, data: DataType, token: string) => {
     setIsLoading(true);
     try {
-      const response = await axios.put(API_URL_crop + id, data, {
+      const response = await axios.put(`${API_URL}/crop/${cropId}/${userId}`, data, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -171,16 +167,18 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const getCrops = async (token: string) => {
     setIsLoading(true);
     try {
-      const response = await axios.get(API_URL, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await axios.get(`${API_URL}/crops/retrieve/all` , {
+        // headers: {
+        //   Authorization: `Bearer ${token}`,
+        // },
       });
       if (response.status === 200) {
-        setCrops(response.data);
+        setCrops(response.data.crops);
         setAreThereCrops(true);
+        console.log(response.data);
       } else {
         setIsError(true);
+        console.log(response.data);
         setMessage('Error getting crops');
         
       }
@@ -192,10 +190,10 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   };
 
   
-  const deleteCrop = async (id: string, token: string) => {
+  const deleteCrop = async (userId: string, cropId: string, token: string, ) => {
     setIsLoading(true);
     try {
-      const response = await axios.delete(API_URL + id, {
+      const response = await axios.delete(`${API_URL}/crops/${userId}/${cropId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -217,7 +215,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
 
   const selectare = async (id: string, selectare: boolean, _id: string, token: string, numSelections: number) => {
-    const response = await axios.post(API_URL_SELECT + id, { selectare: selectare, _id: _id, numSelections: numSelections }, {
+    const response = await axios.post(`${API_URL}/crops/${id}/selectare`, { selectare: selectare, _id: _id, numSelections: numSelections }, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -230,7 +228,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const SinglePage = async (id: string) => {
     setIsLoading(true);
     try {
-      const response = await axios.get(API_URL + id, {
+      const response = await axios.get(`${API_URL}/crops/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -252,14 +250,14 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const getAllCrops = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get(API_URL_crop, {
+      const response = await axios.get(`${API_URL}/crops`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       if (response.status === 200) {
         const data = await response.data;
-        setCrops(data);
+        setCrops(data.crops);
         setAreThereCrops(true);
       } else {
         setIsError(true);
@@ -286,7 +284,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     setIsLoading(true);
     try {
       const response = await axios.post(
-        `${API_URL_cropRotation}`,
+        `${API_URL}`,
         { 
           fieldSize, 
           numberOfDivisions,
@@ -318,7 +316,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const getCropRotation = async (token: string) => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`${API_URL_cropRotation}`, {
+      const response = await axios.get(`${API_URL}/rotation`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -343,7 +341,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const deleteCropRotation = async (id: string, token: string) => {
     setIsLoading(true);
     try {
-      const response = await axios.delete(`${API_URL_cropRotation}${id}`, {
+      const response = await axios.delete(`${API_URL}${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -369,9 +367,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     let recommendations = [];
     if (cropName !== '') {
       try {
-        const response = await axios.get(
-          `${API_URL_cropRecommendations}?cropName=${cropName}`,
-          {
+        const response = await axios.get(`${API_URL}/crops/recommendations?dinamicAction=${cropName}`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -394,7 +390,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   setIsLoading(true);
   const {rotationName, year, division, nitrogenBalance } = data;
   try {
-    const response = await axios.put(`${API_URL_cropRotation}`, {year, rotationName,division, nitrogenBalance }, {
+    const response = await axios.put(`${API_URL}`, {year, rotationName,division, nitrogenBalance }, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -418,7 +414,7 @@ const updateDivisionSizeAndRedistribute = async (token: string, data: any) => {
   const { rotationName, division, newDivisionSize } = data;
   setIsLoading(true);
   try {
-    const response = await axios.put(`${API_URL_CropFields}`, { rotationName, division, newDivisionSize }, {
+    const response = await axios.put(`${API_URL}`, { rotationName, division, newDivisionSize }, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -438,10 +434,7 @@ const updateDivisionSizeAndRedistribute = async (token: string, data: any) => {
   setIsLoading(false);
 };
 
-  
-  
 
-  
 
   return (
     <GlobalContext.Provider
@@ -487,3 +480,4 @@ export const useGlobalContextCrop = () => {
 };
 
 // Path: app\features\Context\culturaStore.tsx
+

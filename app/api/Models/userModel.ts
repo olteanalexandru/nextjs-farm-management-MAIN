@@ -5,10 +5,10 @@ import mongoose from 'mongoose'
 
 
 const userSchema = new mongoose.Schema({
-  rol: {
+  role: {
     type: String,
     enum: {
-      values: ['Fermier', 'Administrator'],
+      values: ['Farmer', 'Admin'],
     },
     required: [true, '{VALUE} is not supported or missing']
   },

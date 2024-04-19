@@ -4,6 +4,8 @@ import Spinner from '../../Crud/Spinner';
 import { useGlobalContextPost } from '../../Context/postStore';
 import Continut from '../../Crud/GetAllPosts/page';
 
+
+
 export default function Noutati() {
   const { data, loading, getAllPosts , error , clearData} = useGlobalContextPost();
   const [page, setPage] = useState(0);

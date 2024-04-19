@@ -26,6 +26,7 @@
     "emailjs-com": "^3.2.0",
     "eslint": "8.57.0",
     "eslint-config-next": "14.1.4",
+    "jsonwebtoken": "^9.0.2",
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
     "mongoose": "^8.3.1",

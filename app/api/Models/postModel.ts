@@ -1,12 +1,13 @@
 import mongoose from "mongoose"
 
-const postSchema = new mongoose.Schema({
-    //linking to user
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'User',
-    },
+
+    const postSchema = new mongoose.Schema({
+        //linking to user
+        user: {
+            type: String,
+            required: true,
+            ref: 'User',
+        },
     title: {
         type: String,
         required: true,
