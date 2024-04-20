@@ -148,6 +148,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
 
     const getPost = async (id: string) => {
+        //solved
         setLoading(true);
         try {
             const response = await axios.get(API_URL + "/post/id/" + id);
@@ -167,6 +168,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     }
     
     const getAllPosts = async (count: number) => {
+        //solved
         setLoading(true);
         try {
      

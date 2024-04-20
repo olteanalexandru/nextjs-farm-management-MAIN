@@ -1,7 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import localForage from 'localforage';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 
@@ -10,11 +9,9 @@ const API_URL = 'http://localhost:5000/api/users/';
 
 type DataType = {
   _id: string;
-  rol: string;
+  role: string;
   name: string;
   email: string;
-  password: string;
-  token: string;
   fermierUsers?: any[];
 };
 
@@ -26,62 +23,78 @@ interface ContextProps {
   login: () => void;
   logout: () => void;
   // modify: (id: string, password: string) => Promise<void>;
-  deleteUser: (token:string,id: string) => Promise<void>;
-  fetchFermierUsers: (token: string) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+  fetchFermierUsers: () => Promise<void>;
   fermierUsers: any[];
-  isUserLoggedIn: () => Promise<void>;
-  handleRequest : () => void;
+  //bool
+  isUserLoggedIn: () => boolean;
 }
+
 
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
 
 export const GlobalContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [data, setData] = useState<DataType>({ _id: '', rol: "", name: '', email: '', password: '', token: '', fermierUsers: [] });
+  const [data, setData] = useState<DataType>({ _id: '', role: "", name: '', email: '', fermierUsers: [] });
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [fermierUsers, setFermierUsers] = useState<any[]>([]);
-const {user, error: authError, isLoading } = useUser();
+  const { user, error: authError, isLoading } = useUser();
 
-
-
+  const router = useRouter();
 
   useEffect(() => {
-
-    const loadUserData = async () => {
-      const storedUser = await localForage.getItem<DataType>('user');
-
-      if (storedUser && storedUser.name && !authError && !isLoading && user && user.name !== null ) {
-        setData(storedUser);
-      }
-    };
-
-    loadUserData();
-  }, []);
-  
-  const router = useRouter();
+    if (user && user.name && !authError && !isLoading) {
+      setData({
+        _id: user.sub,
+        role: user.userRoles[0],
+        name: user.name,
+        email: user.email,
+        fermierUsers: []
+      });
+    }
+  }, [user, authError, isLoading]);
 
   useEffect(() => {
     const handleRequest = async () => {
       setLoading(true);
       try {
-        if (!isLoading) {
-          setData({...user, rol: user.userRoles[0]});
-          await localForage.setItem('user', user);
+        if (!isLoading && user) {
+          setData((prevData) => ({
+            ...prevData,
+            rol: user.userRoles[0]
+          }));
         }
-      } catch (err: any) {
+      } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-  
+
     handleRequest();
-  }, [isLoading,user]); 
+  }, [isLoading, user]);
+
+  // Check if user is logged in
+  const isUserLoggedIn = () => {
+    if (user) {
+      setData({
+        _id: user.sub,
+        role: user.userRoles[0],
+        name: user.name,
+        email: user.email,
+        fermierUsers: []
+      });
+      return true;
+    } else {
+      return false;
+    }
+  };
+  
   
   
 
 const login = async () => {
-    await localForage.removeItem('user');
+
     setData(undefined);
     router.push('/api/auth/login');
   }
@@ -89,19 +102,15 @@ const login = async () => {
 
   const logout = async () => {
     router.push('/api/auth/logout');
-    await localForage.removeItem('user');
     setData(undefined);
   };
 
 
-const deleteUser = async (token:string , id: string) => {
+const deleteUser = async ( id: string) => {
 setLoading(true);
 try {
   await axios.delete(API_URL + id,
   {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      },
       }
       ).then((response) => {
       setData(response.data);
@@ -116,14 +125,12 @@ try {
       };
 
 
-const fetchFermierUsers = async (token: string) => {
+const fetchFermierUsers = async () => {
 setLoading(true);
 try {
   await axios.get(API_URL + 'fermier',
   {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      },
+
       }
       ).then((response) => {
       setFermierUsers(response.data);
@@ -137,12 +144,6 @@ try {
       };
 
 
-const isUserLoggedIn = async (): Promise<void> => {
-  const storedUser = await localForage.getItem<DataType>('user');
-  if (storedUser) {
-    setData(storedUser);
-  }
-};
 
 
 
@@ -150,18 +151,17 @@ const isUserLoggedIn = async (): Promise<void> => {
 return (
 <GlobalContext.Provider
 value={{
-data,
-login,
-setData,
-logout,
-error,
-loading,
-deleteUser,
-fetchFermierUsers,
-fermierUsers,
-isUserLoggedIn,
-
-
+  data,
+  login,
+  setData,
+  logout,
+  error,
+  loading,
+  deleteUser,
+  fetchFermierUsers,
+  fermierUsers,
+  isUserLoggedIn
+ 
 }}
 >
 {children}

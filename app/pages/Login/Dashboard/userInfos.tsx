@@ -4,7 +4,7 @@ import { useGlobalContext } from '../../../Context/UserStore';
 import LinkParola from '../Elements/page';
 
 export const UserInfos = () => {
-  const { data: { name, email, rol } } = useGlobalContext();
+  const { data: { name, email, role } , isUserLoggedIn  } = useGlobalContext();
 
   const cardStyle = {
     backgroundColor: '#f2f2f2',
@@ -25,6 +25,7 @@ export const UserInfos = () => {
   };
 
   return (
+    isUserLoggedIn ?
     <Container>
       <Card style={cardStyle}>
         <section className="heading">
@@ -32,9 +33,10 @@ export const UserInfos = () => {
           <LinkParola />
           <h3 style={infoStyle}>Email: {email}</h3>
           <h3 style={infoStyle}>Nume utilizator: {name}</h3>
-          <h3 style={infoStyle}>Permisiuni: {rol}</h3>
+          <h3 style={infoStyle}>Permisiuni: {role}</h3>
         </section>
       </Card>
     </Container>
+    : null
   );
 };

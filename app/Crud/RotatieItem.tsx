@@ -3,14 +3,18 @@ import { useGlobalContextCrop } from '../Context/culturaStore';
 import styles from './Rotatie.module.css';
 import { Button } from 'react-bootstrap'; 
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
-function RotatieItem({ crops, token }: { crops: any[], token: any }) {
-  const { deleteCrop } = useGlobalContextCrop();
+function RotatieItem({ crops, userID }: { crops: any[], userID: string }) {
+  const { deleteCrop , message } = useGlobalContextCrop();
 
-  const handleDelete = async (id: any, token: any) => {
-    await deleteCrop(id, token);
-  };
+  useEffect(() => {
+    console.log(crops);
+  }
+  , [message]);
+
+
+ 
 
   return (
     <div className={styles.cropList}>
@@ -62,7 +66,9 @@ function RotatieItem({ crops, token }: { crops: any[], token: any }) {
             <p>Adaugat la:</p>
             <div>{new Date(crop.createdAt).toLocaleString('en-US')}</div>
           </div>
-          <Button variant="danger" onClick={() => handleDelete(crop._id, token)}>
+          <Button variant="danger" onClick={() => 
+            deleteCrop(userID,crop._id)
+          }>
             Delete Crop
           </Button>
         </div>

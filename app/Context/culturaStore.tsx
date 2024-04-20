@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, Dispatch, SetStateAction, useState, useCallback } from 'react';
 import axios from 'axios';
-
+import { useUser } from '@auth0/nextjs-auth0/client';
 
 const API_URL = 'http://localhost:3000/api/Controllers/Crop/';
 
@@ -49,57 +49,27 @@ interface ContextProps {
   setIsSuccess: Dispatch<SetStateAction<boolean>>;
   message: string;
   setMessage: Dispatch<SetStateAction<string>>;
-  createCrop: (data: DataType, token: string) => Promise<void>;
-  getCrops: (token: string) => Promise<void>;
-  deleteCrop: (id: string, token: string) => Promise<void>;
-  selectare: (id: string, selectare: boolean, _id: string, token: string, numSelections: number) => Promise<void>;
+  createCrop: (data: DataType) => Promise<void>;
+  getCrops: () => Promise<void>;
+  deleteCrop: (userId: string, cropId: string) => Promise<void>;
+  selectare: (id: string, selectare: boolean, _id: string, numSelections: number) => Promise<void>;
   SinglePage: (id: string) => Promise<void>;
   getAllCrops: () => Promise<void>;
-  updateCrop: (id: string, data: DataType, token: string) => Promise<void>;
+  updateCrop: (id: string, data: DataType) => Promise<void>;
   areThereCrops: boolean;
   cropRotation: any;
   setCropRotation: Dispatch<SetStateAction<any>>;
   generateCropRotation: ( fieldSize: number, numberOfDivisions: number, rotationName: string, filteredCrops: any, token: string , maxYears: number, ResidualNitrogenSupply: number ) => Promise<void>;
-  addTheCropRecommendation: (data: RecommendationType, token: string) => Promise<void>;
+  addTheCropRecommendation: (data: RecommendationType) => Promise<void>;
   setRecommendations: Dispatch<SetStateAction<RecommendationType[]>>;
-  getCropRecommendations: (cropName: string, token: string) => Promise<void>;
+  getCropRecommendations: (cropName: string) => Promise<void>;
   getCropRotation: (token: string) => Promise<void>;
   singleCrop: any;
-  updateNitrogenBalanceAndRegenerateRotation: (token:string , data: DataType) => Promise<void>;
-  updateDivisionSizeAndRedistribute: (token:string , data: DataType) => Promise<void>;
+  updateNitrogenBalanceAndRegenerateRotation: ( data: DataType) => Promise<void>;
+  updateDivisionSizeAndRedistribute: ( data: DataType) => Promise<void>;
 
   
 }
-
-const ContextProps = createContext<ContextProps>({
-  crops: [],
-  setCrops: () => {},
-  isLoading: true,
-  setIsLoading: () => {},
-  isError: false,
-  setIsError: () => {},
-  isSuccess: false,
-  setIsSuccess: () => {},
-  message: '',
-  setMessage: () => {},
-  createCrop: () => Promise.resolve(),
-  getCrops: () => Promise.resolve(),
-  deleteCrop: () => Promise.resolve(),
-  selectare: () => Promise.resolve(),
-  SinglePage: () => Promise.resolve(),
-  getAllCrops: () => Promise.resolve(),
-  updateCrop: () => Promise.resolve(),
-  cropRotation: [],
-  setCropRotation: () => {},
-  generateCropRotation: () => Promise.resolve(),
-  getCropRotation: () => Promise.resolve(),
-  addTheCropRecommendation: () => Promise.resolve(),
-  setRecommendations: () => {},
-  getCropRecommendations: () => Promise.resolve(),
-  singleCrop: [],
-  updateNitrogenBalanceAndRegenerateRotation: () => Promise.resolve(),
-  updateDivisionSizeAndRedistribute: () => Promise.resolve(),
-});
 
 interface Props {
   children: React.ReactNode;
@@ -116,16 +86,16 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const [cropRotation, setCropRotation] = useState([]);
   const [singleCrop, setSingleCrop] = useState<DataType>();
   const [areThereCrops, setAreThereCrops] = useState(false);
+  const { user, error: authError, isLoading: isUserLoading  } = useUser();
 
 
-  const createCrop = async (user:string , data: DataType, token: string) => {
+  const createCrop = async (data) => {
+    console.log('createCrop triggered with object props: ' + JSON.stringify(data));
     setIsLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/crop/single/${user}`, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+
+      const response = await axios.post(`${API_URL}/crop/single/${user.sub}`, data);
+
       if (response.status === 201) {
         setIsSuccess(true);
         setMessage('Crop created successfully');
@@ -134,19 +104,18 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
         setMessage('Error creating crop');
       }
     } catch (err) {
+      console.error(err);
       setIsError(true);
-      setMessage('Error creating crop');
+      setMessage('Error creating crop: ' + err.message);
     }
     setIsLoading(false);
   };
+  
 
-  const updateCrop = async (cropId: string, userId:string, data: DataType, token: string) => {
+  const updateCrop = async (cropId: string, userId:string, data: DataType) => {
     setIsLoading(true);
     try {
       const response = await axios.put(`${API_URL}/crop/${cropId}/${userId}`, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
       if (response.status === 200) {
         setIsSuccess(true);
@@ -164,13 +133,11 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
 
 
-  const getCrops = async (token: string) => {
+  const getCrops = async () => {
+   
     setIsLoading(true);
     try {
       const response = await axios.get(`${API_URL}/crops/retrieve/all` , {
-        // headers: {
-        //   Authorization: `Bearer ${token}`,
-        // },
       });
       if (response.status === 200) {
         setCrops(response.data.crops);
@@ -190,13 +157,11 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   };
 
   
-  const deleteCrop = async (userId: string, cropId: string, token: string, ) => {
+  const deleteCrop = async (userId: string, cropId: string) => {
     setIsLoading(true);
     try {
       const response = await axios.delete(`${API_URL}/crops/${userId}/${cropId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+
       });
       if (response.status === 200) {
         setIsSuccess(true);
@@ -214,11 +179,9 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
 
 
-  const selectare = async (id: string, selectare: boolean, _id: string, token: string, numSelections: number) => {
+  const selectare = async (id: string, selectare: boolean, _id: string, numSelections: number) => {
     const response = await axios.post(`${API_URL}/crops/${id}/selectare`, { selectare: selectare, _id: _id, numSelections: numSelections }, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+
     });
   
     const crops = await response.data;
@@ -229,9 +192,6 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     setIsLoading(true);
     try {
       const response = await axios.get(`${API_URL}/crops/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
       if (response.status === 200) {
         const data = await response.data;
@@ -251,9 +211,6 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     setIsLoading(true);
     try {
       const response = await axios.get(`${API_URL}/crops`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
       if (response.status === 200) {
         const data = await response.data;
@@ -277,7 +234,6 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     numberOfDivisions: number,
     rotationName: string,
     crops: DataType,
-    token: string,
     maxYears: number,
     ResidualNitrogenSupply:number,
   ) => {
@@ -294,10 +250,6 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
           ResidualNitrogenSupply,
         },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
         }
       );
       if (response.status === 200) {
@@ -313,13 +265,10 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     setIsLoading(false);
   };
 
-  const getCropRotation = async (token: string) => {
+  const getCropRotation = async () => {
     setIsLoading(true);
     try {
       const response = await axios.get(`${API_URL}/rotation`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
       if (response.status === 200) {
         setCropRotation(response.data);
@@ -338,13 +287,10 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     setIsLoading(false);
   };
 
-  const deleteCropRotation = async (id: string, token: string) => {
+  const deleteCropRotation = async (id: string) => {
     setIsLoading(true);
     try {
       const response = await axios.delete(`${API_URL}${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
       if (response.status === 200) {
         setIsSuccess(true);
@@ -363,37 +309,51 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
 
 
-  const getCropRecommendations = useCallback(async (cropName: string, token: string) => {
-    let recommendations = [];
-    if (cropName !== '') {
-      try {
-        const response = await axios.get(`${API_URL}/crops/recommendations?dinamicAction=${cropName}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (response.status === 200 && response.data.length > 0) { // check if response data is not empty
-          recommendations = response.data;
-        }
-      } catch (error) {
-        console.error(error);
+  const getCropRecommendations = useCallback(async (cropName: string) => {
+    // let recommendations = [];
+    // if (cropName !== '') {
+    //   try {
+    //     const response = await axios.get(`${API_URL}/crops/recommendations?dinamicAction=${cropName}`, {
+    //       }
+    //     );
+    //     if (response.status === 200 && response.data.length > 0) { // check if response data is not empty
+    //       recommendations = response.data;
+    //     }
+    //   } catch (error) {
+    //     console.error(error);
+    //   }
+    // }
+    // return recommendations;
+    return [
+      {
+        cropName: 'cropName',
+        nitrogenSupply: 0,
+        nitrogenDemand: 0,
+        pests: [],
+        diseases: [],
+      },
+      {
+        cropName: 'cropName',
+        nitrogenSupply: 0,
+        nitrogenDemand: 0,
+        pests: [],
+        diseases: [],
       }
-    }
-    return recommendations;
-  }, []);
+    ] 
+  }
+  , []);
+
+  // }, []);
   
 
 
   
-  const updateNitrogenBalanceAndRegenerateRotation = async ( token: string, data: any) => {
+  const updateNitrogenBalanceAndRegenerateRotation = async (  data: any) => {
   setIsLoading(true);
   const {rotationName, year, division, nitrogenBalance } = data;
   try {
     const response = await axios.put(`${API_URL}`, {year, rotationName,division, nitrogenBalance }, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+
     });
     if (response.status === 200) {
       setIsSuccess(true);

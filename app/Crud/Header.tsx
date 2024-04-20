@@ -34,7 +34,7 @@ function HeaderLog() {
             <Dropdown.Item as={Link} href="/pages/Login/Dashboard/">
               Dashboard
             </Dropdown.Item>
-            {data.rol === 'Fermier' && (
+            {data.role === 'Fermier' && (
               <>
                 <Dropdown.Item as={Link} href="/pages/Login/RotatieDashboard/">
                   Crop rotation

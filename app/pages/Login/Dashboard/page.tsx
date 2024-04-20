@@ -31,29 +31,29 @@ export default function Dashboard() {
     fermierUsers,
   } = useGlobalContext();
 
-  const { token } = data;
+
 
   useEffect(() => {
     if (!data) {
       navigate.push('/login');
-    } else if (data.role === 'Admin' ) {
-      fetchFermierUsers(token);
-    } else if (data.role === 'Farmer') {
-      getCrops(token);
+    } else if (data.role.toLowerCase() === 'admin' ) {
+      fetchFermierUsers();
+    } else if (data.role.toLowerCase() === 'farmer') {
+      getCrops();
     }
-  }, [data, token]);
+  }, [data, ]);
 
   if (isLoading) {
     return <Spinner />;
   }
 
   const handleAddCropRecommendation = async (cropData : any) => {
-    await addTheCropRecommendation(cropData, token);
+    await addTheCropRecommendation(cropData);
   };
   return (
     <>
       <UserInfos />
-      {data && data.rol == 'Admin' ? (
+      {data && data.role.toLowerCase() == 'admin' ? (
         <Container>
           <Card>
             <section className="heading">
@@ -72,11 +72,10 @@ export default function Dashboard() {
               <div>
            
        
-                {data && data.rol === 'Admin' && (
+                {data && data.role.toLowerCase() === 'admin' && (
                   
 <>
-{console.log("se trimite token " + token)}
-{console.log("Farmer users " + fermierUsers)}
+
 
 <Container>
                 <AdminCropForm onSubmit={handleAddCropRecommendation} />
@@ -97,7 +96,7 @@ export default function Dashboard() {
           </Card>
         </Container>
       ) : (
-        data && data.rol == 'Farmer' ? (
+        data && data.role.toLowerCase() == 'farmer' ? (
           <Container>
             <Card>
               <section className="heading">
@@ -109,7 +108,9 @@ export default function Dashboard() {
                 {crops.length > 0 ? (
                   <div className="crops">
                    
-                      <RotatieItem crops={crops} token={data.token}  />
+                      <RotatieItem crops={crops} userID={
+                        data._id
+                      }  />
                   
                   </div>
                 ) : (

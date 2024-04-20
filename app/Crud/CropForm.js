@@ -49,7 +49,7 @@ const CropForm = () => {
       nitrogenDemand: nitrogenDemand,
     };
 
-    createCrop(newCrop, data.token);
+    createCrop(newCrop);
   };
 
   const debouncedSetCropName = useCallback(
@@ -286,11 +286,11 @@ const CropForm = () => {
           </div>
         </form>
       </section>
-      {console.log("Se trimite: " + cropName + " tokenul: " + data.token)}
+    
       {cropName && (
         <>
           <h2 className="text-center mb-4">Culturi similare</h2>
-          <CropRecommendations cropName={cropName} token={data.token} />
+          <CropRecommendations cropName={cropName}  />
         </>
       )}
     </div>
