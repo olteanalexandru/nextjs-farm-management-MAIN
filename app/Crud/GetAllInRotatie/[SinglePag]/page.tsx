@@ -22,8 +22,8 @@ function SinglePag() {
   const navigate = useRouter();
   const _id = useSearchParams().get('crop');
 
-  const token = userData.token;
-  const LocaluserId = userData._id;
+
+  const LocaluserId = "change this to your user id"
   const [selectarea, setSelectarea] = useState(false);
   const [numSelections, setNumSelections] = useState(1);
   const [editMode, setEditMode] = useState(false);
@@ -45,7 +45,11 @@ function SinglePag() {
   });
 
   const crops = singleCrop;
-  const canEdit = userData.rol === 'Administrator' || userData._id === crops?.user;
+  const canEdit = userData.role.toLocaleLowerCase() === 'admin' ||  crops?.user == userData._id;
+  console.log(
+   "isul la user " + userData._id
+  );
+  
 
   useEffect(() => {
     SinglePage(_id);
@@ -79,7 +83,7 @@ function SinglePag() {
   if (isLoading) {
     return <h1>Loading...</h1>;
   }
-  console.log(token);
+
 
   if (isError) {
     return <h1>{message}</h1>;
@@ -87,7 +91,7 @@ function SinglePag() {
 
   const handleDelete = async () => {
     try {
-      await deleteCrop(_id, token);
+      await deleteCrop(_id);
       console.log('Crop deleted');
       navigate.push('/pages/Rotatie');
     } catch (error) {
@@ -97,7 +101,7 @@ function SinglePag() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    await updateCrop(_id, updatedCrop, token);
+    await updateCrop(_id, updatedCrop);
     setEditMode(false);
   };
 
@@ -115,7 +119,7 @@ function SinglePag() {
   const onSubmit = async (e, newSelectArea) => {
     e.preventDefault();
     if (userData && userData.rol === "Fermier") {
-      await selectare(_id, newSelectArea, LocaluserId, token, numSelections);
+      await selectare(_id, newSelectArea, LocaluserId, numSelections);
       setSelectarea(newSelectArea);
     }
   };
@@ -285,7 +289,7 @@ function SinglePag() {
                   <Button variant="primary" onClick={() => setEditMode(true)}>
                     Edit
                   </Button>
-                  {userData && userData.rol === 'Fermier' && (
+                  {userData && userData.role === 'Fermier' && (
                     <Card.Body>
                       <Form onSubmit={(e) => onSubmit(e, !selectarea)}>
                         <Form.Group>

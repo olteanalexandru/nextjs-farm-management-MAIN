@@ -16,22 +16,31 @@ connectDB()
 // API_URL + "/crops/crops/recommendations/" + cropName
 
 
-export async function GET(request: NextRequest,context: any) {
+export async function GET(request: NextRequest,context: any) { 
+
   const { params } = context;
+  const session = await getSession();
+  const user = session?.user;
+
   let crops;
   let message = 'No more crops';
+
+
+
+
+  console.log("user: " + user.sub + " JSON: " +  JSON.stringify(user) )
   if(params.crops === 'crops' &&  params.cropRoute == "search"){
     crops = await Crop.find({ cropName: { $regex: params.dinamicAction, $options: 'i' } });
     console.log("triggered crop")
-  } else if (params.crops === 'crop' && params.cropRoute == "id" ){
-   const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
-   const { user } = await getSession();
+  } else if (params.crops === 'crop' && params.cropRoute == "id"  ){
+ 
+   console.log(" searched user " + params.dinamicAction.toString())
+ 
    
- crops = await Crop.find({ user: Checkuser.sub }) 
+ crops = await Crop.find({ _id: params.dinamicAction.toString() }) 
 
-   if (user === null || user.sub !== Checkuser) {
-      return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
-    }
+
+    message = `crop with id ${params.dinamicAction}  found`;
     //recommandations
    } else if(params.crops === 'crops' && params.cropRoute == "recommendations"){
       crops = await Crop.find({ cropName: { $regex: params.dinamicAction, $options: 'i' } });
@@ -180,13 +189,17 @@ if (
 // API_URL + "/crops/crops/id/" + id + "/recommendations"
 
 export async function PUT(request: NextRequest,context: any) {
+   
    const { params } = context;
    const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
    const { user } = await getSession();
+   const CheckuserObject = Checkuser.toObject();
+   const roles = Array.isArray(user.userRoles) ? user.userRoles : [user.userRoles];
 
  if (
-   user.sub !== Checkuser.sub 
+   user.sub !== CheckuserObject.auth0_id && !roles.map(role => role.toLowerCase()).includes('admin')
  ){
+
    return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
  }
 
@@ -194,7 +207,7 @@ export async function PUT(request: NextRequest,context: any) {
          params.crops === 'crop' 
     ) {
          const { cropName, nitrogenSupply, nitrogenDemand, pests, diseases } = await request.json();
-         let crop = await Crop.findOne(params.cropRoute);
+         let crop = await Crop.findOne({_id : params.cropRoute});
   
          if (!crop) {
             return NextResponse.json({ message: 'Crop not found' }, { status: 404 });
@@ -202,9 +215,17 @@ export async function PUT(request: NextRequest,context: any) {
          if (!params.dinamicAction) {
             return NextResponse.json({ message: 'User not found' }, { status: 401 });
          }
-         if (!user.userRoles.toLowerCase().includes('admin') ) {
-            return NextResponse.json({ message: 'User not authorized, not admin' }, { status: 401 });
-         }
+         console.log( user.userRoles + "rolurile")
+
+ // Check if the user is an admin or the owner of the crop
+if (roles.map(role => role.toLowerCase()).includes('admin') || crop.user.toString() === user.sub) {
+   // The user is either an admin or the owner of the crop, so no error should be sent
+   console.log("Access granted: " + user.sub);
+} else {
+   // The user is not an admin and does not own the crop, so send an error
+   console.log("User is not admin and the crop is not his: " + user.sub + " " + crop.user.toString());
+   return NextResponse.json({ message: 'User not authorized, not admin and not his crop' }, { status: 401 });
+}
          if (!crop) {
             crop = new Crop({
             user: params.dinamicAction,

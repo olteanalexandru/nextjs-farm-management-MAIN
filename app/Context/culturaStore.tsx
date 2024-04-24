@@ -7,6 +7,7 @@ const API_URL = 'http://localhost:3000/api/Controllers/Crop/';
 
 
 type DataType = {
+  
   _id: string;
   cropName: string;
   cropType: string;
@@ -94,7 +95,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     setIsLoading(true);
     try {
 
-      const response = await axios.post(`${API_URL}/crop/single/${user.sub}`, data);
+      const response = await axios.post(`${API_URL}crop/single/${user.sub}`, data);
 
       if (response.status === 201) {
         setIsSuccess(true);
@@ -112,10 +113,10 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   };
   
 
-  const updateCrop = async (cropId: string, userId:string, data: DataType) => {
+  const updateCrop = async (cropId: string, data: DataType) => {
     setIsLoading(true);
     try {
-      const response = await axios.put(`${API_URL}/crop/${cropId}/${userId}`, data, {
+      const response = await axios.put(`${API_URL}crop/${cropId}/${user.sub}`, data, {
       });
       if (response.status === 200) {
         setIsSuccess(true);
@@ -137,7 +138,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
    
     setIsLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/crops/retrieve/all` , {
+      const response = await axios.get(`${API_URL}crops/retrieve/all` , {
       });
       if (response.status === 200) {
         setCrops(response.data.crops);
@@ -157,10 +158,10 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   };
 
   
-  const deleteCrop = async (userId: string, cropId: string) => {
+  const deleteCrop = async ( cropId: string) => {
     setIsLoading(true);
     try {
-      const response = await axios.delete(`${API_URL}/crops/${userId}/${cropId}`, {
+      const response = await axios.delete(`${API_URL}crops/${user.sub}/${cropId}`, {
 
       });
       if (response.status === 200) {
@@ -180,7 +181,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
 
   const selectare = async (id: string, selectare: boolean, _id: string, numSelections: number) => {
-    const response = await axios.post(`${API_URL}/crops/${id}/selectare`, { selectare: selectare, _id: _id, numSelections: numSelections }, {
+    const response = await axios.post(`${API_URL}crops/${id}/selectare`, { selectare: selectare, _id: _id, numSelections: numSelections }, {
 
     });
   
@@ -191,11 +192,11 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const SinglePage = async (id: string) => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/crops/${id}`, {
+      const response = await axios.get(`${API_URL}crop/id/${id}`, {
       });
       if (response.status === 200) {
-        const data = await response.data;
-        setSingleCrop(data);
+        const data = await response.data
+        setSingleCrop(data.crops[0]);
       } else {
         setIsError(true);
         setMessage('Error getting crops');
@@ -210,7 +211,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const getAllCrops = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/crops`, {
+      const response = await axios.get(`${API_URL}crops/retrieve/all`, {
       });
       if (response.status === 200) {
         const data = await response.data;

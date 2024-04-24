@@ -6,12 +6,13 @@ import { Button } from 'react-bootstrap';
 import React, { useEffect } from 'react';
 
 function RotatieItem({ crops, userID }: { crops: any[], userID: string }) {
-  const { deleteCrop , message } = useGlobalContextCrop();
+  const { deleteCrop , message , getAllCrops} = useGlobalContextCrop();
 
   useEffect(() => {
     console.log(crops);
+    
   }
-  , [message]);
+  , [message ]);
 
 
  
@@ -67,7 +68,7 @@ function RotatieItem({ crops, userID }: { crops: any[], userID: string }) {
             <div>{new Date(crop.createdAt).toLocaleString('en-US')}</div>
           </div>
           <Button variant="danger" onClick={() => 
-            deleteCrop(userID,crop._id)
+            deleteCrop(crop._id)
           }>
             Delete Crop
           </Button>

@@ -41,7 +41,7 @@ export default function Dashboard() {
     } else if (data.role.toLowerCase() === 'farmer') {
       getCrops();
     }
-  }, [data, ]);
+  }, [data  ]);
 
   if (isLoading) {
     return <Spinner />;
