@@ -17,13 +17,12 @@ function Postari() {
 
     const router = useRouter();
 
-const token = user.token;
+
 const id = user._id;
 
-useEffect (() => {
-   token ? getAllPosts(0) : router.push('/pages/Login/Login');
-   console.log(token);
-}, [getAllPosts, token, id]);
+    useEffect(() => {
+        getAllPosts() 
+    }, [ ]);
 
 
     // useEffect(() => {
@@ -56,7 +55,7 @@ useEffect (() => {
                         <li key={post._id}>
                             <h2>{post.title}</h2>
                             <p>{post.brief}</p>
-                            <Button variant="danger" onClick={() => deletePost(post._id,token)}>
+                            <Button variant="danger" onClick={() => deletePost(post._id)}>
                                 Delete Post
                             </Button>
                         </li>

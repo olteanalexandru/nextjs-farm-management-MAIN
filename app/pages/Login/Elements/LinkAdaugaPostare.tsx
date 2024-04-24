@@ -4,8 +4,8 @@ import Link from 'next/link'
 function LinkAdaugaPostare(){
   return (
   <>
-              <Link href='/pages/Login/Postari'>
-                <FaUser /> Adauga/vezi postari
+              <Link href='/pages/Login/Posts'>
+                <FaUser /> Add/see posts
               </Link>
               
                 </>

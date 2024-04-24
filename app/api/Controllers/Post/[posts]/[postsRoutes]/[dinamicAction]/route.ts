@@ -60,9 +60,10 @@ export async function POST(request: NextRequest, context: any) {
   const { params } = context;
   const { title, brief, description, image } = await request.json();
   const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
+  const CheckuserObject = Checkuser.toObject();
   const { user } = await getSession();
 
-  if (user === null || user.sub !== Checkuser) {
+  if ( user.sub !== CheckuserObject.auth0_id) {
     return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
   }
   if (!user) {
@@ -139,25 +140,34 @@ export async function PUT(request: NextRequest, context: any) {
 // API_URL + "/post/:postId/:userId"
 
 export async function DELETE(request: NextRequest, context: any) {
+
   const { params } = context;
+
+  const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
+  const CheckuserObject = Checkuser.toObject();
+  const { user } = await getSession();
+
+  if ( user.sub !== CheckuserObject.auth0_id) {
+    return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
+  }
+
+
+
   if (
     params.posts == "post" && params.postsRoutes
   ) {
-    const post = await Post.findById(params.postRoutes);
-    const checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
-    const { user } = await getSession();
-    if (user === null || user.sub !== checkuser) {
-      return NextResponse.json({ message: 'User not authorized' }, { status: 401 });
-    }
+    const post = await Post.findById(params.postsRoutes);
+   
+  
     if (!post) {
       return NextResponse.json({ message: 'Post not found' }, { status: 404 });
     }
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
-    if (post.user.toString() == user.auth0_id.toString() || user.role.includes('admin')) {
+    if (post.user.toString() == user.sub || user.role.toLowerCase().includes('admin')) {
 
-      await post.remove();
+      await post.deleteOne()
       console.log("post delete triggered")
       return NextResponse.json({ message: 'Post Deleted' }, { status: 200 });
     }
