@@ -4,7 +4,6 @@ import User from '../../../../../Models/userModel';
 import { connectDB } from '../../../../../../db';
 import { getSession } from '@auth0/nextjs-auth0';
 
-
 connectDB()
 
 
@@ -27,9 +26,6 @@ export async function GET(request: Request, context: any) {
     const count = Number(params.dinamicAction) || 0;
     const skip = count * limit;
     posts = await Post.find().skip(skip).limit(limit);
-
-
-
 
     if (posts.length === 0) {
       //include a message for no more posts in posts
@@ -109,10 +105,11 @@ export async function PUT(request: NextRequest, context: any) {
     params.posts == "post"
   ) {
     const { title, brief, description, image } = await request.json();
-    const post = await Post.findById(params.dinamicAction);
+    const post = await Post.findById(params.postsRoutes);
     const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
+  const CheckuserObject = Checkuser.toObject();
     const { user } = await getSession();
-    if (user === null || user.sub !== Checkuser) {
+    if (user === null || user.sub !== CheckuserObject.auth0_id) {
       return NextResponse.json({ message: 'User not authorized' }, { status: 401 });
     }
     if (!post) {

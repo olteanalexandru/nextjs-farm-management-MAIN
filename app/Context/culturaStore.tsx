@@ -229,6 +229,26 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     setIsLoading(false);
   };
 
+  const addTheCropRecommendation = async (data: RecommendationType) => {
+    setIsLoading(true);
+    try {
+      const response = await axios.post(`${API_URL}crops/recommendations/${user.sub} `, data, {
+      });
+      if (response.status === 201) {
+        setIsSuccess(true);
+        setMessage('Recommendation added successfully');
+      } else {
+        setIsError(true);
+        setMessage('Error adding recommendation');
+      }
+    } catch (err) {
+      setIsError(true);
+      setMessage('Error adding recommendation');
+    }
+    setIsLoading(false);
+  };
+
+
   
   const generateCropRotation = async (
     fieldSize: number,
@@ -427,6 +447,7 @@ const updateDivisionSizeAndRedistribute = async (token: string, data: any) => {
         singleCrop,
         updateNitrogenBalanceAndRegenerateRotation,
         updateDivisionSizeAndRedistribute,
+        addTheCropRecommendation
       
 
       }}

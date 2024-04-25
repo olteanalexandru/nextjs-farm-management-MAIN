@@ -19,8 +19,7 @@ export default function SinglePost() {
   const data = allData.posts
 
   const { data: user } = useGlobalContext();
-  const token = user.token;
-  const isAdmin = user.rol === 'Administrator';
+  const isAdmin = user.role.toLowerCase() === 'admin';
 
   const [editMode, setEditMode] = useState(false);
   const [updatedPost, setUpdatedPost] = useState({
@@ -54,12 +53,16 @@ export default function SinglePost() {
   }
 
   const handleDelete = async () => {
-    await deletePost(data._id, token);
+    await deletePost(data._id);
   };
 
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await updatePost(data._id, updatedPost.title, updatedPost.brief, updatedPost.description, token);
+    await updatePost(data._id, {
+      title: updatedPost.title,
+      brief: updatedPost.brief,
+      description: updatedPost.description,
+    });
     setEditMode(false);
   };
 

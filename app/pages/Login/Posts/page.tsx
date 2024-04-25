@@ -11,18 +11,20 @@ import PostForm from '../../../Crud/PostForm';
 import Continut from '../../../Crud/GetAllPosts/page';
 
 function Postari() {
-    const { data, loading, getAllPosts, deletePost } = useGlobalContextPost();
-     const { data: user } = useGlobalContext();
-    // const { data: userData } = useGlobalContext();
-
-    const router = useRouter();
+    const { data, loading, getAllPosts, deletePost , clearData } = useGlobalContextPost();
 
 
-const id = user._id;
 
-    useEffect(() => {
-        getAllPosts() 
-    }, [ ]);
+useEffect(() => {
+    const fetchData = async () => {
+      clearData();
+
+
+      await getAllPosts();
+    };
+
+    fetchData();
+  }, []);
 
 
     // useEffect(() => {
@@ -58,6 +60,7 @@ const id = user._id;
                             <Button variant="danger" onClick={() => deletePost(post._id)}>
                                 Delete Post
                             </Button>
+                            
                         </li>
                     ))}
                 </ul>

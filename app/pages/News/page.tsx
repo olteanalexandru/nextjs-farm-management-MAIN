@@ -58,7 +58,7 @@ export default function Noutati() {
 
   return (
     <div className="container">
-      <h1 className="mt-5 mb-4">Noutati:</h1>
+      <h1 className="mt-5 mb-4">Our latest news:</h1>
 
       {data.length > 0 ? (
         <div>
@@ -72,7 +72,7 @@ export default function Noutati() {
           {loadingMore && <Spinner />}
         </div>
       ) : (
-        <h3 className="mb-5">Nu sa adaugat nici un continut pana acum</h3>
+        <h3 className="mb-5">Nothing to see at the moment</h3>
       )}
     </div>
   );

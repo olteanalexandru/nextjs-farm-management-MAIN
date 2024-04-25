@@ -16,33 +16,24 @@ connectDB()
 // API_URL + "/crops/crops/recommendations/" + cropName
 
 
-export async function GET(request: NextRequest,context: any) { 
+export async function GET(request: NextRequest, context: any) {
 
-  const { params } = context;
-  const session = await getSession();
-  const user = session?.user;
+   const { params } = context;
+   const session = await getSession();
+   const user = session?.user;
+   let crops;
+   let message = 'No more crops';
+   console.log("user: " + user.sub + " JSON: " + JSON.stringify(user))
+   if (params.crops === 'crops' && params.cropRoute == "search") {
+      crops = await Crop.find({ cropName: { $regex: params.dinamicAction, $options: 'i' } });
+      console.log("triggered crop")
+   } else if (params.crops === 'crop' && params.cropRoute == "id") {
 
-  let crops;
-  let message = 'No more crops';
-
-
-
-
-  console.log("user: " + user.sub + " JSON: " +  JSON.stringify(user) )
-  if(params.crops === 'crops' &&  params.cropRoute == "search"){
-    crops = await Crop.find({ cropName: { $regex: params.dinamicAction, $options: 'i' } });
-    console.log("triggered crop")
-  } else if (params.crops === 'crop' && params.cropRoute == "id"  ){
- 
-   console.log(" searched user " + params.dinamicAction.toString())
- 
-   
- crops = await Crop.find({ _id: params.dinamicAction.toString() }) 
-
-
-    message = `crop with id ${params.dinamicAction}  found`;
-    //recommandations
-   } else if(params.crops === 'crops' && params.cropRoute == "recommendations"){
+      console.log(" searched user " + params.dinamicAction.toString())
+      crops = await Crop.find({ _id: params.dinamicAction.toString() })
+      message = `crop with id ${params.dinamicAction}  found`;
+      //recommandations
+   } else if (params.crops === 'crops' && params.cropRoute == "recommendations") {
       crops = await Crop.find({ cropName: { $regex: params.dinamicAction, $options: 'i' } });
       crops.map((c) => ({
          cropName: c.cropName,
@@ -50,19 +41,20 @@ export async function GET(request: NextRequest,context: any) {
          pests: c.pests,
          nitrogenSupply: c.nitrogenSupply,
          nitrogenDemand: c.nitrogenDemand,
-         }));
-         console.log("triggered crop")
-         return NextResponse.json( {crops,message});
-   } else if(
- params.crops === 'crops' && 
+      }));
+      console.log("triggered crop")
+      return NextResponse.json({ crops, message });
+   } else if (
+      params.crops === 'crops' &&
       params.cropRoute == "retrieve" && params.dinamicAction == "all"
    ) {
-      
       crops = await Crop.find();
    }
-     
-  console.log("crop get triggered")
-  return NextResponse.json( {crops,message});
+   console.log("crop get triggered")
+   const filteredCrops = crops.filter((crop) =>
+      crop.cropType && crop.cropVariety && crop.plantingDate && crop.harvestingDate && crop.soilType
+    );
+   return NextResponse.json({ crops: filteredCrops, message });
 }
 
 //POST paths and params docs
@@ -76,16 +68,20 @@ export async function POST(request: NextRequest,context: any) {
 
   const { params } = context;
   const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
+  const CheckuserObject = Checkuser.toObject();
   const { user } = await getSession();
   // let user = await User.findOne(params.dinamicAction);
 if (
-  user.sub !== Checkuser.sub  && params.cropRoute !== 'single' 
+  user.sub !== CheckuserObject.auth0_id  && params.cropRoute !== 'single' 
 ){
+   console.log
   return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
 }
   // post request for crop recommendations
   if (
-      params.crops === 'crops' && params.cropRoute == "recommendations" 
+      params.crops === 'crops' && params.cropRoute == "recommendations"  &&
+      params.dinamicAction === user.sub
+ 
    ) {
       const { cropName, nitrogenSupply, nitrogenDemand, pests, diseases } = await request.json();
       let crop = await Crop.findOne({ cropName });
@@ -106,9 +102,7 @@ if (
          crop.pests = pests;
          crop.diseases = diseases;
       }
-      if (!crop) {
-         return NextResponse.json({ message: 'Crop not found' }, { status: 400 });
-      }
+   
 
    
       const updatedCrop = await crop.save();

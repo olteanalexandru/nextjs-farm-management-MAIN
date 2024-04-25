@@ -31,7 +31,10 @@ export default function Noutati() {
   }
 
   // Sort the data to get the two most recent posts
-  const latestPosts = [...data].sort((a, b) => b.date - a.date).slice(0, 2);
+  let latestPosts = [];
+  if (data && Array.isArray(data)) {
+    latestPosts = [...data].sort((a, b) => b.date - a.date).slice(0, 2);
+  } 
 
   return (
     <div className="container">

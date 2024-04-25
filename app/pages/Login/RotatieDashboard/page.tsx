@@ -20,8 +20,8 @@ function RotatieDashboard() {
   const { crops, isError, message, getCropRotation, cropRotation, updateNitrogenBalanceAndRegenerateRotation, getAllCrops, updateDivisionSizeAndRedistribute } = useGlobalContextCrop();
   const { data: userData } = useGlobalContext();
 
-  const token = userData.token;
-  const id = userData._id;
+
+
 
   const [activeIndex, setActiveIndex] = useState(null);
   const [divisionSizeValues, setDivisionSizeValues] = useState([]);
@@ -31,16 +31,14 @@ const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
     if (isError) {
       console.log(message);
     }
-    if (!token) {
-      navigate.push('/login');
-    }
-    getCropRotation(token);
+ 
+    getCropRotation();
     getAllCrops();
 
     return () => {
       setActiveIndex(null);
     };
-  }, [token, isError, message]);
+  }, [ isError, message]);
 
   let filteredCrops = crops.filter((crop) => crop.selectare && crop.selectareBy == id)
 
@@ -56,7 +54,7 @@ const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
 
       // Add missing divisions from the previous year
       for (let division = 1; division <= numberOfDivisions; division++) {
-        const key = `Parcela${division}`;
+        const key = `Parcela ${division}`;
         if (!(key in yearData) && (key in previousYearData)) {
           yearData[key] = previousYearData[key];
         }
@@ -68,7 +66,7 @@ const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
     return chartData;
   };
 
-  if (userData.rol === 'Fermier') {
+  if (userData.role === 'Fermier') {
     return (
       <>
         <Container style={{ marginTop: '2rem', marginBottom: '2rem' }}>

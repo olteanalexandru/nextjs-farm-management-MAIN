@@ -3,8 +3,6 @@ import { createContext, useContext, Dispatch , SetStateAction , useState } from 
 import axios from 'axios'
 import { useUser } from '@auth0/nextjs-auth0/client';
 
-
-
 const API_URL = 'http://localhost:3000/api/Controllers/Post'
 
 type DataType = {
@@ -17,7 +15,6 @@ type DataType = {
     user: string;
     token: string;
 }
-
 interface ContextProps {
     data: any;
     setData: Dispatch<SetStateAction<any>>;
@@ -47,15 +44,10 @@ const ContextProps  = createContext<ContextProps>({
     getPost: () => Promise.resolve(),
     getAllPosts: () => Promise.resolve(),
     clearData: () => {},
-
 });
-
-
 interface Props {
     children: React.ReactNode;
     }
-
-
 
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
 export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
@@ -68,10 +60,8 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
 
     const createPost = async ({ title, brief, description, image }: any) => {
-   
         setLoading(true);
         try {
-       
           const response = await axios.post(API_URL + "/post" + "/new/" + user.sub, {
             title,
             brief,
@@ -100,14 +90,12 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     const updatePost = async (postId: string, { title, brief, description, image }: any) => {
         setLoading(true);
         try {
-          
-            const response = await axios.put(API_URL + "/post" + postId + "/" + user.sub , {
+            const response = await axios.put(API_URL + "/post/" + postId + "/" + user.sub , {
                 title,
                 brief,
                 description,
                 image,
             }, {
-  
             });
             const data = await response.data;
             if (data.error) {
