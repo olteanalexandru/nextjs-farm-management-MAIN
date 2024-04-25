@@ -23,7 +23,7 @@ function SinglePag() {
   const _id = useSearchParams().get('crop');
 
 
-  const LocaluserId = "change this to your user id"
+
   const [selectarea, setSelectarea] = useState(false);
   const [numSelections, setNumSelections] = useState(1);
   const [editMode, setEditMode] = useState(false);
@@ -46,10 +46,7 @@ function SinglePag() {
 
   const crops = singleCrop;
   const canEdit = userData.role.toLocaleLowerCase() === 'admin' ||  crops?.user == userData._id;
-  console.log(
-   "isul la user " + userData._id
-  );
-  
+
 
   useEffect(() => {
     SinglePage(_id);
@@ -118,8 +115,8 @@ function SinglePag() {
 
   const onSubmit = async (e, newSelectArea) => {
     e.preventDefault();
-    if (userData && userData.rol === "Fermier") {
-      await selectare(_id, newSelectArea, LocaluserId, numSelections);
+    if (userData && userData.role.toLowerCase() === "farmer") {
+      await selectare(_id, newSelectArea, numSelections);
       setSelectarea(newSelectArea);
     }
   };
@@ -289,7 +286,7 @@ function SinglePag() {
                   <Button variant="primary" onClick={() => setEditMode(true)}>
                     Edit
                   </Button>
-                  {userData && userData.role === 'Fermier' && (
+                  {userData && userData.role.toLowerCase() === 'farmer' && (
                     <Card.Body>
                       <Form onSubmit={(e) => onSubmit(e, !selectarea)}>
                         <Form.Group>

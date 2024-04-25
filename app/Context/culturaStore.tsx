@@ -52,7 +52,7 @@ interface ContextProps {
   setMessage: Dispatch<SetStateAction<string>>;
   createCrop: (data: DataType) => Promise<void>;
   getCrops: () => Promise<void>;
-  deleteCrop: (userId: string, cropId: string) => Promise<void>;
+  deleteCrop: ( cropId: string) => Promise<void>;
   selectare: (id: string, selectare: boolean, _id: string, numSelections: number) => Promise<void>;
   SinglePage: (id: string) => Promise<void>;
   getAllCrops: () => Promise<void>;
@@ -180,6 +180,8 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
 
 
+
+// await selectare(_id, newSelectArea, numSelections);
   const selectare = async (id: string, selectare: boolean, _id: string, numSelections: number) => {
     const response = await axios.post(`${API_URL}crops/${id}/selectare`, { selectare: selectare, _id: _id, numSelections: numSelections }, {
 
@@ -327,9 +329,6 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     setIsLoading(false);
   };
 
-
-
-
   const getCropRecommendations = async (cropName: string) => {
     let recommendations = [];
     if (cropName !== '') {
@@ -347,9 +346,6 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     console.log("recommendations: ", recommendations);
     return recommendations;
   }
-
-  
-
 
   
   const updateNitrogenBalanceAndRegenerateRotation = async (  data: any) => {
