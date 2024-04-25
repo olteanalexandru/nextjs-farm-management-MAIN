@@ -9,7 +9,7 @@ import Continut from '../../../Crud/GetAllInRotatie/page';
 import CropRotationForm from './RotatieForm';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, Label } from 'recharts';
 import {  Typography } from 'antd';
-
+import { useUser } from '@auth0/nextjs-auth0/client';
 
 const { Title } = Typography;
 
@@ -17,7 +17,7 @@ const colors = ['8884d8', '82ca9d', 'ffc658', 'a4de6c', 'd0ed57', 'ffc658', '00c
 
 function RotatieDashboard() {
   const navigate = useRouter();
-  const { crops, isError, message, getCropRotation, cropRotation, updateNitrogenBalanceAndRegenerateRotation, getAllCrops, updateDivisionSizeAndRedistribute } = useGlobalContextCrop();
+  const { crops,selections, isError, message, getCropRotation, cropRotation, updateNitrogenBalanceAndRegenerateRotation, getAllCrops, updateDivisionSizeAndRedistribute } = useGlobalContextCrop();
   const { data: userData } = useGlobalContext();
 
 
@@ -26,7 +26,7 @@ function RotatieDashboard() {
   const [activeIndex, setActiveIndex] = useState(null);
   const [divisionSizeValues, setDivisionSizeValues] = useState([]);
 const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
-  
+const { user, error: authError, isLoading: isUserLoading  } = useUser();
   useEffect(() => {
     if (isError) {
       console.log(message);
@@ -40,8 +40,11 @@ const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
     };
   }, [ isError, message]);
 
-  let filteredCrops = crops.filter((crop) => crop.selectare && crop.selectareBy == id)
-
+  let filteredCrops = crops.filter((crop) => 
+    selections.some((selection) => 
+      selection.user === user.sub && selection.crop === crop._id
+    )
+  );
   const prepareChartData = (rotationPlan, numberOfDivisions) => {
     let chartData = [];
     let previousYearData = {};
@@ -66,7 +69,7 @@ const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
     return chartData;
   };
 
-  if (userData.role === 'Fermier') {
+  if (userData.role.toLowerCase() === 'farmer') {
     return (
       <>
         <Container style={{ marginTop: '2rem', marginBottom: '2rem' }}>
@@ -77,10 +80,10 @@ const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
             <section className="content">
               {crops.length > 0 ? (
                 <div className="crops">
-                  <CropRotationForm filteredCrops={filteredCrops} token={userData.token} />
+                  <CropRotationForm filteredCrops={filteredCrops}  />
                   <h3>Ai selectat pentru rotatie:</h3>
 
-                  {crops.filter((crop) => crop.selectareBy === id).length === 0 ? (
+                  {filteredCrops.length === 0 ? (
                     <p>Nu ai selectat nicio cerere</p>
                   ) : (
                     <Row>
@@ -154,7 +157,7 @@ const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
                                               division: item.division,
                                               newDivisionSize: parseFloat(e.target.value),
                                             };
-                                            updateDivisionSizeAndRedistribute( token, data);
+                                            updateDivisionSizeAndRedistribute(  data);
                                           }
                                         }}
                                       />
@@ -183,7 +186,7 @@ const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
                                               division: item.division,
                                               nitrogenBalance: parseFloat(e.target.value),
                                             };
-                                            updateNitrogenBalanceAndRegenerateRotation( token, data);
+                                            updateNitrogenBalanceAndRegenerateRotation(  data);
                                           }
                                         }}
                                       />

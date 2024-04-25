@@ -4,7 +4,7 @@ import mongoose from "mongoose"
 
 const UserCropSelectionSchema = new mongoose.Schema({
     user: {
-      type: mongoose.Schema.Types.ObjectId,
+        type: String,
       ref: 'User',
       required: true
     },

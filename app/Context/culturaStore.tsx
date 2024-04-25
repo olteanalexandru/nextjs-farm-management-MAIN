@@ -41,6 +41,7 @@ type RecommendationType = {
 
 interface ContextProps {
   crops: any;
+  selections:any;
   // setCrops: Dispatch<SetStateAction<any>>;
   isLoading: boolean;
   setIsLoading: Dispatch<SetStateAction<boolean>>;
@@ -88,7 +89,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const [singleCrop, setSingleCrop] = useState<DataType>();
   const [areThereCrops, setAreThereCrops] = useState(false);
   const { user, error: authError, isLoading: isUserLoading  } = useUser();
-
+const [selections, setSelections] = useState([]);
 
   const createCrop = async (data) => {
     console.log('createCrop triggered with object props: ' + JSON.stringify(data));
@@ -225,6 +226,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
         const data = await response.data;
         setCrops(data.crops);
         setAreThereCrops(true);
+        setSelections(data.selections);
       } else {
         setIsError(true);
         setAreThereCrops(false);
@@ -406,6 +408,7 @@ const updateDivisionSizeAndRedistribute = async (token: string, data: any) => {
     <GlobalContext.Provider
       value={{
         crops,
+        selections,
         setCrops,
         isLoading,
         setIsLoading,

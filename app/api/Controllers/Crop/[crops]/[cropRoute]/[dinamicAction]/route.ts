@@ -25,17 +25,25 @@ export async function GET(request: NextRequest, context: any) {
    const session = await getSession();
    const user = session?.user;
    let crops;
+   let selections;
    let message = 'No more crops';
    console.log("user: " + user.sub + " JSON: " + JSON.stringify(user))
    if (params.crops === 'crops' && params.cropRoute == "search") {
       crops = await Crop.find({ cropName: { $regex: params.dinamicAction, $options: 'i' } });
       console.log("triggered crop")
+      const filteredCrops = crops.filter((crop) =>
+         crop.cropType && crop.cropVariety && crop.plantingDate && crop.harvestingDate && crop.soilType
+       );
+       return NextResponse.json({ crops: filteredCrops,  message });
    } else if (params.crops === 'crop' && params.cropRoute == "id") {
 
       console.log(" searched user " + params.dinamicAction.toString())
       crops = await Crop.find({ _id: params.dinamicAction.toString() })
       message = `crop with id ${params.dinamicAction}  found`;
-      //recommandations
+      const filteredCrops = crops.filter((crop) =>
+         crop.cropType && crop.cropVariety && crop.plantingDate && crop.harvestingDate && crop.soilType
+       );
+       return NextResponse.json({ crops: filteredCrops,  message });
    } else if (params.crops === 'crops' && params.cropRoute == "recommendations") {
       crops = await Crop.find({ cropName: { $regex: params.dinamicAction, $options: 'i' } });
       crops.map((c) => ({
@@ -52,12 +60,15 @@ export async function GET(request: NextRequest, context: any) {
       params.cropRoute == "retrieve" && params.dinamicAction == "all"
    ) {
       crops = await Crop.find();
+       selections = await UserCropSelection.find();
+
+       const filteredCrops = crops.filter((crop) =>
+         crop.cropType && crop.cropVariety && crop.plantingDate && crop.harvestingDate && crop.soilType
+       );
+       return NextResponse.json({ crops: filteredCrops,selections, message });
    }
    console.log("crop get triggered")
-   const filteredCrops = crops.filter((crop) =>
-      crop.cropType && crop.cropVariety && crop.plantingDate && crop.harvestingDate && crop.soilType
-    );
-   return NextResponse.json({ crops: filteredCrops, message });
+ 
 }
 
 //POST paths and params docs
@@ -262,9 +273,9 @@ console.log( "selectare triggered" + params.cropRoute + " " + params.dinamicActi
       // Fetch user
       const user2 = await User.findOne({ auth0_id: user.sub });
 
-      let userCropSelection = await UserCropSelection.findOne({ user: user2._id, crop: crop._id });
+      let userCropSelection = await UserCropSelection.findOne({ user: user.sub, crop: crop._id });
   if (!userCropSelection) {
-    userCropSelection = new UserCropSelection({ user: user2._id, crop: crop._id });
+    userCropSelection = new UserCropSelection({ user: user.sub, crop: crop._id });
   }
 
 
