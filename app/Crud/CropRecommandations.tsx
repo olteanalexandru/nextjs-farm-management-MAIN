@@ -9,7 +9,7 @@ export default function CropRecommendations({ cropName, token }: { cropName: str
   const [recommendations, setRecommendations] = useState<any[]>([]);
 
   useEffect(() => {
-    getCropRecommendations(cropName, token).then((recommendations) => {
+    getCropRecommendations(cropName).then((recommendations) => {
       if (recommendations !== undefined) {
         setRecommendations(recommendations);
       }

@@ -330,41 +330,24 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
 
 
-  const getCropRecommendations = useCallback(async (cropName: string) => {
-    // let recommendations = [];
-    // if (cropName !== '') {
-    //   try {
-    //     const response = await axios.get(`${API_URL}/crops/recommendations?dinamicAction=${cropName}`, {
-    //       }
-    //     );
-    //     if (response.status === 200 && response.data.length > 0) { // check if response data is not empty
-    //       recommendations = response.data;
-    //     }
-    //   } catch (error) {
-    //     console.error(error);
-    //   }
-    // }
-    // return recommendations;
-    return [
-      {
-        cropName: 'cropName',
-        nitrogenSupply: 0,
-        nitrogenDemand: 0,
-        pests: [],
-        diseases: [],
-      },
-      {
-        cropName: 'cropName',
-        nitrogenSupply: 0,
-        nitrogenDemand: 0,
-        pests: [],
-        diseases: [],
+  const getCropRecommendations = async (cropName: string) => {
+    let recommendations = [];
+    if (cropName !== '') {
+      try {
+        const response = await axios.get(`${API_URL}/crops/recommendations/${cropName}`, {
+        });
+        if (response.status === 200) {
+          recommendations = response.data.crops
+          
+        }
+      } catch (error) {
+        console.error(error);
       }
-    ] 
+    }
+    console.log("recommendations: ", recommendations);
+    return recommendations;
   }
-  , []);
 
-  // }, []);
   
 
 
