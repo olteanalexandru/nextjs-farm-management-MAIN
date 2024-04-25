@@ -15,7 +15,6 @@ import { UserInfos } from './userInfos';
 import AdminCropForm from './AdminCropForm';
 
 export default function Dashboard() {
-  const navigate = useRouter();
   
   const {
     crops,
@@ -34,14 +33,13 @@ export default function Dashboard() {
 
 
   useEffect(() => {
-    if (!data) {
-      navigate.push('/login');
-    } else if (data.role.toLowerCase() === 'admin' ) {
+  if (data.role.toLowerCase() === 'admin' ) {
+      console.log('fetching fermier users');
       fetchFermierUsers();
     } else if (data.role.toLowerCase() === 'farmer') {
       getCrops();
     }
-  }, [data  ]);
+  }, [ ]);
 
   if (isLoading) {
     return <Spinner />;
@@ -88,6 +86,9 @@ export default function Dashboard() {
       fermierUsers.map((user) => (
         <UserListItem key={user._id} user={user} deleteUser={deleteUser} />
       ))}
+      {
+        fermierUsers
+      }
   </ul>
   </>
 )}

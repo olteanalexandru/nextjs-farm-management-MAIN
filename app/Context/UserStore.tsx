@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 
-const API_URL = 'http://localhost:5000/api/users/';
+const API_URL = 'http://localhost:3000/api/Controllers/User/';
 
 
 type DataType = {
@@ -61,7 +61,7 @@ export const GlobalContextProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!isLoading && user) {
           setData((prevData) => ({
             ...prevData,
-            rol: user.userRoles[0]
+            role: user.userRoles[0]
           }));
         }
       } catch (err) {
@@ -109,26 +109,26 @@ const login = async () => {
 const deleteUser = async ( id: string) => {
 setLoading(true);
 try {
-  await axios.delete(API_URL + id,
-  {
-      }
-      ).then((response) => {
-      setData(response.data);
-      }
-      );
-      }
-      catch (error) {
-      setError('Error deleting user');
-      } finally {
-      setLoading(false);
-      }
-      };
+  await axios.delete(API_URL + "delete/" + id ).then(() => {
+  setFermierUsers((prevFermierUsers) =>
+  prevFermierUsers.filter((user) => user._id !== id)
+  );
+  }
+  );
+  } catch (error) {
+  setError('Error deleting user');
+  }
+  finally {
+  setLoading(false);
+  }
+  };
+
 
 
 const fetchFermierUsers = async () => {
 setLoading(true);
 try {
-  await axios.get(API_URL + 'fermier',
+  await axios.get(API_URL + 'fermieri',
   {
 
       }

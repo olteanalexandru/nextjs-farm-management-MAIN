@@ -4,7 +4,7 @@ const router = express.Router()
 const { checkRole} = require('../middleware/authMiddleware')
 const authCheck = require('../Middleware/authCheck');
 
-import userController from '../Controllers/User/userController';
+import userController from '../Controllers/User/[Action]/route';
 const userControllerClass = new userController();
 
 router.post('/login', userControllerClass.loginUser)
