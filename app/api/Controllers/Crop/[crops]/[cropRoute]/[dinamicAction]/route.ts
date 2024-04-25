@@ -1,9 +1,12 @@
 import { NextResponse , NextRequest } from 'next/server';
 import Crop from '../../../../../Models/cropModel';
 import User from '../../../../../Models/userModel';
+import UserCropSelection from '../../../../../Models/selectionModel';
 import { connectDB } from '../../../../../../db';
 import { getSession } from '@auth0/nextjs-auth0';
+
 connectDB()
+
 
 //GET paths and params docs
 // for single crop 
@@ -181,25 +184,27 @@ if (
 // for single crop
 // API_URL + "/crops/crops/cropid/" + userid
 // API_URL + "/crops/crops/id/" + id + "/recommendations"
+// selectare 
+// API_URL + "/crops/crops/selectare/" + id + "/selectare"
 
 export async function PUT(request: NextRequest,context: any) {
-   
+
    const { params } = context;
-   const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
    const { user } = await getSession();
-   const CheckuserObject = Checkuser.toObject();
-   const roles = Array.isArray(user.userRoles) ? user.userRoles : [user.userRoles];
+   if ( params.crops === 'crop'  ) {
+  
 
- if (
-   user.sub !== CheckuserObject.auth0_id && !roles.map(role => role.toLowerCase()).includes('admin')
- ){
-
-   return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
- }
-
-   if (
-         params.crops === 'crop' 
-    ) {
+      const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
+   
+      const CheckuserObject = Checkuser.toObject();
+      const roles = Array.isArray(user.userRoles) ? user.userRoles : [user.userRoles];
+   
+    if (
+      user.sub !== CheckuserObject.auth0_id && !roles.map(role => role.toLowerCase()).includes('admin')
+    ){
+   
+      return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
+    }
          const { cropName, nitrogenSupply, nitrogenDemand, pests, diseases } = await request.json();
          let crop = await Crop.findOne({_id : params.cropRoute});
   
@@ -237,9 +242,61 @@ if (roles.map(role => role.toLowerCase()).includes('admin') || crop.user.toStrin
            }
          const updatedCrop = await crop.save();
          return NextResponse.json(updatedCrop, { status: 200 });
-    }   
+    } else if (params.crops === 'crops' && params.dinamicAction === 'selectare') {
 
-}
+    if ( user === null || user === undefined  ){
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    
+    }
+  
+console.log( "selectare triggered" + params.cropRoute + " " + params.dinamicAction)
+      const crop = await Crop.findById(params.cropRoute.toString());
+      if (!crop) {
+         return NextResponse.json({ message: 'Crop not found' }, { status: 404 });
+      }
+      const { selectare, numSelections } = await request.json();
+      if (selectare === undefined || numSelections === undefined) {
+         return NextResponse.json({ message: 'Missing selectare data' }, { status: 400 });
+      }
+      let selectareBy = user.sub;
+      // Fetch user
+      const user2 = await User.findOne({ auth0_id: user.sub });
+
+      let userCropSelection = await UserCropSelection.findOne({ user: user2._id, crop: crop._id });
+  if (!userCropSelection) {
+    userCropSelection = new UserCropSelection({ user: user2._id, crop: crop._id });
+  }
+
+
+      if (!selectare) {
+         // Deselecting
+         // let selectare = false;
+         // selectareBy = null;
+         // Remove crop id from user's selectedCrops
+         userCropSelection.selectionCount = Math.max(0, userCropSelection.selectionCount - numSelections);
+         user2.selectedCrops = user2.selectedCrops.filter((c) => c.toString() !== params.cropRoute);
+         user2.selectareCount = (user2.selectareCount || numSelections) - numSelections;
+      } else {
+         // Selecting
+         // Increment selection count for the user
+         userCropSelection.selectionCount += numSelections;
+         user2.selectareCount = (user2.selectareCount || 0) + numSelections;
+         // Add crop id to user's selectedCrops
+         for (let i = 0; i < numSelections; i++) {
+            if (!user2.selectedCrops.includes(params.cropRoute)) {
+               user2.selectedCrops.push(params.cropRoute);
+            }
+         }
+      }
+
+      await userCropSelection.save();
+      await User.findOneAndUpdate({ auth0_id: user.sub }, user2);
+      const selectareCrop = await Crop.findByIdAndUpdate(params.cropRoute, {  selectareBy: selectareBy });
+      return NextResponse.json(selectareCrop, { status: 200 });
+    }
+   }
+
+
 
 //DELETE paths and params docs
 // for single crop

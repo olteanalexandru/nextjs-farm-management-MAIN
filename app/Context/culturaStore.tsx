@@ -53,7 +53,7 @@ interface ContextProps {
   createCrop: (data: DataType) => Promise<void>;
   getCrops: () => Promise<void>;
   deleteCrop: ( cropId: string) => Promise<void>;
-  selectare: (id: string, selectare: boolean, _id: string, numSelections: number) => Promise<void>;
+  selectare: (id: string, selectare: boolean, numSelections: number) => Promise<void>;
   SinglePage: (id: string) => Promise<void>;
   getAllCrops: () => Promise<void>;
   updateCrop: (id: string, data: DataType) => Promise<void>;
@@ -180,16 +180,22 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
 
 
-
+  // API_URL + "/crops/crops/selectare/" + id + "/selectare"
 // await selectare(_id, newSelectArea, numSelections);
-  const selectare = async (id: string, selectare: boolean, _id: string, numSelections: number) => {
-    const response = await axios.post(`${API_URL}crops/${id}/selectare`, { selectare: selectare, _id: _id, numSelections: numSelections }, {
+  const selectare = async (cropId:number, selectare: boolean, numSelections: number) => {
+    const response = await axios.put(`${API_URL}crops/${cropId}/selectare`, { selectare: selectare, numSelections: numSelections }, {
 
     });
   
-    const crops = await response.data;
-    setCrops(crops);
+    if (response.status === 200) {
+      setIsSuccess(true);
+      setMessage('Crop updated successfully');
+    } else {
+      setIsError(true);
+      setMessage('Error updating crop');
+    }
   };
+
 
   const SinglePage = async (id: string) => {
     setIsLoading(true);

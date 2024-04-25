@@ -1,9 +1,6 @@
 
 import mongoose from 'mongoose'
 
-
-
-
 const userSchema = new mongoose.Schema({
   role: {
     type: String,
@@ -20,10 +17,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please add an email '],
     unique: true
-  },
-  password: {
-    type: String,
-    required: [true, 'Please add a password']
   },
   selectedCrops: [{
     type: mongoose.Schema.Types.ObjectId,
