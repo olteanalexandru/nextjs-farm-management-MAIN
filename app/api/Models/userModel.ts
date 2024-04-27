@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: {
-      values: ['Farmer', 'Admin'],
+      values: ['farmer', 'admin'],
     },
     required: [true, '{VALUE} is not supported or missing']
   },

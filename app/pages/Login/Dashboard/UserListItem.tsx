@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import UpdatePasswordForm from './UpdatePasswordForm';
+import UpdateRole from './UpdateRoleForm';
 
 const UserListItem = ({ user, deleteUser } : { user: any, deleteUser: any }) => {
-  const [showUpdatePasswordForm, setShowUpdatePasswordForm] = useState(false);
+  const [showUpdateRole, setUpdateRole] = useState(false);
 
   return (
     <li key={user._id}>
       {user.name} - {user.email}{' '}
       <button onClick={() => deleteUser(user._id)}>Delete</button>
-      <button onClick={() => setShowUpdatePasswordForm(!showUpdatePasswordForm)}>
-        Update Password
+      <button onClick={() => setUpdateRole(!showUpdateRole)}>
+        Update Role
       </button>
       {/* Show the UpdatePasswordForm component based on the state */}
-      {showUpdatePasswordForm && <UpdatePasswordForm userId={user._id} />}
+      {showUpdateRole && <UpdateRole userMail={user.email} />}
     </li>
   );
 };

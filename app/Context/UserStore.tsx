@@ -28,6 +28,8 @@ interface ContextProps {
   fermierUsers: any[];
   //bool
   isUserLoggedIn: () => boolean;
+  register: (role: string, name: string, email: string) => Promise<void>;
+  updateRole: (email: string, role: string) => Promise<void>;
 }
 
 
@@ -90,7 +92,26 @@ export const GlobalContextProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
   
-  
+ const register = async (role: string, name: string, email: string) => {
+    setLoading(true);
+    try {
+      await axios.post(API_URL + 'register', {
+      
+        name,
+        email,
+        role
+        
+      }).then((response) => {
+        setData(response.data);
+        router.push('/');
+      });
+    } catch (error) {
+      setError('Error registering user');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   
 
 const login = async () => {
@@ -122,6 +143,24 @@ try {
   setLoading(false);
   }
   };
+
+  const updateRole = async (email: string, role: string) => {
+    setLoading(true);
+    try {
+      await axios.post(API_URL + 'changeRole', {
+        email,
+        role
+      }).then((response) => {
+        setData(response.data);
+      });
+    } catch (error) {
+      setError('Error updating role');
+    } finally {
+      setLoading(false);
+    }
+  
+  }
+
 
 
 
@@ -160,7 +199,9 @@ value={{
   deleteUser,
   fetchFermierUsers,
   fermierUsers,
-  isUserLoggedIn
+  isUserLoggedIn,
+  register ,
+  updateRole
  
 }}
 >

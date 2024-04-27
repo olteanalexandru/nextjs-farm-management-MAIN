@@ -13,14 +13,12 @@ import {useGlobalContext} from '../../../Context/UserStore';
 
 function Register() {
   const [formData, setFormData] = useState({
-    rol: 'Fermier',
+    role: '',
     name: '',
     email: '',
-    password: '',
-    password2: '',
   });
 
-  const { rol, name, email, password, password2 } = formData;
+  const { role, name, email } = formData;
 
   const { data, setData, error, loading, register } = useGlobalContext();
 
@@ -39,23 +37,18 @@ function Register() {
       alert(error);
     }
 
-    if (data.error) {
-      toast.error(data.error);
-      setData({ rol: '', email: '', password: '', token: '' });
-    }
-    if (data.token && data.rol !== 'Administrator') {
+
+    if ( data.role.toLowerCase() !== 'admin') {
       navigate.push('/');
+      console.log('User is not admin' + data.role);
     }
   }, [error, data]);
 
   const onSubmit = (e) => {
     e.preventDefault();
-    if (password !== password2) {
-      toast.error('Passwords do not match');
-    } else {
-      register(rol, name, email, password);
-      console.log(localStorage.getItem('token'));
-    }
+
+      register(role, name, email);
+    
   };
 
   if (loading) {
@@ -67,29 +60,27 @@ function Register() {
        <div className="login-container" style={{ margin: '0 auto', maxWidth: '400px' , marginTop:'100px' , marginBottom:'100px' }}>
       <section className='heading'>
         <h1>
-          <FaUser /> Register
+          <FaUser /> Register a user
         </h1>
-        <p>Create an account</p>
       </section>
 
    
       <section className='form'>
         <Form onSubmit={onSubmit}>
-          {data.rol === 'Administrator' && (
+          {data.role.toLowerCase() === 'admin' && (
             <div className='form-group'>
               <label>
                 <select
-                  as='select'
-                  aria-label='Rol'
-                  value={formData.rol}
+                  aria-label='Role'
+                  value={formData.role}
                   onChange={onChange}
-                  name='rol'
-                  id='rol'
+                  name='role'
+                  id='role'
                   className='form-control'
                 >
                   <option>Select role</option>
-                  <option value='Fermier'>Farmer</option>
-                  <option value='Administrator'>Administrator</option>
+                  <option value='farmer'>Farmer</option>
+                  <option value='admin'>Administrator</option>
                 </select>
               </label>
             </div>
@@ -117,28 +108,6 @@ function Register() {
               onChange={onChange}
             />
           </div>
-          <div className='form-group'>
-            <input
-              type='password'
-              className='form-control'
-              id='password'
-              name='password'
-              value={formData.password}
-              placeholder='Enter password'
-              onChange={onChange}
-            />
-          </div>
-          <div className='form-group'>
-            <input
-              type='password'
-              className='form-control'
-          id='password2'
-          name='password2'
-          value={formData.password2}
-          placeholder='Confirm password'
-          onChange={onChange}
-        />
-      </div>
       <div className='form-group'>
         <button type='submit' className='btn btn-block' >
           Submit
@@ -146,9 +115,6 @@ function Register() {
       </div>
     </Form>
 
-    <p>
-      Already have an account? <a href='http://localhost:3000/pages/Login/Login'>Login</a>
-    </p>
   </section>
 </div>
 </>
