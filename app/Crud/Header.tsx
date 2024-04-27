@@ -3,18 +3,9 @@ import { Dropdown } from 'react-bootstrap';
 import { useGlobalContext } from '../Context/UserStore';
 import styles from '../../styles/Header.module.css';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { FaSignOutAlt } from 'react-icons/fa';
 
 function HeaderLog() {
   const { data , login , logout} = useGlobalContext();
-
-
-  console.log(data)
-  console.log(data?.name)
-  
-
-  // handleRequest()
 
   return (
     <header className={`${styles.headerModule} py-2`}>
@@ -34,9 +25,6 @@ function HeaderLog() {
                 <Dropdown.Item as={Link} href="/pages/Login/RotatieDashboard/">Crop rotation</Dropdown.Item>
                 <Dropdown.Item as={Link} href="/pages/Recomandari/">Analitics</Dropdown.Item>
               </>
-            )}
-            {data.role.toLowerCase() === 'admin' && (
-              <Dropdown.Item as={Link} href="/pages/Admin/">Admin Page</Dropdown.Item>
             )}
             <Dropdown.Item onClick={logout}>Logout</Dropdown.Item>
           </Dropdown.Menu>

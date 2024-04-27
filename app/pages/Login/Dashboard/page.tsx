@@ -1,5 +1,5 @@
 "use client"
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Card, Container } from 'react-bootstrap';
 import { FaUser } from 'react-icons/fa';
 import Link from 'next/link';
@@ -29,7 +29,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (data.role.toLowerCase() === 'admin') {
-      console.log('fetching fermier users');
+      getCrops();
       fetchFermierUsers();
     } else if (data.role.toLowerCase() === 'farmer') {
       getCrops();
@@ -40,7 +40,7 @@ export default function Dashboard() {
     return <Spinner />;
   }
 
-  const handleAddCropRecommendation = async (cropData: any) => {
+  const handleAddCropRecommendation = async (cropData) => {
     await addTheCropRecommendation(cropData);
   };
 
@@ -59,27 +59,21 @@ export default function Dashboard() {
               </Link>
               <br />
               <br />
-              <div>
-                {data && data.role.toLowerCase() === 'admin' && (
-                  <>
-                    <Container>
-                      <AdminCropForm onSubmit={handleAddCropRecommendation} />
-                    </Container>
-                    <p>Gestioneaza utilizatorii</p>
-                    <h2>Fermieri:</h2>
-                    <ul>
-                      {fermierUsers &&
-                        fermierUsers.map((user) => (
-                          <UserListItem
-                            key={user._id}
-                            user={user}
-                            deleteUser={deleteUser}
-                          />
-                        ))}
-                    </ul>
-                  </>
-                )}
-              </div>
+              <Container>
+                <AdminCropForm onSubmit={handleAddCropRecommendation} />
+              </Container>
+              <p>Gestioneaza utilizatorii</p>
+              <h2>Fermieri:</h2>
+              <ul>
+                {fermierUsers &&
+                  fermierUsers.map((user) => (
+                    <UserListItem
+                      key={user._id}
+                      user={user}
+                      deleteUser={deleteUser}
+                    />
+                  ))}
+              </ul>
             </section>
           </Card>
         </Container>
@@ -107,3 +101,5 @@ export default function Dashboard() {
     </>
   );
 }
+
+

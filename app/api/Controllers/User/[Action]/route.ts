@@ -9,12 +9,12 @@ connectDB()
         const { params } = context;
         if(params.Action === 'fermieri'){
             const session = await getSession();
-            const user = session?.user;
-            if (user.userRoles.includes('Admin') === false) {
+            const sessionUser = session?.user;
+            if (sessionUser.userRoles.map((role: string) => role.toLowerCase()).includes('admin') === false ) {
                 return NextResponse.json({ message: 'User not found' }, { status: 404 });
               }
 
-            const fermierUsers = await User.find({ role: 'Admin' }) as  any;
+            const fermierUsers = await User.find({ role: 'farmer' }) as  any;
             console.log(fermierUsers)
             return NextResponse.json(fermierUsers, { status: 200 });
         } 
@@ -75,8 +75,7 @@ export async function PUT(request:NextRequest,context: any){
                 if(params.Action === 'fermieri'){
                     const session = await getSession()
                     const sessionUser = session?.user;
-             
-                    if (sessionUser.userRoles.includes('Admin') === false) {
+                    if (sessionUser.userRoles.map((role: string) => role.toLowerCase()).includes('admin') === false ) {
                         return NextResponse.json({ message: 'User not found' }, { status: 404 });
                     }
                     const { name, email,  role } = await request.json();
@@ -94,7 +93,7 @@ export async function DELETE(request:NextRequest,context: any){
                 
                         const session = await getSession()
                         const sessionUser = session?.user;
-                        if (sessionUser.userRoles.includes('Admin') === false) {
+                        if (sessionUser.userRoles.map((role: string) => role.toLowerCase()).includes('admin') === false ) {
                             return NextResponse.json({ message: 'User not found' }, { status: 404 });
                         }
                         

@@ -13,6 +13,7 @@ type DataType = {
   name: string;
   email: string;
   fermierUsers?: any[];
+  picture?: string;
 };
 
 interface ContextProps {
