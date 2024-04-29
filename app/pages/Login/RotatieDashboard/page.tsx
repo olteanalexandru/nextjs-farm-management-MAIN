@@ -20,13 +20,11 @@ function RotatieDashboard() {
   const { crops,selections, isError, message, getCropRotation, cropRotation, updateNitrogenBalanceAndRegenerateRotation, getAllCrops, updateDivisionSizeAndRedistribute } = useGlobalContextCrop();
   const { data: userData } = useGlobalContext();
 
-
-
-
   const [activeIndex, setActiveIndex] = useState(null);
   const [divisionSizeValues, setDivisionSizeValues] = useState([]);
 const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
 const { user, error: authError, isLoading: isUserLoading  } = useUser();
+
   useEffect(() => {
     if (isError) {
       console.log(message);
@@ -39,12 +37,29 @@ const { user, error: authError, isLoading: isUserLoading  } = useUser();
       setActiveIndex(null);
     };
   }, [ isError, message]);
+console.log(crops + "before filter")
 
-  let filteredCrops = crops.filter((crop) => 
-    selections.some((selection) => 
-      selection.user === user.sub && selection.crop === crop._id
-    )
-  );
+
+
+const getCropsRepeatedBySelection = (crops, selections) => {
+  let uniqueId = 0; // Initialize a unique ID counter
+
+  return selections
+    .map(selection => ({
+      count: selection.selectionCount,
+      cropId: selection.crop
+    }))
+    .flatMap(({ count, cropId }) => {
+      const crop = crops.find(crop => crop._id === cropId);
+      // Create an array with unique objects containing the crop and a unique ID
+      return Array.from({ length: count }, () => ({ ...crop, uniqueId: uniqueId++ }));
+    });
+};
+
+  const filteredCrops = getCropsRepeatedBySelection(crops, selections);
+
+
+  console.log (crops)
   const prepareChartData = (rotationPlan, numberOfDivisions) => {
     let chartData = [];
     let previousYearData = {};
@@ -88,7 +103,7 @@ const { user, error: authError, isLoading: isUserLoading  } = useUser();
                   ) : (
                     <Row>
                     {filteredCrops.map((crop) => (
-                        <Col key={crop._id} xs={12} sm={6} md={4}>
+                        <Col key={crop.uniqueKey} xs={12} sm={6} md={4}>
                             <Continut crop={crop} />
                         </Col>
                     ))}

@@ -66,6 +66,23 @@ export async function GET(request: NextRequest, context: any) {
          crop.cropType && crop.cropVariety && crop.plantingDate && crop.harvestingDate && crop.soilType
        );
        return NextResponse.json({ crops: filteredCrops,selections, message });
+   } else if (params.crops === 'crops' && params.cropRoute == "user" && params.dinamicAction == "selectedCrops" ) {
+
+      crops = await Crop.find();
+      selections = await UserCropSelection.find();
+
+
+     let selectedCrops = selections.filter((selection) => selection.user === user.sub)
+      .map(selection => ({
+        count: selection.selectionCount,
+        cropId: selection.crop
+      }))
+      .flatMap(({ count, cropId }) => {
+        const crop = crops.find(crop => crop._id === cropId);
+        return Array(count).fill(crop);
+      });
+
+      return   NextResponse.json({ selectedCrops });
    }
    console.log("crop get triggered")
  
@@ -346,6 +363,10 @@ if (!user || !Checkuser || user.sub !== CheckuserObject.auth0_id) {
 
 
  
+
+
+
+
 
 
 
