@@ -8,50 +8,51 @@ import { connectDB } from '../../../../../../db';
 import { getSession } from '@auth0/nextjs-auth0';
 import type {  Crop,  CropRotationInput , CropRotationItem } from '../interfaces';
 
-connectDB()
 
 const usedCropsInYear: Map<number, Set<string>> = new Map();
-async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<number, Map<Crop, number>>, division: number, userId: string, maxRepetitions: number): Promise<boolean> {
-  const divisionLastUsedYear = lastUsedYear.get(division) || new Map<Crop, number>();
+async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<number, Map<Crop, number>>, division: number, userId: string): Promise<boolean> {
   
+  const divisionLastUsedYear = lastUsedYear.get(division) || new Map<Crop, number>();
   const lastUsed = divisionLastUsedYear.get(crop) || 0;
-
   // Fetch user
-  const user = await User.findById(userId);
-
+  const user = await User.findOne({ auth0_id: userId });
+  let maxRepetitions = user.selectareCounts[crop._id] 
   // Check selectareCounts for crop selection count
   if (year - lastUsed <= crop.ItShouldNotBeRepeatedForXYears && ((user.selectareCounts[crop._id] || 0) <= maxRepetitions || maxRepetitions < 1)) {
     return false;
   }
-
   // Check if crop was used in the same year
   if (usedCropsInYear.get(year)?.has(crop._id) ) {
     return false;
   }
-
   return true;
 }
   
   //@route PUT /api/crops/recommendations
   //@acces Admin
-  const generateCropRotation = async ( cropInput ) => {
-    const input: CropRotationInput = cropInput 
+
+  const generateCropRotation = async ( cropInput , userObj) => {
+
+    const input: CropRotationInput = cropInput;
     let req = cropInput
 
-    
     const {
-      rotationName,
       crops,
       fieldSize,
       numberOfDivisions,
       maxYears ,
       ResidualNitrogenSupply ,
   
-    } = input;
+    } = input
     const TheResidualNitrogenSupply = ResidualNitrogenSupply ?? 500;
-  
+
+
+
+
     if (!crops || crops.length === 0) {
-      NextResponse.json({ message: 'No crops provided' }, { status: 400 });
+      console.log(`received input is ${JSON.stringify(input)}`);
+      console.log(`destructed input is crops: ${crops}, fieldSize: ${fieldSize}, numberOfDivisions: ${numberOfDivisions}, maxYears: ${maxYears}, ResidualNitrogenSupply: ${ResidualNitrogenSupply}`);
+      console.log(`req is ${JSON.stringify(req)}`);
       throw new Error('No crops provided');
     }
   
@@ -59,7 +60,6 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
     const lastUsedYear: Map<number, Map<Crop, number>> = new Map();
     const usedCropsInYear: Map<number, Set<string>> = new Map();
     
-  
     for (let division = 1; division <= numberOfDivisions; division++) {
       
       const divisionLastUsedYear: Map<Crop, number> = new Map();
@@ -78,7 +78,7 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
     }
   
   
-  
+
     for (let year = 1; year <= maxYears; year++) {
       usedCropsInYear.set(year, new Set<string>());
       let yearlyPlan = [];
@@ -95,7 +95,7 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
           let crop;
           // Find a crop that is available and has no shared pests or diseases with the previous crop
           for (const c of sortedCrops) {
-            const isAvailable = await cropIsAvailable(c, year, lastUsedYear, division, req.user.id, req.user.numSelections);
+            const isAvailable = await cropIsAvailable(c, year, lastUsedYear, division, userObj.auth0_id );
             if (!hasSharedPests(c, prevCrop) && !hasSharedDiseases(c, prevCrop) && isAvailable) {
               crop = c;
               lastUsedYear.get(division)?.set(crop, year); // Update the last used year for the division
@@ -138,8 +138,7 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
           const crop = crops[cropIndex];
           const divisionSize = parseFloat((fieldSize / numberOfDivisions).toFixed(2));
   
-
-          if (cropIsAvailable(crop, year, lastUsedYear, division, req.user.id, req.user.numSelections)) {
+          if (cropIsAvailable(crop, year, lastUsedYear, division, userObj.auth0_id )) {
             lastUsedYear.get(division)?.set(crop, year);
             const plantingDate = new Date(crop.plantingDate);
             plantingDate.setFullYear(plantingDate.getFullYear() + year - 1);
@@ -163,7 +162,7 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
     }
   
     const rotation = new Rotation({
-      user: req.user.id,
+      user: userObj.auth0_id,
       fieldSize,
       numberOfDivisions,
       rotationName : input.rotationName,
@@ -175,9 +174,8 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
     
     const cropsToUpdate = await CropModel.find({ _id: { $in: input.crops } });
     
-    const user = await User.findById(req.user.id);
+    const user = await User.findOne({ auth0_id: userObj.auth0_id });
     if (!user) {
-      NextResponse.json({ message: 'User not found' }, { status: 404 });
       throw new Error('User not found');
     }
     
@@ -195,10 +193,9 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
     await Promise.all(updatePromises);
   
     if (createdRotation) {
-        NextResponse.json(createdRotation);
+      return createdRotation
  
     } else {
-        NextResponse.json({ message: 'Failed to generate crop rotation' }, { status: 500 });
   
       throw new Error('Failed to generate crop rotation');
     }
@@ -231,8 +228,6 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
     const rotation = await Rotation.findOne({ rotationName }).populate('crops');
   
     if (!rotation) {
-        NextResponse.json({ message: 'Rotation not found' }, { status: 404 });
-
       throw new Error('Rotation not found');
     }
   
@@ -240,7 +235,6 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
     const relevantYearPlans = rotation.rotationPlan.filter(item => item.year >= year);
   
     if (!relevantYearPlans.length) {
-     NextResponse.json({ message: 'Year plan not found' }, { status: 404 });
       throw new Error('Year plan not found');
     }
   
@@ -269,12 +263,8 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
   
     // save the updated rotation
     await rotation.save();
-NextResponse.json({
-        status: 'success',
-        data: {
-            rotation
-        }
-        });
+
+return rotation
 
   };
 
@@ -283,27 +273,20 @@ NextResponse.json({
 // @access Admin
 const updateDivisionSizeAndRedistribute = async (input) => {
   const { rotationName, division, newDivisionSize } = input
-  
+
   // Find the rotation for the given id
   const rotation = await Rotation.findOne({ rotationName });
-
   if (!rotation) {
-   NextResponse.json({ message: 'Rotation not found' }, { status: 404 });
     throw new Error('Rotation not found');
   }
-
   // Check if newDivisionSize is valid
   if (newDivisionSize > rotation.fieldSize || newDivisionSize < 0) {
-    NextResponse.json({ message: 'Invalid division size' }, { status: 400 });
     throw new Error('Invalid division size');
   }
-
   // Calculate the remaining size to be distributed among the other divisions
   const remainingSize = rotation.fieldSize - newDivisionSize;
-
   // Calculate the size for the other divisions
   const otherDivisionsSize = remainingSize / (rotation.numberOfDivisions - 1);
-
   // Iterate over all the years
   for (const yearPlan of rotation.rotationPlan) {
     // Iterate over all divisions in a year
@@ -318,37 +301,23 @@ const updateDivisionSizeAndRedistribute = async (input) => {
       }
     }
   }
-
   // save the updated rotation
   await rotation.save();
-NextResponse.json({
-        status: 'success',
-        data: {
-            rotation
-        }
-        });
+return rotation
+}
 
-};
-  
-  
-  
+
 
   
   const deleteCropRotation = async (input) => {
     const cropRotation = await Rotation.findById(input.rotation._id);
   
     if (!cropRotation) {
-      NextResponse.json({ message: 'Crop rotation not found' }, { status: 404 });
       throw new Error('Crop rotation not found');
     }
 
     await cropRotation.remove();
-    NextResponse.json({
-        status: 'success',
-        data: {
-            cropRotation
-        }
-        });
+return cropRotation
     }
 
 
@@ -401,34 +370,49 @@ export async function GET(request: NextRequest, context: any) {
 // generate crop rotation:
 // API_URL + /Rotation/generateRotation/ rotation / :id
 export async function POST(req: NextRequest, context: any) {
-    const { params } = context;
-    if (params.rotation == 'generateRotation' && params.rotationRoutes == 'rotation') {
-        
-    const { params } = context;
-   
+  const { params } = context;
+
+  if (params.rotation == 'generateRotation' && params.rotationRoutes == 'rotation') {
+    // Ensure session and user retrieval is handled correctly
     const session = await getSession();
     const user = session?.user;
 
-   
-        const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
-        const CheckuserObject = Checkuser.toObject();
- if (user.sub !== CheckuserObject.auth0_id) {
-            return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
-        }
-//use generateCropRotation function 
-        const rotation = await generateCropRotation(req.body);
-        return NextResponse.json(rotation);
+    // Fetch the user based on dynamic action parameter
+    const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
+    if (!Checkuser) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    
+    const CheckuserObject = Checkuser.toObject();
+   
+
+    // Check if the user from the session matches the fetched user
+    if (user.sub !== CheckuserObject.auth0_id) {
+      return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 401 });
+    }
+
+    try {
+      // Await the parsing of the JSON body from the request
+      const cropInput = await req.json();
+
+     let response =   await generateCropRotation(cropInput, CheckuserObject);
+      return NextResponse.json({
+        message: 'Crop rotation generated successfully',
+      
+      } , { status: 201 });
+    } catch (error) {
+      // Handle parsing errors or other exceptions
+      console.error('Error parsing request body:', error);
+      return NextResponse.json({ message: error }, { status: 400 });
+    }
+  }
 }
+
 
 
 //PUT paths and params docs
 // update nitrogen balance and regenerate rotation:
 // API_URL + /Rotation/updateNitrogenBalance/ rotation / :id
-
-//PUT paths and params docs
 // update division size and redistribute:
 // API_URL + /Rotation/updateDivisionSizeAndRedistribute/ rotation / :id
 

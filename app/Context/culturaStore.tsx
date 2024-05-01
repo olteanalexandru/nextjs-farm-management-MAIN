@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 
 const API_URL = 'http://localhost:3000/api/Controllers/Crop/';
-
+const API_URL_ROTATION = 'http://localhost:3000/api/Controllers/Rotation/';
 
 type DataType = {
   
@@ -271,7 +271,7 @@ const [selections, setSelections] = useState([]);
     setIsLoading(true);
     try {
       const response = await axios.post(
-        `${API_URL}`,
+        `${API_URL_ROTATION}generateRotation/rotation/${user.sub}`,
         { 
           fieldSize, 
           numberOfDivisions,

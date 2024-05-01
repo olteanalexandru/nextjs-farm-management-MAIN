@@ -1,7 +1,9 @@
 //export 
 export {};
 const mongoose = require('mongoose');
-const Crop = require('./cropModel');
+import Crop from './cropModel';
+import { connectDB } from '../../db';
+connectDB()
 
 const rotationItemSchema = mongoose.Schema({
   division: {
@@ -48,7 +50,7 @@ const rotationYearSchema = mongoose.Schema({
 const rotationSchema = mongoose.Schema(
   {
     user: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       required: true,
       ref: 'User',
     },
@@ -79,16 +81,16 @@ const rotationSchema = mongoose.Schema(
 
 
 // Populate crops in rotation plan with crop names and crop varieties before sending response to client  
-rotationItemSchema.pre('save', function (next) {
-  if (this.crop) {
-    Crop.findById(this.crop, (err, crop) => {
-      if (err) return next(err);
-      this.cropName = crop.cropName;
-      next();
-    });
-  } else {
-    next();
-  }
-});
+// rotationItemSchema.pre('save', function (next) {
+//   if (this.crop) {
+//     Crop.findById(this.crop, (err, crop) => {
+//       if (err) return next(err);
+//       this.cropName = crop.cropName;
+//       next();
+//     });
+//   } else {
+//     next();
+//   }
+// });
 
 export default mongoose.models.Rotation || mongoose.model('Rotation', rotationSchema);

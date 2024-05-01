@@ -23,7 +23,6 @@ const CropRotationForm = ({ filteredCrops, token }) => {
         parseInt(numberOfDivisions),
         rotationName,
         filteredCrops,
-        token,
         parseInt(maxYears),
         parseInt(ResidualNitrogenSupply)
       );

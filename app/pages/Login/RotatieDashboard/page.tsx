@@ -128,17 +128,17 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                           <p>Number of divisions: {rotation.numberOfDivisions}</p>
                           {rotation.rotationPlan.map((plan, planIndex) => (
                             <div key={planIndex}>
-                              <h3>Anul: {plan.year}</h3>
+                              <h3>Year: {plan.year}</h3>
                               <Table striped bordered hover>
                                 <thead>
                                   <tr>
-                                    <th>Nr. Parcelă</th>
-                                    <th>Recoltă</th>
-                                    <th>Data de plantare</th>
-                                    <th>Data de recoltare</th>
-                                    <th>Dimensiune parcelă</th>
-                                    <th>Balans azot per hectar</th>
-                                    <th>Azot total</th>
+                                    <th>Parcel number</th>
+                                    <th>Crop</th>
+                                    <th>Planting date</th>
+                                    <th>Harvesting date</th>
+                                    <th>Parcel size</th>
+                                    <th>Nitrogen balance per hectare</th>
+                                    <th>Total nitrogen</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -152,7 +152,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                       <td>{item.divisionSize}
                                       {planIndex === 0 && ( // Show input only in the first year
                                         <input type="text" 
-                                        placeholder="Modifica dimensiunea" 
+                                        placeholder="Modify size" 
                                         value={divisionSizeValues[itemIndex] || ''} 
                                         onChange={e => {
                                           let newDivisionSizeValues = [...divisionSizeValues];
@@ -161,7 +161,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                         }}
                                         onBlur={e => {
                                           if(isNaN(e.target.value)) {
-                                            alert("Nu este numar");
+                                            alert("Not a number");
                                           }
                                           else {
                                             let newDivisionSizeValues = [...divisionSizeValues];
@@ -179,8 +179,8 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                       )}
                                       </td>
                                       <td>{item.nitrogenBalance} 
-                                                                            <input type="text" 
-                                        placeholder="Azot suplimentat" 
+                                      <input type="text" 
+                                        placeholder="Supplemental nitrogen" 
                                         value={nitrogenBalanceValues[itemIndex] || ''} 
                                         onChange={e => {
                                           let newNitrogenBalanceValues = [...nitrogenBalanceValues];
@@ -189,7 +189,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                         }} 
                                         onBlur={e => {
                                           if(isNaN(e.target.value)) {
-                                            alert("Nu este numar");
+                                            alert("Not a number");
                                           }
                                           else {
                                             let newNitrogenBalanceValues = [...nitrogenBalanceValues];
@@ -217,7 +217,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
 
 
                         <Col xs={24} md={12}>
-                          <Title level={3}>Evolutia Anuala</Title>
+                          <Title level={3}>Annual Evolution</Title>
                           <ResponsiveContainer width="100%" height={500}>
                             <LineChart
                               width={500}
