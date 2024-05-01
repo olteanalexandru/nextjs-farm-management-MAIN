@@ -8,6 +8,7 @@ import { connectDB } from '../../../../../../db';
 import { getSession } from '@auth0/nextjs-auth0';
 import type {  Crop,  CropRotationInput , CropRotationItem } from '../interfaces';
 
+connectDB();
 
 const usedCropsInYear: Map<number, Set<string>> = new Map();
 async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<number, Map<Crop, number>>, division: number, userId: string): Promise<boolean> {
@@ -345,19 +346,24 @@ return cropRotation
 export async function GET(request: NextRequest, context: any) {
     const { params } = context;
     const { user } = await getSession();
+    console.log("reached get request")
 
     if (params.rotation == 'getRotation' && params.rotationRoutes == 'rotation') {
         const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
         const CheckuserObject = Checkuser.toObject();
+
+        console.log("reached get request 2")
 
         if (user.sub !== CheckuserObject.auth0_id) {
 
             return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
         }
 
-        const cropRotation = await Rotation.find({ user: CheckuserObject._id }).sort({ createdAt: -1 });
+        const cropRotation = await Rotation.find({ user: user.sub }).sort({ createdAt: -1 });
         if (cropRotation && cropRotation.length > 0) {
-            return NextResponse.json(cropRotation);
+            return NextResponse.json({
+                data: cropRotation
+            } , { status: 200 });
         } else {
             return NextResponse.json('No crop rotation found for this user', { status: 204 });
         }

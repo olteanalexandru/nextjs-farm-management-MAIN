@@ -1,44 +1,63 @@
 "use client"
 import {useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Container, Card, Row, Col, Table } from 'react-bootstrap';
-import LinkParola from '../Elements/page';
 import { useGlobalContext } from '../../../Context/UserStore';
 import { useGlobalContextCrop } from '../../../Context/culturaStore';
 import Continut from '../../../Crud/GetAllInRotatie/page';
 import CropRotationForm from './RotatieForm';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, Label } from 'recharts';
 import {  Typography } from 'antd';
-import { useUser } from '@auth0/nextjs-auth0/client';
-
 const { Title } = Typography;
-
 const colors = ['8884d8', '82ca9d', 'ffc658', 'a4de6c', 'd0ed57', 'ffc658', '00c49f', 'ff7300', 'ff8042'];
 
 function RotatieDashboard() {
-  const navigate = useRouter();
-  const { crops,selections, isError, message, getCropRotation, cropRotation, updateNitrogenBalanceAndRegenerateRotation, getAllCrops, updateDivisionSizeAndRedistribute } = useGlobalContextCrop();
+  const { crops,
+    selections,
+    isLoading,
+    isCropRotationLoading,
+     getCropRotation,
+     cropRotation: cropRotationObj,
+      updateNitrogenBalanceAndRegenerateRotation,
+       getAllCrops,
+        updateDivisionSizeAndRedistribute,
+        loadingStateAtTheMoment
+       } = useGlobalContextCrop();
   const { data: userData } = useGlobalContext();
-
-  const [activeIndex, setActiveIndex] = useState(null);
   const [divisionSizeValues, setDivisionSizeValues] = useState([]);
 const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
-const { user, error: authError, isLoading: isUserLoading  } = useUser();
 
-  useEffect(() => {
-    if (isError) {
-      console.log(message);
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      // loadingStateAtTheMoment()
+      await getAllCrops()
+       await getCropRotation()
+    } catch (error) {
+      console.error(error);
     }
- 
-    getCropRotation();
-    getAllCrops();
+  };
 
-    return () => {
-      setActiveIndex(null);
-    };
-  }, [ isError, message]);
-console.log(crops + "before filter")
+  fetchData();
+}, [
+  userData
+]);
 
+console.log(
+  `cropRotation: ${JSON.stringify(cropRotationObj)}`
+)
+
+
+
+
+let cropRotation = cropRotationObj 
+  if ( isCropRotationLoading) {
+    return <div>Loading Rotation...</div>;
+  } 
+
+  if (isLoading) {
+    return <div>Loading Crops...</div>;
+  }
+  
 
 
 const getCropsRepeatedBySelection = (crops, selections) => {
@@ -58,12 +77,9 @@ const getCropsRepeatedBySelection = (crops, selections) => {
 
   const filteredCrops = getCropsRepeatedBySelection(crops, selections);
 
-
-  console.log (crops)
   const prepareChartData = (rotationPlan, numberOfDivisions) => {
     let chartData = [];
     let previousYearData = {};
-
     rotationPlan.forEach(yearPlan => {
       let yearData = { year: yearPlan.year };
       yearPlan.rotationItems.forEach(item => {
@@ -77,14 +93,13 @@ const getCropsRepeatedBySelection = (crops, selections) => {
           yearData[key] = previousYearData[key];
         }
       }
-
       chartData.push(yearData);
       previousYearData = yearData;
     });
     return chartData;
   };
 
-  if (userData.role.toLowerCase() === 'farmer') {
+  if (userData?.role?.toLowerCase() === 'farmer') {
     return (
       <>
         <Container style={{ marginTop: '2rem', marginBottom: '2rem' }}>
@@ -93,7 +108,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
               <h1>Salut {userData && userData.name}</h1>
             </section>
             <section className="content">
-              {crops.length > 0 ? (
+              {crops?.length > 0 ? (
                 <div className="crops">
                   <CropRotationForm filteredCrops={filteredCrops}  />
                   <h3>Ai selectat pentru rotatie:</h3>
@@ -102,8 +117,8 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                     <p>Nu ai selectat nicio cerere</p>
                   ) : (
                     <Row>
-                    {filteredCrops.map((crop) => (
-                        <Col key={crop.uniqueKey} xs={12} sm={6} md={4}>
+                    {filteredCrops.map((crop , index) => (
+                        <Col key={index} xs={12} sm={6} md={4}>
                             <Continut crop={crop} />
                         </Col>
                     ))}
@@ -114,10 +129,10 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                 <h3>Nicio cultura selectata</h3>
               )}
 
-              { cropRotation.length > 0 &&  (
+{cropRotation && cropRotation.data && (
                 <div className="rotation" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
                   <h3>Rotatia generata:</h3>
-                  {cropRotation.map((rotation, index) => {
+                  {cropRotation.data.map((rotation, index) => {
                     const chartData = prepareChartData(rotation.rotationPlan, rotation.numberOfDivisions);
                     return (
                       <Row key={index}>
@@ -160,7 +175,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                           setDivisionSizeValues(newDivisionSizeValues);
                                         }}
                                         onBlur={e => {
-                                          if(isNaN(e.target.value)) {
+                                          if(isNaN(parseFloat(e.target.value))) {
                                             alert("Not a number");
                                           }
                                           else {
@@ -172,7 +187,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                               division: item.division,
                                               newDivisionSize: parseFloat(e.target.value),
                                             };
-                                            updateDivisionSizeAndRedistribute(  data);
+                                            updateDivisionSizeAndRedistribute(data);
                                           }
                                         }}
                                       />
@@ -188,7 +203,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                           setNitrogenBalanceValues(newNitrogenBalanceValues);
                                         }} 
                                         onBlur={e => {
-                                          if(isNaN(e.target.value)) {
+                                          if(isNaN(parseFloat(e.target.value))) {
                                             alert("Not a number");
                                           }
                                           else {
@@ -201,7 +216,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                               division: item.division,
                                               nitrogenBalance: parseFloat(e.target.value),
                                             };
-                                            updateNitrogenBalanceAndRegenerateRotation(  data);
+                                            updateNitrogenBalanceAndRegenerateRotation(data);
                                           }
                                         }}
                                       />
@@ -214,8 +229,6 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                             </div>
                           ))}
                         </Col>
-
-
                         <Col xs={24} md={12}>
                           <Title level={3}>Annual Evolution</Title>
                           <ResponsiveContainer width="100%" height={500}>
@@ -259,6 +272,5 @@ const getCropsRepeatedBySelection = (crops, selections) => {
     return null;
   }
 }
-
 export default RotatieDashboard;
                                               

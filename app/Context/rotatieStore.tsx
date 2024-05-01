@@ -89,7 +89,6 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
     numberOfDivisions: number,
     rotationName: string,
     crops: DataType,
-    token: string,
     maxYears: number,
     ResidualNitrogenSupply:number,
   ) => {
@@ -106,10 +105,6 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
           ResidualNitrogenSupply,
         },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
         }
       );
       if (response.status === 200) {

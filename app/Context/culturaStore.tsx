@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, Dispatch, SetStateAction, useState, useCallback } from 'react';
+import { createContext, useContext, Dispatch, SetStateAction, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 
@@ -44,6 +44,8 @@ interface ContextProps {
   selections:any;
   // setCrops: Dispatch<SetStateAction<any>>;
   isLoading: boolean;
+  isCropRotationLoading: boolean;
+  setisCropRotationLoading: Dispatch<SetStateAction<boolean>>;
   setIsLoading: Dispatch<SetStateAction<boolean>>;
   isError: boolean;
   setIsError: Dispatch<SetStateAction<boolean>>;
@@ -54,22 +56,22 @@ interface ContextProps {
   createCrop: (data: DataType) => Promise<void>;
   getCrops: () => Promise<void>;
   deleteCrop: ( cropId: string) => Promise<void>;
-  selectare: (id: string, selectare: boolean, numSelections: number) => Promise<void>;
+  selectare: (cropId:number, selectare: boolean, numSelections: number) => Promise<void>;
   SinglePage: (id: string) => Promise<void>;
   getAllCrops: () => Promise<void>;
   updateCrop: (id: string, data: DataType) => Promise<void>;
   areThereCrops: boolean;
   cropRotation: any;
   setCropRotation: Dispatch<SetStateAction<any>>;
-  generateCropRotation: ( fieldSize: number, numberOfDivisions: number, rotationName: string, filteredCrops: any, token: string , maxYears: number, ResidualNitrogenSupply: number ) => Promise<void>;
+  generateCropRotation: ( fieldSize: number, numberOfDivisions: number, rotationName: string, filteredCrops: any , maxYears: number, ResidualNitrogenSupply?: number ) => Promise<void>;
   addTheCropRecommendation: (data: RecommendationType) => Promise<void>;
   setRecommendations: Dispatch<SetStateAction<RecommendationType[]>>;
-  getCropRecommendations: (cropName: string) => Promise<void>;
-  getCropRotation: (token: string) => Promise<void>;
+  getCropRecommendations: (cropName: string) => Promise<any>;
+  getCropRotation: () => Promise<void>;
   singleCrop: any;
   updateNitrogenBalanceAndRegenerateRotation: ( data: DataType) => Promise<void>;
   updateDivisionSizeAndRedistribute: ( data: DataType) => Promise<void>;
-
+  loadingStateAtTheMoment : () => Promise<void>;
   
 }
 
@@ -80,16 +82,70 @@ interface Props {
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
 export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const [crops, setCrops] = useState<DataType[]>([]);
-  const [token, setToken] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [loading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [message, setMessage] = useState('');
   const [cropRotation, setCropRotation] = useState([]);
   const [singleCrop, setSingleCrop] = useState<DataType>();
   const [areThereCrops, setAreThereCrops] = useState(false);
-  const { user, error: authError, isLoading: isUserLoading  } = useUser();
+  const [isCropRotationLoading , setIsCropRotationLoading] = useState(false); 
 const [selections, setSelections] = useState([]);
+const { user, error: authError, isLoading: isUserLoading  } = useUser();
+
+// useEffect(() => {
+//   if (user && user.name && !authError && !isUserLoading) {
+//     console.log("user: ", user);
+//     console.log("user.sub: ", user.sub);
+//     getCropRotation()
+//   }
+// } , [user, authError, isUserLoading]);
+
+
+// useEffect(() => {
+//   loadingStateAtTheMoment();
+// }, [loading]);
+
+const loadingStateAtTheMoment = async () => {
+  try {
+    if (loading || isCropRotationLoading || isUserLoading) {
+      console.log("Loading state at the moment");
+    } else {
+      console.log("Loading state is false now");
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+
+const getCropRotation = async () => {
+  if (!user) {
+    console.log("User is not loaded yet");
+    return;
+  }
+
+  setIsLoading(true);
+  setIsCropRotationLoading(true);
+
+  try {
+    console.log("making a get request to get crop rotation try");
+
+    const response = await axios.get(API_URL_ROTATION + "getRotation/rotation/" + user.sub);
+
+    if (response.status === 200) {
+      setCropRotation(response.data);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  console.log( "crop rotation fetched ");
+  setIsLoading(false);
+  setIsCropRotationLoading(false);
+};
+
+
 
   const createCrop = async (data) => {
     console.log('createCrop triggered with object props: ' + JSON.stringify(data));
@@ -106,9 +162,7 @@ const [selections, setSelections] = useState([]);
         setMessage('Error creating crop');
       }
     } catch (err) {
-      console.error(err);
-      setIsError(true);
-      setMessage('Error creating crop: ' + err.message);
+      console.error(err)
     }
     setIsLoading(false);
   };
@@ -127,8 +181,7 @@ const [selections, setSelections] = useState([]);
         setMessage('Error updating crop');
       }
     } catch (err) {
-      setIsError(true);
-      setMessage('Error updating crop');
+      console.error(err)
     }
     setIsLoading(false);
   };
@@ -152,8 +205,7 @@ const [selections, setSelections] = useState([]);
         
       }
     } catch (err) {
-      setIsError(true);
-      setMessage('Error getting crops');
+      console.error(err)
     }
     setIsLoading(false);
   };
@@ -173,8 +225,7 @@ const [selections, setSelections] = useState([]);
         setMessage('Error deleting crop');
       }
     } catch (err) {
-      setIsError(true);
-      setMessage('Error deleting crop');
+      console.error(err)
     }
     setIsLoading(false);
   };
@@ -184,19 +235,19 @@ const [selections, setSelections] = useState([]);
   // API_URL + "/crops/crops/selectare/" + id + "/selectare"
 // await selectare(_id, newSelectArea, numSelections);
   const selectare = async (cropId:number, selectare: boolean, numSelections: number) => {
+    setIsLoading(true);
+    try {
     const response = await axios.put(`${API_URL}crops/${cropId}/selectare`, { selectare: selectare, numSelections: numSelections }, {
-
     });
-  
     if (response.status === 200) {
       setIsSuccess(true);
-      setMessage('Crop updated successfully');
-    } else {
-      setIsError(true);
-      setMessage('Error updating crop');
-    }
+      setMessage('Crop selected successfully');
+    } 
+  } catch (err) {
+    console.error(err)
+  }
+    setIsLoading(false);
   };
-
 
   const SinglePage = async (id: string) => {
     setIsLoading(true);
@@ -206,38 +257,14 @@ const [selections, setSelections] = useState([]);
       if (response.status === 200) {
         const data = await response.data
         setSingleCrop(data.crops[0]);
-      } else {
-        setIsError(true);
-        setMessage('Error getting crops');
-      }
+      } 
     } catch (err) {
-      setIsError(true);
-      setMessage('Error getting crops');
+      console.error(err)
     }
     setIsLoading(false);
   };
 
-  const getAllCrops = async () => {
-    setIsLoading(true);
-    try {
-      const response = await axios.get(`${API_URL}crops/retrieve/all`, {
-      });
-      if (response.status === 200) {
-        const data = await response.data;
-        setCrops(data.crops);
-        setAreThereCrops(true);
-        setSelections(data.selections);
-      } else {
-        setIsError(true);
-        setAreThereCrops(false);
-        setMessage('Error getting crops');
-      }
-    } catch (err) {
-      setIsError(true);
-      setMessage('Error getting crops');
-    }
-    setIsLoading(false);
-  };
+
 
   const addTheCropRecommendation = async (data: RecommendationType) => {
     setIsLoading(true);
@@ -247,19 +274,13 @@ const [selections, setSelections] = useState([]);
       if (response.status === 201) {
         setIsSuccess(true);
         setMessage('Recommendation added successfully');
-      } else {
-        setIsError(true);
-        setMessage('Error adding recommendation');
-      }
+      } 
     } catch (err) {
-      setIsError(true);
-      setMessage('Error adding recommendation');
+      console.error(err)
     }
     setIsLoading(false);
   };
 
-
-  
   const generateCropRotation = async (
     fieldSize: number,
     numberOfDivisions: number,
@@ -269,6 +290,7 @@ const [selections, setSelections] = useState([]);
     ResidualNitrogenSupply:number,
   ) => {
     setIsLoading(true);
+    setIsCropRotationLoading(true);
     try {
       const response = await axios.post(
         `${API_URL_ROTATION}generateRotation/rotation/${user.sub}`,
@@ -283,40 +305,35 @@ const [selections, setSelections] = useState([]);
         {
         }
       );
-      if (response.status === 200) {
+      if (response.status === 200 || response.status === 201) {
         setCropRotation(response.data);
-      } else {
-        setIsError(true);
-        setMessage('Error generating crop rotation');
-      }
+      } 
     } catch (err) {
-      setIsError(true);
-      setMessage('Error generating crop rotation');
+      console.error(err)
+    }
+    setIsLoading(false);
+    setIsCropRotationLoading(false);
+  };
+
+
+  const getAllCrops = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}crops/retrieve/all`, {
+      });
+      if (response.status === 200) {
+        const data = await response.data;
+        setCrops(data.crops);
+        setAreThereCrops(true);
+        setSelections(data.selections);
+      } 
+    } catch (err) {
+      console.error(err)
     }
     setIsLoading(false);
   };
 
-  const getCropRotation = async () => {
-    setIsLoading(true);
-    try {
-      const response = await axios.get(`${API_URL}/rotation`, {
-      });
-      if (response.status === 200) {
-        setCropRotation(response.data);
-      } else if (response.status === 204) {
-        setMessage('Nu exista nici o rotatie de culturi');
-        setCropRotation(response.data);
-      } else
-       {
-        setIsError(true);
-        setMessage('Eroare la preluarea rotatiei de culturi cu codul ' + response.status);
-      }
-    } catch (err) {
-      setIsError(true);
-      setMessage('Eroare la preluarea rotatiei de culturi');
-    }
-    setIsLoading(false);
-  };
+
 
   const deleteCropRotation = async (id: string) => {
     setIsLoading(true);
@@ -326,13 +343,9 @@ const [selections, setSelections] = useState([]);
       if (response.status === 200) {
         setIsSuccess(true);
         setMessage('Crop rotation deleted successfully');
-      } else {
-        setIsError(true);
-        setMessage('Error deleting crop rotation');
-      }
+      } 
     } catch (err) {
-      setIsError(true);
-      setMessage('Error deleting crop rotation');
+      console.error(err)
     }
     setIsLoading(false);
   };
@@ -355,7 +368,6 @@ const [selections, setSelections] = useState([]);
     return recommendations;
   }
 
-  
   const updateNitrogenBalanceAndRegenerateRotation = async (  data: any) => {
   setIsLoading(true);
   const {rotationName, year, division, nitrogenBalance } = data;
@@ -367,40 +379,30 @@ const [selections, setSelections] = useState([]);
       setIsSuccess(true);
       setMessage('Nitrogen Balance and Crop Rotation updated successfully');
       setCropRotation(response.data);
-    } else {
-      setIsError(true);
-      setMessage('Error updating Nitrogen Balance and Crop Rotation');
-    }
+    } 
   } catch (err) {
-    setIsError(true);
-    setMessage('Error updating Nitrogen Balance and Crop Rotation');
+    console.error(err)
   }
   setIsLoading(false);
 };
 
-const updateDivisionSizeAndRedistribute = async (token: string, data: any) => {
+const updateDivisionSizeAndRedistribute = async ( data: any) => {
   const { rotationName, division, newDivisionSize } = data;
   setIsLoading(true);
   try {
     const response = await axios.put(`${API_URL}`, { rotationName, division, newDivisionSize }, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     if (response.status === 200) {
       setIsSuccess(true);
       setMessage('Division Size and Crop Rotation updated successfully');
       setCropRotation(response.data);
-    } else {
-      setIsError(true);
-      setMessage('Error updating Division Size and Crop Rotation');
-    }
+    } 
   } catch (err) {
-    setIsError(true);
-    setMessage('Error updating Division Size and Crop Rotation');
+    console.error(err)
   }
   setIsLoading(false);
 };
+
 
 
 
@@ -410,7 +412,7 @@ const updateDivisionSizeAndRedistribute = async (token: string, data: any) => {
         crops,
         selections,
         setCrops,
-        isLoading,
+        loading,
         setIsLoading,
         isError,
         setIsError,
@@ -435,7 +437,9 @@ const updateDivisionSizeAndRedistribute = async (token: string, data: any) => {
         singleCrop,
         updateNitrogenBalanceAndRegenerateRotation,
         updateDivisionSizeAndRedistribute,
-        addTheCropRecommendation
+        addTheCropRecommendation,
+        isCropRotationLoading,
+        loadingStateAtTheMoment
       
 
       }}

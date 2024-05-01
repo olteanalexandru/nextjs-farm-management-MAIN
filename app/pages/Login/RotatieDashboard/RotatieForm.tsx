@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useGlobalContextCrop } from '../../../Context/culturaStore';
 
-const CropRotationForm = ({ filteredCrops, token }) => {
+const CropRotationForm = ({ filteredCrops }) => {
   const [fieldSize, setFieldSize] = useState('');
   const [numberOfDivisions, setNumberOfDivisions] = useState('');
   const [rotationName, setRotationName] = useState('');
