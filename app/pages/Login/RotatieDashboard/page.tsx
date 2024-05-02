@@ -35,12 +35,8 @@ useEffect(() => {
       console.error(error);
     }
   };
-
   fetchData();
-}, [
-]);
-
-
+}, [ userData ]);
 
 useEffect(() => {
   const fetchData = async () => {
@@ -58,11 +54,8 @@ useEffect(() => {
 
   fetchData();
 }, [
-   cropRotationChange
+   cropRotationChange , userData
 ]);
-
-console.log( cropRotationChange)
-
 
 let cropRotation = cropRotationObj 
   if ( isCropRotationLoading) {
@@ -177,6 +170,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                             onClick={() => {
                                       
                                               deleteCropRotation(rotation._id);
+                                              setCropRotationChange(true)
                                             }
                                           }
                                           >
