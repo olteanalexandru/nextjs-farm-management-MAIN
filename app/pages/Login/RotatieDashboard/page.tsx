@@ -20,6 +20,7 @@ function RotatieDashboard() {
       updateNitrogenBalanceAndRegenerateRotation,
        getAllCrops,
         updateDivisionSizeAndRedistribute,
+        deleteCropRotation
        } = useGlobalContextCrop();
   const { data: userData } = useGlobalContext();
   const [divisionSizeValues, setDivisionSizeValues] = useState([]);
@@ -38,6 +39,7 @@ useEffect(() => {
   fetchData();
 }, [
 ]);
+
 
 
 useEffect(() => {
@@ -168,6 +170,21 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                     <th>Parcel size</th>
                                     <th>Nitrogen balance per hectare</th>
                                     <th>Total nitrogen</th>
+                                    <th>
+                                      {
+                                        planIndex === 0 && (
+                                          <button
+                                            onClick={() => {
+                                      
+                                              deleteCropRotation(rotation._id);
+                                            }
+                                          }
+                                          >
+                                            Delete
+                                          </button>
+                                        )
+                                      }
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody>

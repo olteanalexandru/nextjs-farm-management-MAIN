@@ -307,7 +307,7 @@ const updateDivisionSizeAndRedistribute = async (input) => {
 return rotation
 }
   const deleteCropRotation = async (input) => {
-    const cropRotation = await Rotation.findById(input.rotation._id);
+    const cropRotation = await Rotation.findById(input);
   
     if (!cropRotation) {
       throw new Error('Crop rotation not found');
@@ -316,7 +316,10 @@ return rotation
     if (cropRotation.user !== user.sub) {
       throw new Error('User not authorized to delete this crop rotation');
     }
-    await cropRotation.remove();
+    await cropRotation.deleteOne(
+      { _id: input }
+    );
+
 return cropRotation
     }
 
@@ -455,23 +458,34 @@ export async function PUT(req: NextRequest, context: any) {
 //DELETE paths and params docs
 // delete crop rotation:
 
-// API_URL + /Rotation/deleteRotation/ rotation / :id
+// API_URL + /Rotation/deleteRotation/:userID / :Rotationid
 
 export async function DELETE(req: NextRequest, context: any) {
     const { params } = context;
-    if (params.rotation == 'deleteRotation' && params.rotationRoutes == 'rotation') {
+    if (params.rotation == 'deleteRotation' ) {
+
         const session = await getSession();
         const user = session?.user;
-
-        const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
+        const Checkuser = await User.findOne({ auth0_id: params.rotationRoutes.toString() });
         const CheckuserObject = Checkuser.toObject();
-        if (user.sub !== CheckuserObject.auth0_id) {
+        if (user.sub !== CheckuserObject.auth0_id ) {
             return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
         }
-        const rotation = await deleteCropRotation(req.body);
-        return NextResponse.json(rotation);
+        try {
+          let rotationToDelete = params.dinamicAction;
+        const rotation = await deleteCropRotation(rotationToDelete);
+        return NextResponse.json({
+
+            message: 'Rotation deleted successfully',
+            data: rotation
+        } , { status: 200 })
+    } catch (err) {
+        console.error('Error parsing request body:', err);
+        return NextResponse.json({ message: err.toString() }, { status: 400 });
+      }
     }
-}
+
+  }
 
 
 

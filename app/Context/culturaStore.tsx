@@ -72,6 +72,7 @@ interface ContextProps {
   updateNitrogenBalanceAndRegenerateRotation: ( data: DataType) => Promise<void>;
   updateDivisionSizeAndRedistribute: ( data: DataType) => Promise<void>;
   loadingStateAtTheMoment : () => Promise<boolean>;
+  deleteCropRotation: (id: string) => Promise<void>;
 }
 
 interface Props {
@@ -310,9 +311,13 @@ const getCropRotation = async () => {
   };
 
   const deleteCropRotation = async (id: string) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this crop rotation?");
+    if (!confirmDelete) {
+      return;
+    }
     setIsLoading(true);
     try {
-      const response = await axios.delete(`${API_URL_ROTATION}${id}`, {
+      const response = await axios.delete(`${API_URL_ROTATION}deleteRotation/${user.sub}/${id}`, {
       });
       if (response.status === 200) {
         setIsSuccess(true);
@@ -380,8 +385,7 @@ const updateDivisionSizeAndRedistribute = async ( data: any) => {
       value={{
         crops,
         selections,
-  
-
+      
         setIsLoading,
         isError,
         setIsError,
