@@ -223,18 +223,18 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
   // @route PUT /api/crops/rotation/
   // @access Admin
   const updateNitrogenBalanceAndRegenerateRotation = async (Inputs) => {
-    const { year, rotationName, division, nitrogenBalance } = Inputs;
-    
+    const {id,  year, rotationName, division, nitrogenBalance } = Inputs;
     // Find the rotation for the given id
-    const rotation = await Rotation.findOne({ rotationName }).populate('crops');
-  
+    const rotation = await Rotation.findById(id).populate('crops');
     if (!rotation) {
-      throw new Error('Rotation not found');
+      throw new Error('Rotation not found' + id +" " + JSON.stringify(Inputs) );
     }
-  
+    const { user } = await getSession();
+    if (rotation.user !== user.sub) {
+      throw new Error('User not authorized to update this crop rotation');
+    }
     // Get the rotation plans for the specific year and the following years
     const relevantYearPlans = rotation.rotationPlan.filter(item => item.year >= year);
-  
     if (!relevantYearPlans.length) {
       throw new Error('Year plan not found');
     }
@@ -248,41 +248,41 @@ async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<numbe
         relevantDivision.nitrogenBalance += nitrogenBalance;
       }
     }
-  
     // Find the division in the last year plan
     const lastYearPlan = relevantYearPlans[relevantYearPlans.length - 1];
     const lastYearDivision = lastYearPlan.rotationItems.find(item => item.division === division);
-  
     if (lastYearDivision && lastYearDivision.crop) {
       // Find the crop and update its soilResidualNitrogen
-      const crop = rotation.crops.find(crop => crop._id.toString() === lastYearDivision.crop.toString());
+      const crop = await rotation.crops.find(crop => crop._id.toString() === lastYearDivision.crop.toString());
       if (crop) {
         crop.soilResidualNitrogen = lastYearDivision.nitrogenBalance;
         await crop.save();
       }
     }
-  
     // save the updated rotation
     await rotation.save();
-
 return rotation
-
   };
 
 
   // @route PUT /api/crops/rotation/divisionSize
 // @access Admin
 const updateDivisionSizeAndRedistribute = async (input) => {
-  const { rotationName, division, newDivisionSize } = input
+  const {id, rotationName, division, newDivisionSize } = input
 
   // Find the rotation for the given id
-  const rotation = await Rotation.findOne({ rotationName });
+  const rotation = await Rotation.findById(id)
   if (!rotation) {
-    throw new Error('Rotation not found');
+    throw new Error('Rotation not found for ' + id + input.toString())
   }
   // Check if newDivisionSize is valid
   if (newDivisionSize > rotation.fieldSize || newDivisionSize < 0) {
-    throw new Error('Invalid division size');
+    throw new Error('Invalid division size: ' + newDivisionSize +  " must not be above fieldsize: " + rotation.fieldSize);
+  }
+
+  const { user } = await getSession();
+  if (rotation.user !== user.sub) {
+    throw new Error('User not authorized to update this crop rotation');
   }
   // Calculate the remaining size to be distributed among the other divisions
   const remainingSize = rotation.fieldSize - newDivisionSize;
@@ -306,32 +306,19 @@ const updateDivisionSizeAndRedistribute = async (input) => {
   await rotation.save();
 return rotation
 }
-
-
-
-  
   const deleteCropRotation = async (input) => {
     const cropRotation = await Rotation.findById(input.rotation._id);
   
     if (!cropRotation) {
       throw new Error('Crop rotation not found');
     }
-
+    const { user } = await getSession();
+    if (cropRotation.user !== user.sub) {
+      throw new Error('User not authorized to delete this crop rotation');
+    }
     await cropRotation.remove();
 return cropRotation
     }
-
-
-
-// router.route('/cropSelect/:id').post(authCheck, cropControllerClass.setSelectare).put(authCheck, cropControllerClass.setSelectare)
-// router.route('/cropRotation').post(authCheck, rotationControllerClass.generateCropRotation).get(authCheck, rotationControllerClass.getCropRotation).put(authCheck, rotationControllerClass.updateNitrogenBalanceAndRegenerateRotation)
-// router.route('/cropRotation/fields').put(authCheck, rotationControllerClass.updateDivisionSizeAndRedistribute)
-// router.route('/cropRotation/:id').get(authCheck, rotationControllerClass.getCropRotation)
-
-
-
-
-
 
 //new api paths:
 
@@ -402,10 +389,7 @@ export async function POST(req: NextRequest, context: any) {
       const cropInput = await req.json();
 
      let response =   await generateCropRotation(cropInput, CheckuserObject);
-      return NextResponse.json({
-        message: 'Crop rotation generated successfully',
-      
-      } , { status: 201 });
+      return NextResponse.json(response, { status: 200 });
     } catch (error) {
       // Handle parsing errors or other exceptions
       console.error('Error parsing request body:', error);
@@ -427,27 +411,45 @@ export async function PUT(req: NextRequest, context: any) {
     if (params.rotation == 'updateDivisionSizeAndRedistribute' && params.rotationRoutes == 'rotation') {
         const session = await getSession();
         const user = session?.user;
-
         const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
         const CheckuserObject = Checkuser.toObject();
-        if (user.sub !== CheckuserObject.auth0_id) {
+        if (user.sub !== CheckuserObject.auth0_id ) {
             return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
         }
-        const rotation = await updateDivisionSizeAndRedistribute(req.body);
-        return NextResponse.json(rotation);
+        try {
+          let divisionNewSize = await req.json();
+        const rotation = await updateDivisionSizeAndRedistribute(divisionNewSize);
+        return NextResponse.json( rotation , { status: 200   });
+
+      } catch (err) {
+        console.error('Error parsing request body:', err);
+        return NextResponse.json({ message: err.toString() }, { status: 400 });
+      }
     }
     if (params.rotation == 'updateNitrogenBalance' && params.rotationRoutes == 'rotation') {
         const session = await getSession();
         const user = session?.user;
-
         const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
         const CheckuserObject = Checkuser.toObject();
-        if (user.sub !== CheckuserObject.auth0_id) {
+        if (user.sub !== CheckuserObject.auth0_id ) {
             return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
         }
-        const rotation = await updateNitrogenBalanceAndRegenerateRotation(req.body);
-        return NextResponse.json(rotation);
+
+        console.log("reached put request ")
+        try {
+          let nitrogenToSuplement = await req.json();
+        const rotation = await updateNitrogenBalanceAndRegenerateRotation(nitrogenToSuplement);
+        return NextResponse.json({
+
+            message: 'Nitrogen balance updated successfully',
+            data: rotation
+        } , { status: 200 }) 
+      } catch (err) {
+        console.error('Error parsing request body:', err);
+        return NextResponse.json({ message: err.toString() }, { status: 400 });
+      }
     }
+
 }
 
 //DELETE paths and params docs

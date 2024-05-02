@@ -183,7 +183,6 @@ import { CustomRequest, Crop, Response, CropRotationInput , CropRotationItem } f
       });
       
       const createdRotation = await rotation.save();
-      
       const cropsToUpdate = await Crop.find({ _id: { $in: input.crops } });
       
       const user = await User.findById(req.user.id);

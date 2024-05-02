@@ -20,18 +20,16 @@ function RotatieDashboard() {
       updateNitrogenBalanceAndRegenerateRotation,
        getAllCrops,
         updateDivisionSizeAndRedistribute,
-        loadingStateAtTheMoment
        } = useGlobalContextCrop();
   const { data: userData } = useGlobalContext();
   const [divisionSizeValues, setDivisionSizeValues] = useState([]);
 const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
+const [cropRotationChange, setCropRotationChange] = useState(false);
 
 useEffect(() => {
   const fetchData = async () => {
     try {
-      // loadingStateAtTheMoment()
-      await getAllCrops()
-       await getCropRotation()
+       await getAllCrops()
     } catch (error) {
       console.error(error);
     }
@@ -39,14 +37,29 @@ useEffect(() => {
 
   fetchData();
 }, [
-  userData
 ]);
 
-console.log(
-  `cropRotation: ${JSON.stringify(cropRotationObj)}`
-)
 
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+       await getCropRotation()
+       setCropRotationChange(false)
+       if ( isCropRotationLoading) {
+        console.log('Loading Rotation...');
+        return <div>Loading Rotation...</div>;
+      } 
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
+  fetchData();
+}, [
+   cropRotationChange
+]);
+
+console.log( cropRotationChange)
 
 
 let cropRotation = cropRotationObj 
@@ -111,6 +124,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
               {crops?.length > 0 ? (
                 <div className="crops">
                   <CropRotationForm filteredCrops={filteredCrops}  />
+                  
                   <h3>Ai selectat pentru rotatie:</h3>
 
                   {filteredCrops.length === 0 ? (
@@ -132,7 +146,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
 {cropRotation && cropRotation.data && (
                 <div className="rotation" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
                   <h3>Rotatia generata:</h3>
-                  {cropRotation.data.map((rotation, index) => {
+                  {cropRotation && Array.isArray(cropRotation.data) && (cropRotation.data.map((rotation, index) => {
                     const chartData = prepareChartData(rotation.rotationPlan, rotation.numberOfDivisions);
                     return (
                       <Row key={index}>
@@ -175,20 +189,24 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                           setDivisionSizeValues(newDivisionSizeValues);
                                         }}
                                         onBlur={e => {
-                                          if(isNaN(parseFloat(e.target.value))) {
+                                          if (isNaN(parseFloat(e.target.value)) && parseFloat(e.target.value) > 0) {
                                             alert("Not a number");
-                                          }
-                                          else {
+                                          }        else if (parseFloat(e.target.value) > 1) {
                                             let newDivisionSizeValues = [...divisionSizeValues];
                                             newDivisionSizeValues[itemIndex] = parseFloat(e.target.value);
                                             setDivisionSizeValues(newDivisionSizeValues);
-                                            let data = {
+                                            let data :any = {
+                                              id: rotation._id,
                                               rotationName: rotation.rotationName,
                                               division: item.division,
                                               newDivisionSize: parseFloat(e.target.value),
                                             };
                                             updateDivisionSizeAndRedistribute(data);
+                                            
                                           }
+                                          if(parseFloat(e.target.value) > 0 ) {
+                                            setCropRotationChange(true)
+                                            }
                                         }}
                                       />
                                       )}
@@ -203,20 +221,24 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                           setNitrogenBalanceValues(newNitrogenBalanceValues);
                                         }} 
                                         onBlur={e => {
-                                          if(isNaN(parseFloat(e.target.value))) {
+                                          if (isNaN(parseFloat(e.target.value)) && parseFloat(e.target.value) > 0) {
                                             alert("Not a number");
-                                          }
-                                          else {
+                                          } else if (parseFloat(e.target.value) > 1) {
                                             let newNitrogenBalanceValues = [...nitrogenBalanceValues];
                                             newNitrogenBalanceValues[itemIndex] = parseFloat(e.target.value);
                                             setNitrogenBalanceValues(newNitrogenBalanceValues);
-                                            let data = {
+                                            let data :any = {
+                                              id: rotation._id,
                                               rotationName: rotation.rotationName,
                                               year: plan.year,
                                               division: item.division,
                                               nitrogenBalance: parseFloat(e.target.value),
                                             };
                                             updateNitrogenBalanceAndRegenerateRotation(data);
+                                            
+                                          }
+                                          if(parseFloat(e.target.value) > 0 ) {
+                                          setCropRotationChange(true)
                                           }
                                         }}
                                       />
@@ -260,7 +282,8 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                         </Col>
                       </Row>
                     );
-                  })}
+                  }
+                ))}
                 </div>
               )}
             </section>
