@@ -13,6 +13,7 @@
     "@auth0/nextjs-auth0": "^3.5.0",
     "@emailjs/browser": "^4.3.3",
     "@next/font": "14.1.4",
+    "@preact/signals-react": "^2.0.1",
     "@types/node": "20.11.30",
     "@types/react": "18.2.73",
     "@types/react-dom": "18.2.22",

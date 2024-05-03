@@ -9,7 +9,7 @@ function RotatieItem({ crops, userID }: { crops: any[], userID: string }) {
   const { deleteCrop , message , getAllCrops} = useGlobalContextCrop();
 
   useEffect(() => {
-    console.log(crops);
+    console.log(crops.value);
     
   }
   , [message ]);
@@ -19,7 +19,7 @@ function RotatieItem({ crops, userID }: { crops: any[], userID: string }) {
 
   return (
     <div className={styles.cropList}>
-      {crops.map((crop: any) => (
+      {crops.value.map((crop: any) => (
         <div key={crop._id} className={styles.crop}>
           <h2 className={styles.cropName}>{crop.cropName}</h2>
           <div className={styles.cropDetails}>

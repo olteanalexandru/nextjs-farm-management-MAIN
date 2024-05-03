@@ -355,7 +355,7 @@ export async function GET(request: NextRequest, context: any) {
                 data: cropRotation
             } , { status: 200 });
         } else {
-            return NextResponse.json('No crop rotation found for this user', { status: 204 });
+            return NextResponse.json('No crop rotation found for this user', { status: 205 });
         }
     }
 }

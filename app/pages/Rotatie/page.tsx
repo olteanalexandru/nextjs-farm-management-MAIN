@@ -10,23 +10,20 @@ export default function Rotatie() {
   const { 
     crops,
     isLoading,
-    isError,
-    message,
+
     getAllCrops,
     areThereCrops,
   } = useGlobalContextCrop();
 
   useEffect(() => {
-    if (isError) {
-      console.log(message)
-    }
+
     console.log("isLoading state: ", isLoading)
     getAllCrops()
   }, [
 
   ])
 
-  if (isLoading) {
+  if (isLoading?.value) {
     return <Spinner />
   }
 
@@ -50,11 +47,11 @@ export default function Rotatie() {
         <h2 className={styles.title}>Culturi adaugate :</h2>
         { 
           // promise is resolved
-          areThereCrops === true && isLoading === false
+          areThereCrops.value === true && isLoading.value === false
           ? (
             <div className={styles.gridContainer}>
               <GridGenerator cols={3}>
-                {crops.map((crop: Crop) => {
+                {crops.value.map((crop: Crop) => {
                   return (
                     <div className={styles.gridItem} key={crop._id}>
                       <Continut crop={crop} />
@@ -63,7 +60,7 @@ export default function Rotatie() {
                 })}
               </GridGenerator>
             </div>
-          ) : (areThereCrops === false && isLoading === false) ? (
+          ) : (areThereCrops.value === false && isLoading.value === false) ? (
             <div className={styles.noCrops}>
               <h3>Nu exista culturi adaugate</h3>
             </div>

@@ -1,5 +1,5 @@
 "use client"
-import {useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Container, Card, Row, Col, Table } from 'react-bootstrap';
 import { useGlobalContext } from '../../../Context/UserStore';
 import { useGlobalContextCrop } from '../../../Context/culturaStore';
@@ -16,56 +16,52 @@ function RotatieDashboard() {
     isLoading,
     isCropRotationLoading,
      getCropRotation,
-     cropRotation: cropRotationObj,
+     cropRotation,
       updateNitrogenBalanceAndRegenerateRotation,
        getAllCrops,
         updateDivisionSizeAndRedistribute,
         deleteCropRotation
        } = useGlobalContextCrop();
+
   const { data: userData } = useGlobalContext();
   const [divisionSizeValues, setDivisionSizeValues] = useState([]);
 const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
 const [cropRotationChange, setCropRotationChange] = useState(false);
 
-useEffect(() => {
+
   const fetchData = async () => {
     try {
        await getAllCrops()
-    } catch (error) {
-      console.error(error);
-    }
-  };
-  fetchData();
-}, [ userData ]);
-
-useEffect(() => {
-  const fetchData = async () => {
-    try {
        await getCropRotation()
-       setCropRotationChange(false)
-       if ( isCropRotationLoading) {
-        console.log('Loading Rotation...');
-        return <div>Loading Rotation...</div>;
-      } 
     } catch (error) {
       console.error(error);
     }
   };
-
   fetchData();
-}, [
-   cropRotationChange , userData
-]);
 
-let cropRotation = cropRotationObj 
-  if ( isCropRotationLoading) {
+
+
+
+
+
+console.log(
+  'loading? : ', isLoading.value, isCropRotationLoading.value,
+  'crops', crops.value,
+  'selections', selections.value,
+  'cropRotation', cropRotation.value
+
+)
+
+
+  if ( isCropRotationLoading.value) {
     return <div>Loading Rotation...</div>;
   } 
 
-  if (isLoading) {
+  if (isLoading.value) {
     return <div>Loading Crops...</div>;
   }
   
+
 
 
 const getCropsRepeatedBySelection = (crops, selections) => {
@@ -83,7 +79,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
     });
 };
 
-  const filteredCrops = getCropsRepeatedBySelection(crops, selections);
+  const filteredCrops = getCropsRepeatedBySelection(crops.value, selections.value);
 
   const prepareChartData = (rotationPlan, numberOfDivisions) => {
     let chartData = [];
@@ -116,7 +112,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
               <h1>Salut {userData && userData.name}</h1>
             </section>
             <section className="content">
-              {crops?.length > 0 ? (
+              {crops?.value?.length > 0 ? (
                 <div className="crops">
                   <CropRotationForm filteredCrops={filteredCrops}  />
                   
@@ -135,13 +131,17 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                   )}
                 </div>
               ) : (
+               
                 <h3>Nicio cultura selectata</h3>
+                
+
+         
               )}
 
-{cropRotation && cropRotation.data && (
+{cropRotation.value  && (
                 <div className="rotation" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
                   <h3>Rotatia generata:</h3>
-                  {cropRotation && Array.isArray(cropRotation.data) && (cropRotation.data.map((rotation, index) => {
+                  {cropRotation.value && Array.isArray(cropRotation.value.data) && (cropRotation.value.data.map((rotation, index) => {
                     const chartData = prepareChartData(rotation.rotationPlan, rotation.numberOfDivisions);
                     return (
                       <Row key={index}>
@@ -168,9 +168,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                                         planIndex === 0 && (
                                           <button
                                             onClick={() => {
-                                      
                                               deleteCropRotation(rotation._id);
-                                              setCropRotationChange(true)
                                             }
                                           }
                                           >

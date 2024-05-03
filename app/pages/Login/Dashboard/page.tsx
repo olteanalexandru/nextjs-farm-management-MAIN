@@ -36,7 +36,7 @@ export default function Dashboard() {
     }
   }, [data?.role]);
 
-  if (isLoading) {
+  if (isLoading?.value) {
     return <Spinner />;
   }
 
@@ -85,7 +85,7 @@ export default function Dashboard() {
             </section>
             <CropForm />
             <section className="content">
-              {crops.length > 0 ? (
+              {crops.value.length > 0 ? (
                 <div className="crops">
                   <RotatieItem crops={crops} userID={data._id} />
                 </div>
