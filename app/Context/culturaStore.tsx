@@ -84,7 +84,7 @@ const GlobalContext = createContext<ContextProps>({} as ContextProps);
 export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
 const cropsSignal = signal([]);
-const loadingSignal = signal(true);
+const loadingSignal = signal(null);
 const isErrorSignal = signal(false);
 const isSuccessSignal = signal(false);
 const messageSignal = signal('');
@@ -116,7 +116,7 @@ const getCropRotation = async () => {
   try {
     console.log("making a get request to get crop rotation try");
     const response = await axios.get(API_URL_ROTATION + "getRotation/rotation/" + user.sub);
-    if (response.status === 200) {
+    if (response.status === 200 || response.status === 203) {
       cropRotationSignal.value = response.data;
     }
   } catch (err) {
@@ -295,8 +295,9 @@ const SinglePage = async (id: string) => {
   const getAllCrops = async () => {
       // Wait until isUserLoading is false
  await awaitUser()
-    loadingSignal.value = true
+    
     try {
+      loadingSignal.value = true
       const response = await axios.get(`${API_URL}crops/retrieve/all`, {});
       if (response.status === 200) {
         console.log("getting all crops..")
@@ -304,13 +305,18 @@ const SinglePage = async (id: string) => {
         cropsSignal.value = data.crops;
         areThereCropsSignal.value = true
         selectionsSignal.value = data.selections;
+       
       } 
     } catch (err) {
       console.error(err)
+      areThereCropsSignal.value = false
     }
     // console.log("crops fetched with selections " + selectionsSignal.value )
     // console.log("crops:  " +  cropsSignal.value)
     loadingSignal.value = false
+    
+
+    console.log("crops are done fetching loading  signal is: " +  loadingSignal)
   };
   
   const deleteCropRotation = async (id: string) => {

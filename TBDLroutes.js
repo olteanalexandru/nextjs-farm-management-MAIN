@@ -45,3 +45,74 @@
 
 
 
+using ASP.net BLAZOR generate a farming crops management single page  . With an SQLlite database that has items like : 
+  user: {
+    type: String,
+    required: true,
+    ref: 'Auth0 user',
+  }
+  cropName: {
+    type: String,
+    required: [true, 'Crop name is required'],
+  },
+  cropType: {
+    type: String,
+    required: false,
+  },
+  cropVariety: {
+    type: String,
+    required: false,
+  },
+  plantingPeriod: {
+    type: String,
+    required: false,
+  },
+  harvestingPeriod: {
+    type: String,
+    required: false,
+  },
+  description: {
+    type: String,
+    required: false,
+  },
+  image: {
+    type: String, 
+    required: false,
+  },
+  soilType: {
+    type: String,
+    required: false,
+  },
+  climate: {
+    type: String,
+    required: false,
+  },
+  ItShouldNotBeRepeatedForHowmanyYearsOnSameField: {
+    type: Number,
+    required: false,
+  },
+  fertilizers: {
+    type: [String],
+    required: false,
+  },
+  pests: {
+    type: [String],
+    required: false,
+  },
+  diseases: {
+    type: [String],
+    required: false,
+  },
+  nitrogenSupply: {
+    type: Number,
+    required: false,
+  },
+  nitrogenDemand: {
+    type: Number,
+    required: false,
+  },
+  soilResidualNitrogen: {
+    type: Number,
+    required: false,
+  },
+

@@ -13,7 +13,15 @@ function HeaderLog() {
         <Dropdown>
           <Dropdown.Toggle variant="outline-secondary" id="dropdownMenuButton1">
             <Link href="/pages/Login/Dashboard/" style={{ textDecoration: 'none', color: '#fff' }}>
-              <img src={data.picture} alt="User Avatar" width="40" height="40" style={{ borderRadius: "25%", marginRight: "10px" }} />
+            {data.picture && (
+  <img 
+    src={data.picture} 
+    alt="User Avatar" 
+    width="40" 
+    height="40" 
+    style={{ borderRadius: "25%", marginRight: "10px" }} 
+  />
+)}
               {data.name}
             </Link>
           </Dropdown.Toggle>
@@ -23,7 +31,7 @@ function HeaderLog() {
             {data.role.toLowerCase() === 'farmer' && (
               <>
                 <Dropdown.Item as={Link} href="/pages/Login/RotatieDashboard/">Crop rotation</Dropdown.Item>
-                <Dropdown.Item as={Link} href="/pages/Recomandari/">Analitics</Dropdown.Item>
+                {/* <Dropdown.Item as={Link} href="/pages/Recomandari/">Analitics</Dropdown.Item> */}
               </>
             )}
             <Dropdown.Item onClick={logout}>Logout</Dropdown.Item>

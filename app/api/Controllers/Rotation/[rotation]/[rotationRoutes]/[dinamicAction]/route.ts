@@ -346,7 +346,7 @@ export async function GET(request: NextRequest, context: any) {
 
         if (user.sub !== CheckuserObject.auth0_id) {
 
-            return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
+            return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 401 });
         }
 
         const cropRotation = await Rotation.find({ user: user.sub }).sort({ createdAt: -1 });
@@ -355,7 +355,8 @@ export async function GET(request: NextRequest, context: any) {
                 data: cropRotation
             } , { status: 200 });
         } else {
-            return NextResponse.json('No crop rotation found for this user', { status: 205 });
+         
+          return NextResponse.json({ message: 'No rotation for user' }, { status: 203 } );
         }
     }
 }
