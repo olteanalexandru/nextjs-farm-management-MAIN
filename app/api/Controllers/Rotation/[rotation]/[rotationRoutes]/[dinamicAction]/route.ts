@@ -342,7 +342,7 @@ export async function GET(request: NextRequest, context: any) {
         const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
         const CheckuserObject = Checkuser.toObject();
 
-        console.log("reached get request 2")
+        console.log("reached get request getCrop")
 
         if (user.sub !== CheckuserObject.auth0_id) {
 
@@ -356,7 +356,7 @@ export async function GET(request: NextRequest, context: any) {
             } , { status: 200 });
         } else {
          
-          return NextResponse.json({ message: 'No rotation for user' }, { status: 203 } );
+          return NextResponse.json({ message: 'No rotation for user 2' }, { status: 203 } );
         }
     }
 }

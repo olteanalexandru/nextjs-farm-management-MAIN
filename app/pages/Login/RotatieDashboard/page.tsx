@@ -1,5 +1,5 @@
 "use client"
-import { useState } from 'react';
+import { useState , useEffect } from 'react';
 import { Container, Card, Row, Col, Table } from 'react-bootstrap';
 import { useGlobalContext } from '../../../Context/UserStore';
 import { useGlobalContextCrop } from '../../../Context/culturaStore';
@@ -9,7 +9,6 @@ import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, L
 import {  Typography } from 'antd';
 const { Title } = Typography;
 const colors = ['8884d8', '82ca9d', 'ffc658', 'a4de6c', 'd0ed57', 'ffc658', '00c49f', 'ff7300', 'ff8042'];
-
 function RotatieDashboard() {
   const { crops,
     selections,
@@ -23,13 +22,16 @@ function RotatieDashboard() {
         deleteCropRotation
        } = useGlobalContextCrop();
 
-  const { data: userData } = useGlobalContext();
+  // const { data: userData } = useGlobalContext();
   const [divisionSizeValues, setDivisionSizeValues] = useState([]);
 const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
 const [cropRotationChange, setCropRotationChange] = useState(false);
 
 
+
+
   const fetchData = async () => {
+
     try {
        await getAllCrops()
        await getCropRotation()
@@ -37,32 +39,45 @@ const [cropRotationChange, setCropRotationChange] = useState(false);
       console.error(error);
     }
   };
-  fetchData();
+  fetchData()
+  
+let userData = {
+  role: 'farmer',
+  name: 'John Doe'
+}
 
 
-
-
-
-
-console.log(
-  'loading? : ', isLoading.value, isCropRotationLoading.value,
-  'crops', crops.value,
-  'selections', selections.value,
-  'cropRotation', cropRotation.value
-
-)
-
-
-  if ( isCropRotationLoading.value) {
+  if (isCropRotationLoading.value) {
     return <div>Loading Rotation...</div>;
   } 
+  console.log(
+    'loading states : ', isLoading.value
+  
+  )
+
 
   if (isLoading.value) {
-    return <div>Loading Crops...</div>;
+    return <div>Loading Crops2... { isLoading.value + " space " +  isCropRotationLoading.value }</div>;
   }
-  
+ 
+
+    // console.log('cropRotationLoading',
+    // isCropRotationLoading.value
+    // )
 
 
+
+
+
+  // console.log(  'crops', crops.value,
+  // 'selections', selections.value,
+  // 'cropRotation', cropRotation.value ) ;
+
+    if (cropRotationChange) {
+      console.log('cropRotationChange did change')
+      getCropRotation();
+      setCropRotationChange(false);
+    }
 
 const getCropsRepeatedBySelection = (crops, selections) => {
   let uniqueId = 0; // Initialize a unique ID counter

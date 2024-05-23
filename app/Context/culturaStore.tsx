@@ -1,7 +1,7 @@
 "use client";
-import { createContext, useContext, Dispatch, SetStateAction, useState, useEffect } from 'react';
+import { createContext, useContext } from 'react';
 import axios from 'axios';
-import { signal } from "@preact/signals-react";
+import { useSignal } from "@preact/signals-react";
 import { useUser } from '@auth0/nextjs-auth0/client';
 
 const API_URL = 'http://localhost:3000/api/Controllers/Crop/';
@@ -41,40 +41,35 @@ type RecommendationType = {
 };
 
 interface ContextProps {
-
-
-  //refactored for signals
   crops: any;
-  selections:any;
-  setSelections: Dispatch<SetStateAction<any>>;
-  isLoading: any; 
-  isCropRotationLoading: any;
+  selections: any;
+  isLoading: any;
   isError: any;
   isSuccess: any;
   message: any;
   createCrop: (data: DataType) => Promise<void>;
   getCrops: () => Promise<void>;
-  deleteCrop: ( cropId: string) => Promise<void>;
-  selectare: (cropId:number, selectare: boolean, numSelections: number) => Promise<void>;
+  deleteCrop: (cropId: string) => Promise<void>;
+  selectare: (cropId: number, selectare: boolean, numSelections: number) => Promise<void>;
   SinglePage: (id: string) => Promise<void>;
   getAllCrops: () => Promise<void>;
-  updateCrop: (id: string, data: DataType) => Promise<void>;
+  updateCrop: (cropId: string, data: DataType) => Promise<void>;
   areThereCrops: any;
   setCropRotation: any;
-  generateCropRotation: ( fieldSize: number, numberOfDivisions: number, rotationName: string, filteredCrops: any , maxYears: number, ResidualNitrogenSupply?: number ) => Promise<void>;
-  addTheCropRecommendation: (data: RecommendationType) => Promise<void>;
+  generateCropRotation: (fieldSize: number, numberOfDivisions: number, rotationName: string, crops: DataType, maxYears: number, ResidualNitrogenSupply: number) => Promise<void>;
   getCropRecommendations: (cropName: string) => Promise<any>;
   getCropRotation: () => Promise<void>;
   deleteCropRotation: (id: string) => Promise<void>;
   cropRotation: any;
   singleCrop: any;
-  updateNitrogenBalanceAndRegenerateRotation: ( data: DataType) => Promise<void>;
-  updateDivisionSizeAndRedistribute: ( data: DataType) => Promise<void>;
-  loadingStateAtTheMoment : () => Promise<boolean>;
- value: any;
-
+  updateNitrogenBalanceAndRegenerateRotation: (data: any) => Promise<void>;
+  updateDivisionSizeAndRedistribute: (data: any) => Promise<void>;
+  addTheCropRecommendation: (data: RecommendationType) => Promise<void>;
+  isCropRotationLoading: any;
 
 }
+
+
 
 interface Props {
   children: React.ReactNode;
@@ -83,16 +78,16 @@ interface Props {
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
 export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
-const cropsSignal = signal([]);
-const loadingSignal = signal(null);
-const isErrorSignal = signal(false);
-const isSuccessSignal = signal(false);
-const messageSignal = signal('');
-const cropRotationSignal = signal([]);
-const singleCropSignal = signal(null);
-const areThereCropsSignal = signal(false);
-const isCropRotationLoadingSignal = signal(true);
-const selectionsSignal = signal([]);
+const cropsSignal = useSignal([]);
+const loadingSignal = useSignal(false);
+const isErrorSignal = useSignal(false);
+const isSuccessSignal = useSignal(false);
+const messageSignal = useSignal('');
+const cropRotationSignal = useSignal([]);
+const singleCropSignal = useSignal(null);
+const areThereCropsSignal = useSignal(false);
+const isCropRotationLoadingSignal = useSignal(false);
+const selectionsSignal = useSignal([]);
 
 
 const { user, error: authError, isLoading: isUserLoading  } = useUser();
@@ -110,7 +105,7 @@ const getCropRotation = async () => {
   // Wait until isUserLoading is false
  await awaitUser()
 
-  loadingSignal.value = true;
+ 
   isCropRotationLoadingSignal.value = true;
 
   try {
@@ -121,11 +116,12 @@ const getCropRotation = async () => {
     }
   } catch (err) {
     console.error(err);
+  } finally {
+    isCropRotationLoadingSignal.value = false;
   }
 
   console.log( "crop rotation fetched ");
-  loadingSignal.value = false;
-  isCropRotationLoadingSignal.value = false;
+
 };
 
 
@@ -171,9 +167,11 @@ const updateCrop = async (cropId: string, data: DataType) => {
 const getCrops = async () => {
     // Wait until isUserLoading is false
  await awaitUser()
-  loadingSignal.value = true
+  
   try {
+    loadingSignal.value = true
     const response = await axios.get(`${API_URL}crops/retrieve/all`, {});
+    loadingSignal.value = false
     if (response.status === 200) {
       cropsSignal.value = response.data.crops;
       areThereCropsSignal.value = true
@@ -185,8 +183,10 @@ const getCrops = async () => {
     }
   } catch (err) {
     console.error(err)
+  } finally {
+    loadingSignal.value = false
   }
-  loadingSignal.value = false
+  console.log("crops are done  in getCrops: " +  loadingSignal)
 };
 
 const deleteCrop = async (cropId: string) => {
@@ -204,8 +204,9 @@ const deleteCrop = async (cropId: string) => {
     }
   } catch (err) {
     console.error(err)
-  }
+  } finally {
   loadingSignal.value = false
+  }
 };
 
 const selectare = async (cropId: number, selectare: boolean, numSelections: number) => {
@@ -220,8 +221,9 @@ const selectare = async (cropId: number, selectare: boolean, numSelections: numb
     } 
   } catch (err) {
     console.error(err)
-  }
+  }  finally {
   loadingSignal.value = false
+  } 
 };
 
 const SinglePage = async (id: string) => {
@@ -286,9 +288,10 @@ const SinglePage = async (id: string) => {
       } 
     } catch (err) {
       console.error(err);
-    }
+    } finally {
     loadingSignal.value = false
     isCropRotationLoadingSignal.value = false
+    }
   };
   
 
@@ -296,9 +299,11 @@ const SinglePage = async (id: string) => {
       // Wait until isUserLoading is false
  await awaitUser()
     
+
     try {
       loadingSignal.value = true
       const response = await axios.get(`${API_URL}crops/retrieve/all`, {});
+      loadingSignal.value = false
       if (response.status === 200) {
         console.log("getting all crops..")
         const data = await response.data;
@@ -306,16 +311,13 @@ const SinglePage = async (id: string) => {
         areThereCropsSignal.value = true
         selectionsSignal.value = data.selections;
        
-      } 
+      }  
     } catch (err) {
       console.error(err)
       areThereCropsSignal.value = false
+    } finally {
+      loadingSignal.value = false
     }
-    // console.log("crops fetched with selections " + selectionsSignal.value )
-    // console.log("crops:  " +  cropsSignal.value)
-    loadingSignal.value = false
-    
-
     console.log("crops are done fetching loading  signal is: " +  loadingSignal)
   };
   
@@ -356,6 +358,7 @@ const SinglePage = async (id: string) => {
     console.log("recommendations: ", recommendations);
     return recommendations;
   };
+  
   
   const updateNitrogenBalanceAndRegenerateRotation = async (data: any) => {
       // Wait until isUserLoading is false
