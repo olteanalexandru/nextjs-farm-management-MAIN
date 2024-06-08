@@ -9,11 +9,12 @@ import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, L
 import {  Typography } from 'antd';
 const { Title } = Typography;
 const colors = ['8884d8', '82ca9d', 'ffc658', 'a4de6c', 'd0ed57', 'ffc658', '00c49f', 'ff7300', 'ff8042'];
+import { useSignals  } from "@preact/signals-react/runtime";
+import { useUser } from '@auth0/nextjs-auth0/client';
 function RotatieDashboard() {
   const { crops,
     selections,
     isLoading,
-    isCropRotationLoading,
      getCropRotation,
      cropRotation,
       updateNitrogenBalanceAndRegenerateRotation,
@@ -22,34 +23,32 @@ function RotatieDashboard() {
         deleteCropRotation
        } = useGlobalContextCrop();
 
-  // const { data: userData } = useGlobalContext();
+   const { data: userData } = useGlobalContext();
   const [divisionSizeValues, setDivisionSizeValues] = useState([]);
 const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
 const [cropRotationChange, setCropRotationChange] = useState(false);
+const { user, error, isLoading: isUserLoading } = useUser();
 
+///data  is changed but functions might not be rerernderedb n
+useSignals();
+  const fetchData =  () => {
 
+     getAllCrops()
+    getCropRotation()
 
-
-  const fetchData = async () => {
-
-    try {
-       await getAllCrops()
-       await getCropRotation()
-    } catch (error) {
-      console.error(error);
-    }
   };
-  fetchData()
   
-let userData = {
-  role: 'farmer',
-  name: 'John Doe'
-}
+  
 
 
-  if (isCropRotationLoading.value) {
-    return <div>Loading Rotation...</div>;
-  } 
+
+useEffect(() => {
+  if (!isUserLoading) {
+    fetchData();
+  }
+}, [isUserLoading]);
+
+
   console.log(
     'loading states : ', isLoading.value
   
@@ -57,21 +56,10 @@ let userData = {
 
 
   if (isLoading.value) {
-    return <div>Loading Crops2... { isLoading.value + " space " +  isCropRotationLoading.value }</div>;
+    return <div>Loading Crops2... { isLoading.value  }</div>;
   }
  
 
-    // console.log('cropRotationLoading',
-    // isCropRotationLoading.value
-    // )
-
-
-
-
-
-  // console.log(  'crops', crops.value,
-  // 'selections', selections.value,
-  // 'cropRotation', cropRotation.value ) ;
 
     if (cropRotationChange) {
       console.log('cropRotationChange did change')
@@ -146,14 +134,10 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                   )}
                 </div>
               ) : (
-               
                 <h3>Nicio cultura selectata</h3>
-                
-
-         
               )}
 
-{cropRotation.value  && (
+{cropRotation.value && cropRotation.value.data &&  (
                 <div className="rotation" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
                   <h3>Rotatia generata:</h3>
                   {cropRotation.value && Array.isArray(cropRotation.value.data) && (cropRotation.value.data.map((rotation, index) => {

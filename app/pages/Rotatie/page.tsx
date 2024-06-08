@@ -5,7 +5,8 @@ import Continut from '../../Crud/GetAllInRotatie/page';
 import GridGenerator from '../../Componente/GridGen';
 import styles from './Rotatie.module.css'; 
 import { useGlobalContextCrop } from '../../Context/culturaStore';
-
+import { useSignals  } from "@preact/signals-react/runtime";
+import { useUser } from '@auth0/nextjs-auth0/client';
 export default function Rotatie() {
   const { 
     crops,
@@ -14,15 +15,19 @@ export default function Rotatie() {
     areThereCrops,
   } = useGlobalContextCrop();
 
+  const { user, error, isLoading: isUserLoading } = useUser();
 
-  const fetchData = async () => {
-    try {
-       await getAllCrops()
-    } catch (error) {
-      console.error(error);
-    }
+  useSignals();
+
+  const fetchData =  () => {
+        getAllCrops()
   };
-  fetchData();
+
+  useEffect(() => {
+    if (!isUserLoading) {
+      fetchData();
+    }
+  }, [isUserLoading]);
 console.log("is loading states on page" + isLoading.value)
 
   if (isLoading.value) {

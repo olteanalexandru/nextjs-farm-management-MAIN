@@ -1,7 +1,8 @@
 "use client";
 import { createContext, useContext } from 'react';
 import axios from 'axios';
-import { useSignal } from "@preact/signals-react";
+import { useSignals  } from "@preact/signals-react/runtime";
+import { signal } from "@preact/signals-react";
 import { useUser } from '@auth0/nextjs-auth0/client';
 
 const API_URL = 'http://localhost:3000/api/Controllers/Crop/';
@@ -78,56 +79,50 @@ interface Props {
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
 export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
-const cropsSignal = useSignal([]);
-const loadingSignal = useSignal(false);
-const isErrorSignal = useSignal(false);
-const isSuccessSignal = useSignal(false);
-const messageSignal = useSignal('');
-const cropRotationSignal = useSignal([]);
-const singleCropSignal = useSignal(null);
-const areThereCropsSignal = useSignal(false);
-const isCropRotationLoadingSignal = useSignal(false);
-const selectionsSignal = useSignal([]);
-
+const cropsSignal = signal([]);
+const loadingSignal = signal(false);
+const isErrorSignal = signal(false);
+const isSuccessSignal = signal(false);
+const messageSignal = signal('');
+const cropRotationSignal = signal([]);
+const singleCropSignal = signal(null);
+const areThereCropsSignal = signal(false);
+const selectionsSignal = signal([]);
+const userStatus = signal(false);
 
 const { user, error: authError, isLoading: isUserLoading  } = useUser();
 
+userStatus.value = isUserLoading;
 
-const awaitUser = async () => {
-  while (isUserLoading) {
-    await new Promise(resolve => setTimeout(resolve, 500)); // wait for .5 second before checking again
-  }
-console.log("user loaded")
 
-}
 
 const getCropRotation = async () => {
+ // useSignals(); 
   // Wait until isUserLoading is false
- await awaitUser()
-
- 
-  isCropRotationLoadingSignal.value = true;
 
   try {
     console.log("making a get request to get crop rotation try");
     const response = await axios.get(API_URL_ROTATION + "getRotation/rotation/" + user.sub);
     if (response.status === 200 || response.status === 203) {
       cropRotationSignal.value = response.data;
+      console.log("crop rotation fetched 1 " + response?.data + response?.data?.message );
+    } else {
+      isErrorSignal(true)
+      messageSignal.value = 'Error getting crop rotation';
+      cropRotationSignal.value = response.data;
     }
   } catch (err) {
     console.error(err);
   } finally {
-    isCropRotationLoadingSignal.value = false;
+  
   }
 
-  console.log( "crop rotation fetched ");
+  console.log( "crop rotation fetched signal " + cropRotationSignal.value?.message);
 
 };
 
 
 const createCrop = async (data) => {
-    // Wait until isUserLoading is false
- await awaitUser()
   console.log('createCrop triggered with object props: ' + JSON.stringify(data));
   loadingSignal.value = true
   try {
@@ -146,8 +141,7 @@ const createCrop = async (data) => {
 };
 
 const updateCrop = async (cropId: string, data: DataType) => {
-    // Wait until isUserLoading is false
- await awaitUser()
+
   loadingSignal.value = true
   try {
     const response = await axios.put(`${API_URL}crop/${cropId}/${user.sub}`, data, {});
@@ -163,35 +157,40 @@ const updateCrop = async (cropId: string, data: DataType) => {
   }
   loadingSignal.value = false
 };
-
 const getCrops = async () => {
-    // Wait until isUserLoading is false
- await awaitUser()
-  
+
+
+  console.log("getting crops..")
   try {
     loadingSignal.value = true
     const response = await axios.get(`${API_URL}crops/retrieve/all`, {});
-    loadingSignal.value = false
+
     if (response.status === 200) {
-      cropsSignal.value = response.data.crops;
-      areThereCropsSignal.value = true
-      console.log(response.data);
+      const newCrops = response.data.crops;
+      if (newCrops !== cropsSignal.value) {
+        cropsSignal.value = newCrops;
+        areThereCropsSignal.value = true
+      }
     } else {
-      isErrorSignal.value = true
-      console.log(response.data);
-      messageSignal.value = 'Error getting crops';
+      const newCrops = response.data.crops;
+      if (newCrops !== cropsSignal.value) {
+        cropsSignal.value = newCrops;
+        isErrorSignal.value = true
+        messageSignal.value = 'Error getting crops';
+      }
     }
   } catch (err) {
     console.error(err)
   } finally {
     loadingSignal.value = false
   }
-  console.log("crops are done  in getCrops: " +  loadingSignal)
+
+  console.log("crops are done in getCrops: " + !loadingSignal.value)
 };
 
 const deleteCrop = async (cropId: string) => {
-    // Wait until isUserLoading is false
- await awaitUser()
+
+
   loadingSignal.value = true
   try {
     const response = await axios.delete(`${API_URL}crops/${user.sub}/${cropId}`, {});
@@ -210,8 +209,8 @@ const deleteCrop = async (cropId: string) => {
 };
 
 const selectare = async (cropId: number, selectare: boolean, numSelections: number) => {
-    // Wait until isUserLoading is false
- await awaitUser()
+
+
   loadingSignal.value = true
   try {
     const response = await axios.put(`${API_URL}crops/${cropId}/selectare`, { selectare: selectare, numSelections: numSelections }, {});
@@ -227,8 +226,8 @@ const selectare = async (cropId: number, selectare: boolean, numSelections: numb
 };
 
 const SinglePage = async (id: string) => {
-    // Wait until isUserLoading is false
- await awaitUser()
+
+  
   loadingSignal.value = true
   try {
     const response = await axios.get(`${API_URL}crop/id/${id}`, {});
@@ -243,8 +242,8 @@ const SinglePage = async (id: string) => {
 };
 
   const addTheCropRecommendation = async (data: RecommendationType) => {
-      // Wait until isUserLoading is false
- await awaitUser()
+
+
     loadingSignal.value = true
     try {
       const response = await axios.post(`${API_URL}crops/recommendations/${user.sub}`, data, {});
@@ -266,10 +265,9 @@ const SinglePage = async (id: string) => {
     maxYears: number,
     ResidualNitrogenSupply: number,
   ) => {
-      // Wait until isUserLoading is false
- await awaitUser()
+
     loadingSignal.value = true
-    isCropRotationLoadingSignal.value = true
+  
     try {
       const response = await axios.post(
         `${API_URL_ROTATION}generateRotation/rotation/${user.sub}`,
@@ -290,15 +288,13 @@ const SinglePage = async (id: string) => {
       console.error(err);
     } finally {
     loadingSignal.value = false
-    isCropRotationLoadingSignal.value = false
+  
     }
   };
   
 
   const getAllCrops = async () => {
-      // Wait until isUserLoading is false
- await awaitUser()
-    
+
 
     try {
       loadingSignal.value = true
@@ -311,7 +307,11 @@ const SinglePage = async (id: string) => {
         areThereCropsSignal.value = true
         selectionsSignal.value = data.selections;
        
-      }  
+      }  else {
+        cropsSignal.value = response.data.crops;
+        isErrorSignal.value = true
+        messageSignal.value = 'Error getting crops';
+      }
     } catch (err) {
       console.error(err)
       areThereCropsSignal.value = false
@@ -322,8 +322,7 @@ const SinglePage = async (id: string) => {
   };
   
   const deleteCropRotation = async (id: string) => {
-      // Wait until isUserLoading is false
- await awaitUser()
+
     const confirmDelete = window.confirm("Are you sure you want to delete this crop rotation?");
     if (!confirmDelete) {
       return;
@@ -342,8 +341,8 @@ const SinglePage = async (id: string) => {
   };
   
   const getCropRecommendations = async (cropName: string) => {
-      // Wait until isUserLoading is false
- await awaitUser()
+
+
     let recommendations = [];
     if (cropName !== '') {
       try {
@@ -361,8 +360,6 @@ const SinglePage = async (id: string) => {
   
   
   const updateNitrogenBalanceAndRegenerateRotation = async (data: any) => {
-      // Wait until isUserLoading is false
- await awaitUser()
     const { id, rotationName, year, division, nitrogenBalance } = data;
     loadingSignal.value = true
     try {
@@ -380,8 +377,6 @@ const SinglePage = async (id: string) => {
   
 
 const updateDivisionSizeAndRedistribute = async (data: any) => {
-    // Wait until isUserLoading is false
- await awaitUser()
   const { id, rotationName, division, newDivisionSize } = data;
   loadingSignal.value = true
   try {
@@ -424,7 +419,7 @@ const updateDivisionSizeAndRedistribute = async (data: any) => {
       updateNitrogenBalanceAndRegenerateRotation,
       updateDivisionSizeAndRedistribute,
       addTheCropRecommendation,
-      isCropRotationLoading: isCropRotationLoadingSignal,
+    
       
     }}
     >

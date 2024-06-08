@@ -12,6 +12,8 @@ import { useGlobalContext } from '../../../Context/UserStore';
 import { useGlobalContextCrop } from '../../../Context/culturaStore';
 import { UserInfos } from './userInfos';
 import AdminCropForm from './AdminCropForm';
+import { useSignals  } from "@preact/signals-react/runtime";
+import { useUser } from '@auth0/nextjs-auth0/client';
 
 export default function Dashboard() {
   const {
@@ -26,15 +28,26 @@ export default function Dashboard() {
     data,
     fermierUsers,
   } = useGlobalContext();
+  const { user, error, isLoading: isUserLoading } = useUser();
+
+  useSignals();
+
+  let apiCalls = ( ) => {
+ 
+
+    getCrops();
+    if (data?.role?.toLowerCase() === 'admin') {
+      fetchFermierUsers();
+    } 
+ 
+  }
 
   useEffect(() => {
-    if (data.role.toLowerCase() === 'admin') {
-      getCrops();
-      fetchFermierUsers();
-    } else if (data.role.toLowerCase() === 'farmer') {
-      getCrops();
+    if (!isUserLoading) {
+      apiCalls();
     }
-  }, [data?.role]);
+  }, [isUserLoading]);
+
 
   if (isLoading?.value) {
     return <Spinner />;
@@ -44,10 +57,13 @@ export default function Dashboard() {
     await addTheCropRecommendation(cropData);
   };
 
+  if (isUserLoading) return <div>Loading user...</div>;
   return (
+    
     <>
+   
       <UserInfos />
-      {data && data.role.toLowerCase() === 'admin' ? (
+      {data && data?.role?.toLowerCase() === 'admin' ? (
         <Container>
           <Card>
             <section className="heading">
@@ -77,7 +93,7 @@ export default function Dashboard() {
             </section>
           </Card>
         </Container>
-      ) : data && data.role.toLowerCase() === 'farmer' ? (
+      ) : data && data?.role?.toLowerCase() === 'farmer' ? (
         <Container>
           <Card>
             <section className="heading">
@@ -85,7 +101,7 @@ export default function Dashboard() {
             </section>
             <CropForm />
             <section className="content">
-              {crops.value.length > 0 ? (
+              {crops?.value?.length > 0 ? (
                 <div className="crops">
                   <RotatieItem crops={crops} userID={data._id} />
                 </div>
