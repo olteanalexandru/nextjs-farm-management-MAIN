@@ -99,21 +99,19 @@ userStatus.value = isUserLoading;
 const getCropRotation = async () => {
  // useSignals(); 
   // Wait until isUserLoading is false
-
-  try {
+  loadingSignal.value = true;
+    try {
     console.log("making a get request to get crop rotation try");
     const response = await axios.get(API_URL_ROTATION + "getRotation/rotation/" + user.sub);
     if (response.status === 200 || response.status === 203) {
       cropRotationSignal.value = response.data;
       console.log("crop rotation fetched 1 " + response?.data + response?.data?.message );
-    } else {
-      isErrorSignal(true)
-      messageSignal.value = 'Error getting crop rotation';
-      cropRotationSignal.value = response.data;
-    }
+    } 
   } catch (err) {
     console.error(err);
   } finally {
+    loadingSignal.value = false
+
   
   }
 
@@ -288,6 +286,7 @@ const SinglePage = async (id: string) => {
       console.error(err);
     } finally {
     loadingSignal.value = false
+    getCropRotation();
   
     }
   };

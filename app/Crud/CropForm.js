@@ -79,6 +79,7 @@ const CropForm = () => {
                   setCropName(e.target.value);
                 }}
                 className="form-control"
+                required
               />
             </div>
             <div className="col-md-6 form-group">
@@ -212,6 +213,7 @@ const CropForm = () => {
                 onChange={(e) =>
                   setPests(Array.from(e.target.selectedOptions, (option) => option.value))
                 }
+                required
                 className="form-control"
               >
                 <option value="">Selectați un dăunător</option>
@@ -232,6 +234,7 @@ const CropForm = () => {
                   setDiseases(Array.from(e.target.selectedOptions, (option) => option.value))
                 }
                 className="form-control"
+                required
               >
                 <option value="">Selectați o boală</option>
                 <option value="albina">Albina</option>
@@ -243,6 +246,7 @@ const CropForm = () => {
                 <option value="rugină">Rugină</option>
                 <option value="tulburări">Tulburări</option>
                 <option value="viroze">Viroze</option>
+                
               </select>
             </div>
           </div>
@@ -255,6 +259,7 @@ const CropForm = () => {
               value={nitrogenSupply}
               onChange={(e) => setNitrogenSupply(e.target.value)}
               className="form-control"
+              required
             />
           </div>
           <div className="col-md-6 form-group">
@@ -266,6 +271,7 @@ const CropForm = () => {
               value={nitrogenDemand}
               onChange={(e) => setNitrogenDemand(e.target.value)}
               className="form-control"
+              required
             />
           </div>
           <div className="col-md-6 form-group">
@@ -277,6 +283,8 @@ const CropForm = () => {
               value={ItShouldNotBeRepeatedForXYears}
               onChange={(e) => setItShouldNotBeRepeatedForXYears(e.target.value)}
               className="form-control"
+              required
+
             />
           </div>
           <div className="form-group">
