@@ -4,7 +4,7 @@ require('dotenv').config();
 
 var options = {
     method: 'POST',
-    url: 'https://localhost:3000/oauth/token',
+    url: 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/',
     headers: {'content-type': 'application/x-www-form-urlencoded'},
     data: new URLSearchParams({
         grant_type: process.env.GRANT_TYPE,
@@ -19,3 +19,6 @@ axios.request(options).then(function (response) {
 }).catch(function (error) {
   console.error(error);
 });
+
+
+console.log("it actually did something");console.log("it actually did something");console.log("it actually did something");console.log("it actually did something");console.log("it actually did something");console.log("it actually did something");

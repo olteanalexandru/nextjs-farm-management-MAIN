@@ -3,8 +3,8 @@ import { createContext, useContext, Dispatch , SetStateAction , useState } from 
 import axios from 'axios'
 import { useUser } from '@auth0/nextjs-auth0/client';
 
-const API_URL = 'http://localhost:3000/api/Controllers/Post'
-
+//const API_URL = 'http://localhost:3000/api/Controllers/Post'
+const API_URL = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/Post'
 type DataType = {
     id: string;
     _id: string;

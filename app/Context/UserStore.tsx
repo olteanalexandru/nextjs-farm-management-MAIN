@@ -4,7 +4,8 @@ import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 
-const API_URL = 'http://localhost:3000/api/Controllers/User/';
+//const API_URL = 'http://localhost:3000/api/Controllers/User/';
+const API_URL = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/User/';
 
 
 type DataType = {
