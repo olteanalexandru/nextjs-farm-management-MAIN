@@ -25,6 +25,7 @@ const CropForm = () => {
   const [climate, setClimate] = useState('');
   const [nitrogenSupply, setNitrogenSupply] = useState('');
   const [nitrogenDemand, setNitrogenDemand] = useState('');
+  const [showAdditional, setShowAdditional] = useState(false);
 
   const onSubmit = (e) => {
     e.preventDefault();
@@ -63,12 +64,15 @@ const CropForm = () => {
     }
   }, [cropName, debouncedSetCropName]);
 
+
+  const toggleAdditionalFields = () => setShowAdditional(!showAdditional);
+
   return (
     <div className="container">
       <section className="form my-5">
         <form onSubmit={onSubmit}>
           <div className="row">
-            <div className="col-md-6 form-group">
+            <div className="col-md-3 form-group">
               <label htmlFor="cropName">Nume cultură:</label>
               <input
                 type="text"
@@ -82,25 +86,10 @@ const CropForm = () => {
                 required
               />
             </div>
-            <div className="col-md-6 form-group">
-              <label htmlFor="cropType">Tip cultură:</label>
-              <select
-                name="cropType"
-                id="cropType"
-                value={cropType}
-                onChange={(e) => setCropType(e.target.value)}
-                className="form-control"
-              >
-                <option value="">Alegeți un tip</option>
-                <option value="legume">Legume</option>
-                <option value="fructe">Fructe</option>
-                <option value="cereale">Cereale</option>
-                <option value="alte">Altele</option>
-              </select>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col-md-6 form-group">
+           
+          
+         
+            <div className="col-md-3 form-group">
               <label htmlFor="cropVariety">Soi cultură:</label>
               <input
                 type="text"
@@ -111,99 +100,13 @@ const CropForm = () => {
                 className="form-control"
               />
             </div>
-            <div className="col-md-6 form-group">
-              <label htmlFor="plantingDate">Data plantării:</label>
-              <input
-                type="date"
-                name="plantingDate"
-                id="plantingDate"
-                value={plantingDate}
-                onChange={(e) => setPlantingDate(e.target.value)}
-                className="form-control"
-              />
-            </div>
-          </div>
-          <div className="row">
-            <div className="col-md-6 form-group">
-              <label htmlFor="harvestingDate">Data recoltării:</label>
-              <input
-                type="date"
-                name="harvestingDate"
-                id="harvestingDate"
-                value={harvestingDate}
-                onChange={(e) => setHarvestingDate(e.target.value)}
-                className="form-control"
-              />
-            </div>
-            <div className="col-md-6 form-group">
-              <label htmlFor="description">Descriere:</label>
-              <textarea
-                name="description"
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="form-control"
-              />
-            </div>
-          </div>
-          <div className="row">
-            <div className="col-md-6 form-group">
-              <h3 className="text-center mb-4">Adăugați imagine</h3>
-              <FileBase multiple={false} onDone={({ base64 }) => setImageUrl(base64)} />
-            </div>
-            <div className="col-md-3 form-group">
-              <label htmlFor="soilType">Tip de sol:</label>
-              <select
-                name="soilType"
-                id="soilType"
-                value={soilType}
-                onChange={(e) => setSoilType(e.target.value)}
-                className="form-control"
-              >
-                <option value="">Alegeți un tip de sol</option>
-                <option value="argilos">Argilos</option>
-                <option value="nisipos">Nisipos</option>
-                <option value="lutos">Lutos</option>
-                <option value="podosol">Podosol</option>
-              </select>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col-md-6 form-group">
-              <label htmlFor="fertilizers">Îngrășăminte folosite:</label>
-              <select
-                name="fertilizers"
-                id="fertilizers"
-                multiple
-                value={fertilizers}
-                onChange={(e) =>
-                  setFertilizers(Array.from(e.target.selectedOptions, (option) => option.value))
-                }
-                className="form-control"
-              >
-                <option value="azotat">Azotat</option>
-                <option value="fosfat">Fosfat</option>
-                <option value="potasic">Potasic</option>
-                <option value="organice">Organice</option>
-              </select>
-            </div>
-          </div>
-          <div className="col-md-6 form-group">
-            <label htmlFor="climate">Climă:</label>
-            <input
-              type="text"
-              name="climate"
-              id="climate"
-              value={climate}
-              onChange={(e) => setClimate(e.target.value)}
-              className="form-control"
-            />
-          </div>
+            
+   
           <br />
           <strong>Necesar pentru Rotatia culturii:</strong>
           <br />
           <div className="row">
-            <div className="col-md-6 form-group">
+            <div className="col-md-3 form-group">
               <label htmlFor="pests">Dăunători:</label>
               <select
                 name="pests"
@@ -223,7 +126,7 @@ const CropForm = () => {
                 <option value="paianjeni">Păianjeni</option>
               </select>
             </div>
-            <div className="col-md-6 form-group">
+            <div className="col-md-3 form-group">
               <label htmlFor="diseases">Boli:</label>
               <select
                 name="diseases"
@@ -250,7 +153,7 @@ const CropForm = () => {
               </select>
             </div>
           </div>
-          <div className="col-md-6 form-group">
+          <div className="col-md-3 form-group">
             <label htmlFor="nitrogenSupply">Aprovizionare cu azot:</label>
             <input
               type="number"
@@ -262,7 +165,7 @@ const CropForm = () => {
               required
             />
           </div>
-          <div className="col-md-6 form-group">
+          <div className="col-md-3 form-group">
             <label htmlFor="nitrogenDemand">Cerere de azot:</label>
             <input
               type="number"
@@ -274,7 +177,7 @@ const CropForm = () => {
               required
             />
           </div>
-          <div className="col-md-6 form-group">
+          <div className="col-md-3 form-group">
             <label htmlFor="ItShouldNotBeRepeatedForXYears">Nu repeta pentru X ani:</label>
             <input
               type="number"
@@ -287,11 +190,131 @@ const CropForm = () => {
 
             />
           </div>
+          </div>
+          <button type="button" onClick={toggleAdditionalFields} className="btn btn-block mt-2 mb-2">
+            {showAdditional ? 'Hide Additional Fields' : 'Show Additional Fields'}
+          </button>
+
+          {showAdditional && (
+            <>
+                     <div className="row">
+            <div className="col-md-3 form-group">
+              <label htmlFor="fertilizers">Îngrășăminte folosite:</label>
+              <select
+                name="fertilizers"
+                id="fertilizers"
+                multiple
+                value={fertilizers}
+                onChange={(e) =>
+                  setFertilizers(Array.from(e.target.selectedOptions, (option) => option.value))
+                }
+                className="form-control"
+              >
+                <option value="azotat">Azotat</option>
+                <option value="fosfat">Fosfat</option>
+                <option value="potasic">Potasic</option>
+                <option value="organice">Organice</option>
+              </select>
+            </div>
+            <div className="col-md-3 form-group">
+            <label htmlFor="climate">Climă:</label>
+            <input
+              type="text"
+              name="climate"
+              id="climate"
+              value={climate}
+              onChange={(e) => setClimate(e.target.value)}
+              className="form-control"
+            />
+          </div>
+          <div className="row">
+            <div className="col-md-3 form-group">
+              <label htmlFor="cropType">Tip cultură:</label>
+              <select
+                name="cropType"
+                id="cropType"
+                value={cropType}
+                onChange={(e) => setCropType(e.target.value)}
+                className="form-control"
+              >
+                <option value="">Alegeți un tip</option>
+                <option value="legume">Legume</option>
+                <option value="fructe">Fructe</option>
+                <option value="cereale">Cereale</option>
+                <option value="alte">Altele</option>
+              </select>
+            </div>
+            <div className="col-md-3 form-group">
+              <label htmlFor="soilType">Tip de sol:</label>
+              <select
+                name="soilType"
+                id="soilType"
+                value={soilType}
+                onChange={(e) => setSoilType(e.target.value)}
+                className="form-control"
+              >
+                <option value="">Alegeți un tip de sol</option>
+                <option value="argilos">Argilos</option>
+                <option value="nisipos">Nisipos</option>
+                <option value="lutos">Lutos</option>
+                <option value="podosol">Podosol</option>
+              </select>
+            </div>
+          </div>
+  
+            </div>
+         
+          <div className="row">
+            <div className="col-md-3 form-group">
+              <label htmlFor="plantingDate">Data plantării:</label>
+              <input
+                type="date"
+                name="plantingDate"
+                id="plantingDate"
+                value={plantingDate}
+                onChange={(e) => setPlantingDate(e.target.value)}
+                className="form-control"
+              />
+               <label htmlFor="harvestingDate">Data recoltării:</label>
+              <input
+                type="date"
+                name="harvestingDate"
+                id="harvestingDate"
+                value={harvestingDate}
+                onChange={(e) => setHarvestingDate(e.target.value)}
+                className="form-control"
+              />
+            
+            </div>
+            <div className="col-md-3 form-group">
+              <label htmlFor="description">Descriere:</label>
+              <textarea
+                name="description"
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="form-control"
+              />
+            </div>
+          </div>
+          <div className="row">
+            <div className="col-md-3 form-group">
+              <h3 className="text-center mb-4">Adăugați imagine</h3>
+              <FileBase multiple={false} onDone={({ base64 }) => setImageUrl(base64)} />
+            </div>
+           
+          </div>
+          <br />
+          </>
+          )}
+        
+
           <div className="form-group">
             <button className="btn btn-primary btn-block" type="submit">
               Adaugă cultură
             </button>
           </div>
+         
         </form>
       </section>
     

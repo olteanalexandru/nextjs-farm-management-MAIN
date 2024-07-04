@@ -71,7 +71,7 @@ export default function Dashboard() {
               <br />
               <br />
               <Link href="/pages/Login/Register">
-                <FaUser /> Adauga utilizatori
+                <FaUser /> Add users
               </Link>
               <br />
               <br />

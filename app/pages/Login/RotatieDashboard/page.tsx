@@ -1,6 +1,6 @@
 "use client"
 import { useState , useEffect } from 'react';
-import { Container, Card, Row, Col, Table } from 'react-bootstrap';
+import { Container, Card, Row, Col, Table,  Button  } from 'react-bootstrap';
 import { useGlobalContext } from '../../../Context/UserStore';
 import { useGlobalContextCrop } from '../../../Context/culturaStore';
 import Continut from '../../../Crud/GetAllInRotatie/page';
@@ -28,6 +28,7 @@ function RotatieDashboard() {
 const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
 const [cropRotationChange, setCropRotationChange] = useState(false);
 const { user, error, isLoading: isUserLoading } = useUser();
+const [visible, setVisible] = useState(6);
 
 ///data  is changed but functions might not be rerernderedb n
 useSignals();
@@ -37,30 +38,49 @@ useSignals();
     getCropRotation()
 
   };
+
+
+
+
+
+// ...
+
+const [visibleR, setVisibleR] = useState(6);
+const [rotationPage, setRotationPage] = useState(0);
+const rotationsPerPage = 1;
+
+
+const showMoreRotation = () => {
+  setVisibleR(prevVisibleR => prevVisibleR + rotationsPerPage);
+};
+
+const showLessRotation = () => {
+  setVisibleR(prevVisibleR => prevVisibleR - rotationsPerPage);
+};
+
+
+
+
+
+
+
   
+
+ 
+
+
+
   
-
-
-
 useEffect(() => {
   if (!isUserLoading) {
     fetchData();
   }
 }, [isUserLoading]);
 
-
-  console.log(
-    'loading states : ', isLoading.value
-  
-  )
-
-
   if (isLoading.value) {
     return <div>Loading Crops2... { isLoading.value  }</div>;
   }
  
-
-
     if (cropRotationChange) {
       console.log('cropRotationChange did change')
       getCropRotation();
@@ -83,6 +103,10 @@ const getCropsRepeatedBySelection = (crops, selections) => {
 };
 
   const filteredCrops = getCropsRepeatedBySelection(crops.value, selections.value);
+
+  const showMore = () => {
+    setVisible(prevVisible => prevVisible + 6);
+};
 
   const prepareChartData = (rotationPlan, numberOfDivisions) => {
     let chartData = [];
@@ -124,23 +148,35 @@ const getCropsRepeatedBySelection = (crops, selections) => {
                   {filteredCrops.length === 0 ? (
                     <p>Nu ai selectat nicio cerere</p>
                   ) : (
+                    <>
                     <Row>
-                    {filteredCrops.map((crop , index) => (
-                        <Col key={index} xs={12} sm={6} md={4}>
-                            <Continut crop={crop} />
-                        </Col>
-                    ))}
-                </Row>
+                        {filteredCrops.slice(0, visible).map((crop, index) => (
+                            <Col key={index} xs={12} sm={6} md={4}>
+                                <Continut crop={crop} />
+                            </Col>
+                        ))}
+                    </Row>
+                    {filteredCrops.length > visible && (
+                        <div className="text-center">
+                            <Button onClick={showMore}>See More</Button>
+                        </div>
+                    )}
+                </>
                   )}
                 </div>
               ) : (
                 <h3>Nicio cultura selectata</h3>
               )}
 
-{cropRotation.value && cropRotation.value.data &&  (
-                <div className="rotation" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
-                  <h3>Rotatia generata:</h3>
-                  {cropRotation.value && Array.isArray(cropRotation.value.data) && (cropRotation.value.data.map((rotation, index) => {
+{cropRotation.value && cropRotation.value.data && (
+  <div className="rotation" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+    <h3>Rotatia generata:</h3>
+    {cropRotation.value && Array.isArray(cropRotation.value.data) && (
+      cropRotation.value.data
+        .slice(rotationPage * rotationsPerPage, (rotationPage + 1) * rotationsPerPage)
+        .map((rotation, index) => {
+
+                    
                     const chartData = prepareChartData(rotation.rotationPlan, rotation.numberOfDivisions);
                     return (
                       <Row key={index}>
@@ -296,6 +332,15 @@ const getCropsRepeatedBySelection = (crops, selections) => {
               )}
             </section>
           </Card>
+
+          {rotationPage > 0 && (
+          <Button onClick={() => setRotationPage(prevPage => prevPage - 1)}>Previous</Button>
+        )}
+        {(rotationPage + 1) * rotationsPerPage < cropRotation.value.data.length && (
+          <Button onClick={() => setRotationPage(prevPage => prevPage + 1)}>Next</Button>
+        )}
+
+        
         </Container>
       </>
     );

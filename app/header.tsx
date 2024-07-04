@@ -29,9 +29,7 @@ function Header() {
               <li className="nav-item nav-list">
                 <Link href="/pages/News" className={styles.navLink}>News</Link>
               </li>
-              <li className="nav-item nav-list">
-                <Link href="/pages/AboutUs" className={styles.navLink}>About us</Link>
-              </li>
+           
 
 
               <li className={`${styles.navLink} nav-item nav-list`}>

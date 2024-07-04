@@ -9,7 +9,7 @@
     flex: 1 0 20%; /* change as needed, 20% will fit 5 in a row */
     margin: 15px;
     padding: 20px;
-    border: 1px solid #ccc;
+ 
     border-radius: 10px;
     background-color: #f9f9f9;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -39,5 +39,50 @@
   
   .additionalInfo {
     margin-top: 10px;
+  }
+  
+
+  .crop {
+    border: 1px solid #ddd;
+    padding: 8px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+  }
+  
+  .cropName {
+    font-size: 1.2em;
+    margin-bottom: 4px;
+  }
+  
+  .cropDetails, .cropDates, .additionalInfo, .creationDate {
+    margin-bottom: 8px;
+  }
+  
+  .cropImage {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 8px;
+  }
+  
+  .seeMoreButton {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  
+  .seeMoreButton:hover {
+    background-color: #0056b3;
+  }
+  
+  .listContainer ul {
+    padding-left: 20px;
+  }
+  
+  .creationDate p {
+    margin: 0;
   }
   
