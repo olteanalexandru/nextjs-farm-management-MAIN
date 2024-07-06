@@ -336,7 +336,7 @@ const getCropsRepeatedBySelection = (crops, selections) => {
           {rotationPage > 0 && (
           <Button onClick={() => setRotationPage(prevPage => prevPage - 1)}>Previous</Button>
         )}
-        {(rotationPage + 1) * rotationsPerPage < cropRotation.value.data.length && (
+        {(rotationPage + 1) * rotationsPerPage < cropRotation.value?.data?.length && (
           <Button onClick={() => setRotationPage(prevPage => prevPage + 1)}>Next</Button>
         )}
 
