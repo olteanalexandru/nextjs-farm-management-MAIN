@@ -1,11 +1,11 @@
 'use client'
-import {  useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Spinner from '../../Crud/Spinner';
 import Continut from '../../Crud/GetAllInRotatie/page';
 import GridGenerator from '../../Componente/GridGen';
-import styles from './Rotatie.module.css'; 
+import styles from './Rotatie.module.css';
 import { useGlobalContextCrop } from '../../Context/culturaStore';
-import { useSignals  } from "@preact/signals-react/runtime";
+import { useSignals } from "@preact/signals-react/runtime";
 import { useUser } from '@auth0/nextjs-auth0/client';
 
 export default function Rotatie() {
@@ -19,7 +19,6 @@ export default function Rotatie() {
       getAllCrops();
     }
   }, [isUserLoading]);
-
 
   if (isLoading.value) {
     return (
@@ -35,24 +34,42 @@ export default function Rotatie() {
 
 function App({ crops, areThereCrops }) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 6;
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
 
-  const paginatedCrops = crops.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
 
-  const totalPages = Math.ceil(crops.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+
+  // Filter crops based on search term
+  const filteredCrops = crops.filter(crop => {
+    const regex = new RegExp(searchTerm, 'i');
+    return regex.test(crop.cropName) || regex.test(crop.cropType) || regex.test(crop.cropVariety);
+  });
+
+  const currentItems = filteredCrops.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredCrops.length / itemsPerPage);
 
   return (
     <div className={` text-center `}>
-      <h2 className={styles.title}>Culturi adaugate :</h2>
+      <input
+        type="text"
+        placeholder="Search crops..."
+        value={searchTerm}
+        onChange={handleSearch}
+        className={styles.searchInput}
+      />
+
       {areThereCrops ? (
-        <CropsList crops={paginatedCrops} />
+        <CropsList crops={currentItems} />
       ) : (
         <NoCrops />
       )}
@@ -67,7 +84,7 @@ function App({ crops, areThereCrops }) {
 
 function CropsList({ crops }) {
   return (
-    <div >
+    <div>
       <GridGenerator cols={3}>
         {crops.map((crop) => (
           <div className={styles.gridItem} key={crop._id}>
@@ -108,3 +125,4 @@ function NoCrops() {
     </div>
   );
 }
+

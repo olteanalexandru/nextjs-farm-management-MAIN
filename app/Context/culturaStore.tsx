@@ -233,17 +233,21 @@ const SinglePage = async (id: string) => {
     const response = await axios.get(`${API_URL}crop/id/${id}`, {});
     if (response.status === 200) {
       const data = await response.data;
+      isSuccessSignal.value = true
       singleCropSignal.value = data.crops[0];
-    } 
+    } else {
+      isErrorSignal.value = true
+      messageSignal.value = 'Error in single page crop';
+    }
   } catch (err) {
     console.error(err)
-  }
-  loadingSignal.value = false
+  }finally {
+    loadingSignal.value = false
+    }
+console.log("the state of loading is " + loadingSignal.value)
 };
 
   const addTheCropRecommendation = async (data: RecommendationType) => {
-
-
     loadingSignal.value = true
     try {
       const response = await axios.post(`${API_URL}crops/recommendations/${user.sub}`, data, {});

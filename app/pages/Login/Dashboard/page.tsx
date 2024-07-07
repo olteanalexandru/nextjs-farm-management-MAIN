@@ -33,13 +33,10 @@ export default function Dashboard() {
   useSignals();
 
   let apiCalls = ( ) => {
- 
-
     getCrops();
     if (data?.role?.toLowerCase() === 'admin') {
       fetchFermierUsers();
     } 
- 
   }
 
   useEffect(() => {
@@ -97,7 +94,7 @@ export default function Dashboard() {
         <Container>
           <Card>
             <section className="heading">
-              <p>Adauga culturi:</p>
+              <p>Add crops:</p>
             </section>
             <CropForm />
             <section className="content">
@@ -106,13 +103,13 @@ export default function Dashboard() {
                   <RotatieItem crops={crops} userID={data._id} />
                 </div>
               ) : (
-                <h3>Nu ai adaugat culturi</h3>
+                <h3>No crops were added</h3>
               )}
             </section>
           </Card>
         </Container>
       ) : (
-        <h1>Acces interzis</h1>
+        <h1>access denied</h1>
       )}
     </>
   );

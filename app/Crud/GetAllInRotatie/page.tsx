@@ -11,13 +11,13 @@ export default function Continut({ crop }: { crop: any }): JSX.Element {
           <strong>{crop.cropType}</strong>
         </p>
         <p>{crop.description} </p>
-        <p>Tip sol: {crop.soilType}</p>
-        <p>Nu ar trebui repetat pentru {crop.ItShouldNotBeRepeatedForXYears} ani</p>
+        <p>Soil type: {crop.soilType}</p>
+        <p>Should not be repeated for {crop.ItShouldNotBeRepeatedForXYears} years</p>
       </div>
 
       <Link href={`/Crud/GetAllInRotatie/SinglePag?crop=${crop._id}`}>
         <button type="button" className="btn btn-primary">
-          Vezi mai mult
+          See more
         </button>
       </Link>
     </>
