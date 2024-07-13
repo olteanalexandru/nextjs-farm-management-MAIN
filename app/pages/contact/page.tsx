@@ -1,46 +1,17 @@
-"use client"
-//@ts-nocheck
-import React, { useEffect, useRef, useState } from 'react';
-import emailjs from '@emailjs/browser';
+import React, { useRef } from 'react';
 import { Form, Button, Container, Row, Col } from 'react-bootstrap';
-
-import { useGlobalContext } from '../../Context/UserStore';
+import useUserState from './Components/UserState';
+import sendEmail from './Components/SendEmail';
 
 export default function Contact(): JSX.Element {
-  const { data  } = useGlobalContext();
-  const [user, setUser] = useState('');
-  const [email, setEmail] = useState('');
-
-  useEffect(() => {
-    if (data) {
-      const user = data;
-      setUser(user.name);
-      setEmail(user.email);
-    }
-  }, [data]);
-
+  const { user, setUser, email, setEmail } = useUserState();
   const form = useRef() as React.MutableRefObject<HTMLFormElement>;
-
-  const sendEmail = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    emailjs
-      .sendForm('service_ynv83op', 'template_3oljtxo', form.current, '92Cb78cmp5MUyYktO')
-      .then(
-        (result) => {
-          console.log(result.text);
-        },
-        (error) => {
-          console.log(error.text);
-        }
-      );
-  };
 
   return (
     <Container className="text-center mt-5">
       <Row>
         <Col md={{ span: 8, offset: 2 }}>
-          <Form ref={form} onSubmit={sendEmail}>
+          <Form ref={form} onSubmit={sendEmail(form)}>
             <Form.Group controlId="formBasicName">
               <Form.Label><strong>Name</strong></Form.Label>
               <Form.Control type="text" name="user_name" value={user} onChange={(e) => setUser(e.target.value)} placeholder="Enter your name" />

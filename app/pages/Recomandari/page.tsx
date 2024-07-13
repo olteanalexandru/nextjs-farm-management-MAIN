@@ -58,32 +58,32 @@ function RecommendationDashboard() {
       <Container className="mt-4 mb-4">
         <Card className="p-4">
           <section className="heading mb-3">
-            <h1>Salut {data && data.name}</h1>
+            <h1>Hello {data && data.name}</h1>
           </section>
           <section className="content">
             {Array.isArray(cropRotation) && (
               <div className="rotation mt-4 mb-4">
-                <h3>Recomandări bazate pe rotația culturilor:</h3>
+                <h3>Recommendations based on crop rotation:</h3>
                 {cropRotation.map((rotation, index) => (
                   <div key={index}>
                     <h2>{rotation.rotationName}</h2>
                     <Table striped bordered hover>
                       <thead>
                         <tr>
-                          <th>Parcela</th>
-                          <th>Recoltă</th>
-                          <th>Data de plantare</th>
-                          <th>Data de recoltare</th>
-                          <th>Dimensiunea parcela</th>
-                          <th>Balans azot</th>
-                          <th>Recomandări</th>
+                          <th>Division</th>
+                          <th>Crop</th>
+                          <th>Planting Date</th>
+                          <th>Harvesting Date</th>
+                          <th>Division Size</th>
+                          <th>Nitrogen Balance</th>
+                          <th>Recommendations</th>
                         </tr>
                       </thead>
                       <tbody>
                         {rotation.rotationPlan.map((plan, planIndex) => (
                           <React.Fragment key={planIndex}>
                             <tr>
-                              <th colSpan="7">Anul: {plan.year}</th>
+                              <th colSpan="7">Year: {plan.year}</th>
                             </tr>
                             {plan.rotationItems.map((item, itemIndex) => (
                               <RotationItem key={itemIndex} item={item} />

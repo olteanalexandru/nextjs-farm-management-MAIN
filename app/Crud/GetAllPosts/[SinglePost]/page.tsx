@@ -71,65 +71,141 @@ export default function SinglePost() {
     setUpdatedPost({ ...updatedPost, [name]: value });
   };
 
-  return (
-    <Container>
-      {editMode ? (
-        <Form onSubmit={handleUpdate}>
-          <Form.Group>
-            <Form.Label>Title</Form.Label>
-            <Form.Control
-              type="text"
-              name="title"
-              value={updatedPost.title}
-              onChange={handleChange}
-            />
-          </Form.Group>
-          <Form.Group>
-            <Form.Label>Brief</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
-              name="brief"
-              value={updatedPost.brief}
-              onChange={handleChange}
-            />
-          </Form.Group>
-          <Form.Group>
-            <Form.Label>Description</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={5}
-              name="description"
-              value={updatedPost.description}
-              onChange={handleChange}
-            />
-          </Form.Group>
-          <Button variant="primary" type="submit">
-            Save Changes
-          </Button>
-          <Button variant="secondary" onClick={() => setEditMode(false)}>
-            Cancel
-          </Button>
-        </Form>
-      ) : (
-        <>
-          <h1>{data.title}</h1>
-          <p>{data.brief}</p>
-          <p>{data.description}</p>
-          {isAdmin && (
-            <>
-              <Button variant="danger" onClick={handleDelete}>
-                Delete Post
-              </Button>
-              <Button variant="primary" onClick={() => setEditMode(true)}>
-                Edit Post
-              </Button>
-            </>
-          )}
-        </>
-      )}
-    </Container>
-  );
+  import React, { useEffect, useState } from 'react';
+  import { Container, Button, Form } from 'react-bootstrap';
+  import { useGlobalContextPost } from '../../../Context/postStore';
+  import { useGlobalContext } from '../../../Context/UserStore';
+
+  interface SinglePostProps {
+    postId: string;
+  }
+
+  const SinglePost: React.FC<SinglePostProps> = ({ postId }) => {
+    const {
+      data: allData,
+      loading,
+      getPost,
+      deletePost,
+      updatePost,
+    } = useGlobalContextPost();
+
+    const data = allData.posts;
+
+    const { data: user } = useGlobalContext();
+    const isAdmin = user.role.toLowerCase() === 'admin';
+
+    const [editMode, setEditMode] = useState(false);
+    const [updatedPost, setUpdatedPost] = useState({
+      title: '',
+      brief: '',
+      description: '',
+    });
+
+    useEffect(() => {
+      getPost(postId);
+    }, [postId]);
+
+    useEffect(() => {
+      if (data) {
+        setUpdatedPost({
+          title: data.title,
+          brief: data.brief,
+          description: data.description,
+        });
+      }
+    }, [data]);
+
+    if (loading) {
+      return <h1>Loading...</h1>;
+    }
+
+    console.log(data, 'data');
+54 3c4 712
+    if (!data) {
+      return <h1>Nothing to show</h1>;
+    }
+
+    const handleDelete = async () => {
+      await deletePost(data._id);
+    };
+
+    const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      await updatePost(data._id, {
+        title: updatedPost.title,
+        brief: updatedPost.brief,
+        description: updatedPost.description,
+      });
+      setEditMode(false);
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const { name, value } = e.target;
+      setUpdatedPost({ ...updatedPost, [name]: value });
+    };
+
+    return (
+      <Container>
+        {editMode ? (
+          <Form onSubmit={handleUpdate}>
+            <Form.Group>
+              <Form.Label>Title</Form.Label>
+              <Form.Control
+                type="text"
+                name="title"
+                value={updatedPost.title}
+                onChange={handleChange}
+              />
+            </Form.Group>
+            <Form.Group>
+              <Form.Label>Brief</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                name="brief"
+                value={updatedPost.brief}
+                onChange={handleChange}
+              />
+            </Form.Group>
+            <Form.Group>
+              <Form.Label>Description</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={5}
+                name="description"
+                value={updatedPost.description}
+                onChange={handleChange}
+              />
+            </Form.Group>
+            <Button variant="primary" type="submit">
+              Save Changes
+            </Button>
+            <Button variant="secondary" onClick={() => setEditMode(false)}>
+              Cancel
+            </Button>
+          </Form>
+        ) : (
+          <>
+            <h1>{data.title}</h1>
+            <p>{data.brief}</p>
+            <p>{data.description}</p>
+            {isAdmin && (
+              <>
+                <Button variant="danger" onClick={handleDelete}>
+                  Delete Post
+                </Button>
+                <Button variant="primary" onClick={() => setEditMode(true)}>
+                  Edit Post
+                </Button>
+              </>
+            )}
+          </>
+        )}
+      </Container>
+    );
+  };
+
+  export default SinglePost;
 }
 
 

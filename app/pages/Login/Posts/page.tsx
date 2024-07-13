@@ -27,13 +27,6 @@ useEffect(() => {
   }, []);
 
 
-    // useEffect(() => {
-    //     localStorage.getItem('user') ? getAllPosts() : router.push('/pages/Login/Login');
-    // }, [router, user  ]);
-    // if (loading) {
-    //     return <Spinner />;
-    // }
-
     return (
         <div>
             <Container>

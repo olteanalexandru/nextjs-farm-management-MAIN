@@ -11,6 +11,8 @@ const { Title } = Typography;
 const colors = ['8884d8', '82ca9d', 'ffc658', 'a4de6c', 'd0ed57', 'ffc658', '00c49f', 'ff7300', 'ff8042'];
 import { useSignals  } from "@preact/signals-react/runtime";
 import { useUser } from '@auth0/nextjs-auth0/client';
+import { getCropsRepeatedBySelection, prepareChartData } from './Components/helperFunctions';
+
 function RotatieDashboard() {
   const { crops,
     selections,
@@ -38,39 +40,9 @@ useSignals();
     getCropRotation()
 
   };
-
-
-
-
-
-// ...
-
-const [visibleR, setVisibleR] = useState(6);
 const [rotationPage, setRotationPage] = useState(0);
 const rotationsPerPage = 1;
 
-
-const showMoreRotation = () => {
-  setVisibleR(prevVisibleR => prevVisibleR + rotationsPerPage);
-};
-
-const showLessRotation = () => {
-  setVisibleR(prevVisibleR => prevVisibleR - rotationsPerPage);
-};
-
-
-
-
-
-
-
-  
-
- 
-
-
-
-  
 useEffect(() => {
   if (!isUserLoading) {
     fetchData();
@@ -87,48 +59,10 @@ useEffect(() => {
       setCropRotationChange(false);
     }
 
-const getCropsRepeatedBySelection = (crops, selections) => {
-  let uniqueId = 0; // Initialize a unique ID counter
-
-  return selections
-    .map(selection => ({
-      count: selection.selectionCount,
-      cropId: selection.crop
-    }))
-    .flatMap(({ count, cropId }) => {
-      const crop = crops.find(crop => crop._id === cropId);
-      // Create an array with unique objects containing the crop and a unique ID
-      return Array.from({ length: count }, () => ({ ...crop, uniqueId: uniqueId++ }));
-    });
-};
-
   const filteredCrops = getCropsRepeatedBySelection(crops.value, selections.value);
-
   const showMore = () => {
     setVisible(prevVisible => prevVisible + 6);
 };
-
-  const prepareChartData = (rotationPlan, numberOfDivisions) => {
-    let chartData = [];
-    let previousYearData = {};
-    rotationPlan.forEach(yearPlan => {
-      let yearData = { year: yearPlan.year };
-      yearPlan.rotationItems.forEach(item => {
-        yearData[`Parcela${item.division}`] = item.nitrogenBalance;
-      });
-
-      // Add missing divisions from the previous year
-      for (let division = 1; division <= numberOfDivisions; division++) {
-        const key = `Parcela ${division}`;
-        if (!(key in yearData) && (key in previousYearData)) {
-          yearData[key] = previousYearData[key];
-        }
-      }
-      chartData.push(yearData);
-      previousYearData = yearData;
-    });
-    return chartData;
-  };
 
   if (userData?.role?.toLowerCase() === 'farmer') {
     return (

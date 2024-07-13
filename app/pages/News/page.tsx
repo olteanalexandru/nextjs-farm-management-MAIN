@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import Spinner from '../../Crud/Spinner';
 import { useGlobalContextPost } from '../../Context/postStore';
 import Continut from '../../Crud/GetAllPosts/page';
-
+import { handleScroll, loadMorePosts } from './Components/scrollHandler';
+import debounce from './Components/debounce';
 
 
 export default function Noutati() {
@@ -12,45 +13,21 @@ export default function Noutati() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-
   useEffect(() => {
     const fetchData = async () => {
-  clearData();
-   await loadMorePosts();
-      
+      clearData();
+      await loadMorePosts(setLoadingMore, error, getAllPosts, page, setPage, setHasMore);
     };
-  
     fetchData();
   }, []);
-  
-
 
   useEffect(() => {
     const debouncedHandleScroll = debounce(handleScroll, 100);
-
     window.addEventListener('scroll', debouncedHandleScroll);
     return () => {
       window.removeEventListener('scroll', debouncedHandleScroll);
     };
   }, [page, loadingMore, hasMore]);
-
-  const handleScroll = () => {
-    if (window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight || loadingMore || !hasMore) return;
-    loadMorePosts();
-  };
-
-  const loadMorePosts = async () => {
-    setLoadingMore(true);
-
-    if (error === "No more posts") {
-      console.log("erarea" + error)
-      setHasMore(false);
-    } else {
-      await getAllPosts(page);
-      setPage(page + 1);
-    }
-    setLoadingMore(false);
-  };
 
   if (loading) {
     return <Spinner />;
@@ -59,7 +36,6 @@ export default function Noutati() {
   return (
     <div className="container">
       <h1 className="mt-5 mb-4">Our latest news:</h1>
-
       {data.length > 0 ? (
         <div>
           {data.map((data) => {
@@ -76,18 +52,6 @@ export default function Noutati() {
       )}
     </div>
   );
-}
-
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
 }
 
 
