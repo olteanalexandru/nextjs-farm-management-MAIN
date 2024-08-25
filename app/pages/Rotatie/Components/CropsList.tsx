@@ -2,6 +2,13 @@ import GridGenerator from '../../../Componente/GridGen';
 import Continut from '../../../Crud/GetAllInRotatie/page';
 import styles from '../Rotatie.module.css';
 
+interface Crop {
+  _id: string;
+  cropName: string;
+  cropType: string;
+  cropVariety: string;
+}
+
 interface CropsListProps {
   crops: Crop[];
 }

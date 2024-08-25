@@ -8,8 +8,10 @@ import {FaUser} from 'react-icons/fa'
 import Spinner from '../../../Crud/Spinner'
 
 import "bootstrap/dist/css/bootstrap.min.css";
+import { useTranslations } from 'next-intl';
 
 function Modifica() {
+  const t = useTranslations('Modifica');
   const navigate = useRouter()
 
   if (localStorage.getItem('user') === null) {
@@ -46,7 +48,7 @@ function Modifica() {
   const onSubmit = (e) => {
     e.preventDefault()
     if (password !== password2) {
-      toast.error('Parolele nu se potrivesc')
+      toast.error( t('Passwords do not match'))
     } else {
       const userData = {
         password,
@@ -65,7 +67,7 @@ function Modifica() {
     <>
       <section className='heading'>
         <h1>
-          <FaUser /> Modificare parola
+          <FaUser /> {t('Modificare parola')}
         </h1>
       </section>
 
@@ -80,7 +82,7 @@ function Modifica() {
               id='password'
               name='password'
               value={password}
-              placeholder='Enter password'
+              placeholder={t('Enter password')}
               onChange={onChange}
             />
           </div>
@@ -91,13 +93,13 @@ function Modifica() {
               id='password2'
               name='password2'
               value={password2}
-              placeholder='Confirm password'
+              placeholder={t('Confirm password')}
               onChange={onChange}
             />
           </div>
           <div className='form-group'>
             <button type='submit' className='btn btn-block'>
-              Submit
+              {t('Submit')}
             </button>
           </div>
         </form>
@@ -107,3 +109,6 @@ function Modifica() {
 }
 
 export default Modifica
+
+
+

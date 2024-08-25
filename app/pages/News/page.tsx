@@ -5,6 +5,7 @@ import { useGlobalContextPost } from '../../Context/postStore';
 import Continut from '../../Crud/GetAllPosts/page';
 import { handleScroll, loadMorePosts } from './Components/scrollHandler';
 import debounce from './Components/debounce';
+import { useTranslations } from 'next-intl';
 
 
 export default function Noutati() {
@@ -12,6 +13,7 @@ export default function Noutati() {
   const [page, setPage] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const t = useTranslations('News');
 
   useEffect(() => {
     const fetchData = async () => {

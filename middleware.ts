@@ -70,38 +70,45 @@
 // }
 
 // middleware.js
-import { withMiddlewareAuthRequired , getSession} from '@auth0/nextjs-auth0/edge';
+import createMiddleware from 'next-intl/middleware';
+import { withMiddlewareAuthRequired, getSession } from '@auth0/nextjs-auth0/edge';
 import { NextRequest, NextResponse } from 'next/server';
-// connectDB();
 
+// Internationalization middleware
+const intlMiddleware = createMiddleware({
+  locales: ['en', 'de'],
+  defaultLocale: 'en',
+});
+
+// Authentication middleware
 const checkRole = async (role: string, next: () => void, res: NextResponse) => {
   if (role.length > 0) {
     next();
   } else {
-    // res.status(403);
     throw new Error('Not authorized, insufficient permissions');
   }
-}
-  
+};
 
-
-const myMiddleware = async (
-  req: NextRequest,
-  res: NextResponse
-) => {
-  // const res = NextResponse.next();
+const myMiddleware = async (req: NextRequest, res: NextResponse) => {
   const user = await getSession(req, res);
+  console.log('Hello from authed middleware' + "User infos access " + user.user.userRoles);
+};
 
- 
-  console.log('Hello from authed middleware' + "User infos access " + user.user.userRoles)
+// Combine both middlewares
+const combinedMiddleware = async (req: NextRequest, res: NextResponse) => {
+  // await intlMiddleware(req, res);
+  await withMiddlewareAuthRequired(myMiddleware)(req, res);
+};
 
-}
+export default combinedMiddleware;
 
-export default withMiddlewareAuthRequired(myMiddleware);
 export const config = {
-  matcher: '/Crud/:path*',
+  matcher: ['/', '/(ro|en)/:path*', '/Crud/:path*'],
   exclude: ['/Crud/GetAllPosts/'],
   include: ['/pages/Rotatie/:path*', '/pages/Login/Dashboard/:path*'],
 };
+
+
+
 
 

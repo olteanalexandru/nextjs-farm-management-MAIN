@@ -32,7 +32,7 @@ export const UserInfos = () => {
           <h1 style={greetingStyle}>YO {name ? name : ''}</h1>
           {/* <LinkParola /> */}
           <h3 style={infoStyle}>Email: {email}</h3>
-          <h3 style={infoStyle}>Nume utilizator: {name}</h3>
+          <h3 style={infoStyle}>Nume utilizator: {name ? name : ''}</h3>
           <h3 style={infoStyle}>Permisiuni: {role}</h3>
         </section>
       </Card>

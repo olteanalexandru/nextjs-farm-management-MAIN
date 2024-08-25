@@ -4,14 +4,21 @@ import HeaderLog from './Crud/Header';
 import Image from 'next/image';
 import styles from '../styles/Header.module.css';
 import logo from '../public/Logo.png'
+import { LanguageSwitch } from './Componente/LanguageSwitch';
 
-//for check loggedstatus
+
+
+
+
 
 
 function Header() {
 
+ 
+
   return (
     <div className={styles.container}>
+ 
       <header id="header" className={styles.header}>
         <div className="container-fluid d-flex align-items-center justify-content-between">
           <div className={` d-flex align-items-center ${styles.link, styles.logo}`}>
@@ -34,7 +41,15 @@ function Header() {
 
               <li className={`${styles.navLink} nav-item nav-list`}>
                 <HeaderLog />
+          
+              
               </li>
+              <div>
+  {/* lang switch */}
+  <LanguageSwitch />
+</div>
+
+
             </ul>
           </nav>
           <i className="bi bi-list mobile-nav-toggle"></i>

@@ -55,6 +55,10 @@ function Pagination({ itemsPerPage, totalItems, paginate, currentPage }) {
     pageNumbers.push(i);
   }
 
+  if (pageNumbers.length <= 1) {
+    return null;
+  }
+
   return (
     <nav>
       <ul className='pagination'>

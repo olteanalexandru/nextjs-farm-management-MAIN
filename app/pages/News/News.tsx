@@ -3,15 +3,15 @@ import Spinner from '../../Crud/Spinner';
 import { useGlobalContextPost } from '../../Context/postStore';
 import Continut from '../../Crud/GetAllPosts/page';
 import Card from 'react-bootstrap/Card';
+import { useTranslations } from 'next-intl';
 
 export default function Noutati() {
   const { data, loading, getAllPosts, clearData } = useGlobalContextPost();
+  const t = useTranslations('News');
 
   useEffect(() => {
     const fetchData = async () => {
       clearData();
-
-
       await getAllPosts(0);
     };
 
@@ -40,7 +40,7 @@ export default function Noutati() {
     <div className="container">
       <br />
       <br />
-      <p>Latest in our newsfeed:</p>
+      <p>{t('Latest in our newsfeed:')}</p>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
         {latestPosts.map((post) => {
@@ -57,3 +57,6 @@ export default function Noutati() {
     </div>
   );
 }
+
+
+

@@ -9,10 +9,11 @@ import { UserInfos } from '../Dashboard/userInfos';
 import { Container, Card, Button } from 'react-bootstrap';
 import PostForm from '../../../Crud/PostForm';
 import Continut from '../../../Crud/GetAllPosts/page';
-
+import { useTranslations } from 'next-intl';
 function Postari() {
     const { data, loading, getAllPosts, deletePost , clearData } = useGlobalContextPost();
 
+    const t = useTranslations('Postari');
 
 
 useEffect(() => {
@@ -43,7 +44,9 @@ useEffect(() => {
             </Container>
 
             <div>
-                <h1>All Posts</h1>
+                <h1>
+                    {t('Postari')}
+                </h1>
                 <ul>
                     {Array.isArray(data) && data.map((post) => (
                     
@@ -51,7 +54,7 @@ useEffect(() => {
                             <h2>{post.title}</h2>
                             <p>{post.brief}</p>
                             <Button variant="danger" onClick={() => deletePost(post._id)}>
-                                Delete Post
+                                {t('Sterge')}
                             </Button>
                             
                         </li>
@@ -65,3 +68,5 @@ useEffect(() => {
 }
 
 export default Postari;
+
+

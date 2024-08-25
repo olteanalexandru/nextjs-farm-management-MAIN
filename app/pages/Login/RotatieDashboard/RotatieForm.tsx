@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useGlobalContextCrop } from '../../../Context/culturaStore';
+import { useTranslations } from 'next-intl';
 
 const CropRotationForm = ({ filteredCrops }) => {
+
+  const t = useTranslations('CropRotationForm');
   const [fieldSize, setFieldSize] = useState('');
   const [numberOfDivisions, setNumberOfDivisions] = useState('');
   const [rotationName, setRotationName] = useState('');
@@ -37,7 +40,9 @@ const CropRotationForm = ({ filteredCrops }) => {
   return (
     <form onSubmit={handleSubmit}>
       <div className="form-group">
-        <label htmlFor="fieldSize">Dimensiune câmp*:</label>
+        <label htmlFor="fieldSize">
+          { t('fieldSize') }*:
+        </label>
         <input
           type="number"
           className="form-control"
@@ -47,7 +52,9 @@ const CropRotationForm = ({ filteredCrops }) => {
         />
       </div>
       <div className="form-group">
-        <label htmlFor="numberOfDivisions">Număr de diviziuni*:</label>
+        <label htmlFor="numberOfDivisions">
+          { t('numberOfDivisions') }*:
+        </label>
         <input
           type="number"
           className="form-control"
@@ -57,7 +64,9 @@ const CropRotationForm = ({ filteredCrops }) => {
         />
       </div>
       <div className="form-group">
-        <label htmlFor="rotationName">Nume rotație*:</label>
+        <label htmlFor="rotationName">
+          { t('rotationName') }*:
+        </label>
         <input
           type="text"
           className="form-control"
@@ -67,7 +76,9 @@ const CropRotationForm = ({ filteredCrops }) => {
         />
       </div>
       <div className="form-group">
-        <label htmlFor="maxYears">Ani maximi*:</label>
+        <label htmlFor="maxYears">
+          { t('maxYears') }*:
+        </label>
         <input
           type="number"
           className="form-control"
@@ -77,7 +88,9 @@ const CropRotationForm = ({ filteredCrops }) => {
         />
       </div>
       <div className="form-group">
-      <label htmlFor="maxYears">Azot rezidual:</label>
+      <label htmlFor="maxYears">
+        { t('ResidualNitrogenSupply') }*:
+      </label>
       <input
           type="number"
           className="form-control"
@@ -87,10 +100,11 @@ const CropRotationForm = ({ filteredCrops }) => {
         />
       </div>
       <button type="submit" className="btn btn-primary">
-        Generează rotația culturilor
+        { t('generateCropRotation') } 
       </button>
     </form>
   );
 };
 
 export default CropRotationForm;
+

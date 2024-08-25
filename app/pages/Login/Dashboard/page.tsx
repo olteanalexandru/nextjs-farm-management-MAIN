@@ -28,7 +28,7 @@ export default function Dashboard() {
     data,
     fermierUsers,
   } = useGlobalContext();
-  const { user, error, isLoading: isUserLoading } = useUser();
+  const {  isLoading: isUserLoading } = useUser();
 
   useSignals();
 
@@ -114,5 +114,4 @@ export default function Dashboard() {
     </>
   );
 }
-
 

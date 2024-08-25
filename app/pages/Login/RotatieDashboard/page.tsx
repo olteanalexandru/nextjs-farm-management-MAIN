@@ -12,8 +12,10 @@ const colors = ['8884d8', '82ca9d', 'ffc658', 'a4de6c', 'd0ed57', 'ffc658', '00c
 import { useSignals  } from "@preact/signals-react/runtime";
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { getCropsRepeatedBySelection, prepareChartData } from './Components/helperFunctions';
+import { useTranslations } from 'next-intl';
 
 function RotatieDashboard() {
+  const t = useTranslations('RotatieDashboard');
   const { crops,
     selections,
     isLoading,
@@ -50,7 +52,9 @@ useEffect(() => {
 }, [isUserLoading]);
 
   if (isLoading.value) {
-    return <div>Loading Crops2... { isLoading.value  }</div>;
+    return <div>
+      {t('Loading')}
+      { isLoading.value  }</div>;
   }
  
     if (cropRotationChange) {
@@ -77,10 +81,18 @@ useEffect(() => {
                 <div className="crops">
                   <CropRotationForm filteredCrops={filteredCrops}  />
                   
-                  <h3>Ai selectat pentru rotatie:</h3>
+                  <h3>
+                    {
+                      t('Culturi selectate')
+                    }
+                  </h3>
 
                   {filteredCrops.length === 0 ? (
-                    <p>Nu ai selectat nicio cerere</p>
+                    <p>
+                      {
+                        t('Nicio cultura selectata')
+                      }
+                    </p>
                   ) : (
                     <>
                     <Row>
@@ -92,19 +104,31 @@ useEffect(() => {
                     </Row>
                     {filteredCrops.length > visible && (
                         <div className="text-center">
-                            <Button onClick={showMore}>See More</Button>
+                            <Button onClick={showMore}>
+                                {
+                                  t('Vezi mai mult')
+                                }
+                            </Button>
                         </div>
                     )}
                 </>
                   )}
                 </div>
               ) : (
-                <h3>Nicio cultura selectata</h3>
+                <h3>
+                  {
+                    t('Nu exista culturi')
+                  }
+                </h3>
               )}
 
 {cropRotation.value && cropRotation.value.data && (
   <div className="rotation" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
-    <h3>Rotatia generata:</h3>
+    <h3>
+      {
+        t('Rotatii')
+      }
+    </h3>
     {cropRotation.value && Array.isArray(cropRotation.value.data) && (
       cropRotation.value.data
         .slice(rotationPage * rotationsPerPage, (rotationPage + 1) * rotationsPerPage)
@@ -117,21 +141,38 @@ useEffect(() => {
                         <Col xs={12} md={6}>
                           <h2>{rotation.rotationName}</h2>
                           
-                          <p>Field size: {rotation.fieldSize}</p>
-                          <p>Number of divisions: {rotation.numberOfDivisions}</p>
+                          <p> {t('Dimensiune camp')}  {rotation.fieldSize}</p>
+                     
+                          <p> {t('Numar de diviziuni')}  {rotation.numberOfDivisions}</p>
+                        
+                          
                           {rotation.rotationPlan.map((plan, planIndex) => (
                             <div key={planIndex}>
-                              <h3>Year: {plan.year}</h3>
+                              <h3> { t('anul')}  {plan.year}</h3>
                               <Table striped bordered hover>
                                 <thead>
                                   <tr>
-                                    <th>Parcel number</th>
-                                    <th>Crop</th>
-                                    <th>Planting date</th>
-                                    <th>Harvesting date</th>
-                                    <th>Parcel size</th>
-                                    <th>Nitrogen balance per hectare</th>
-                                    <th>Total nitrogen</th>
+                                    <th>
+                                      {t('Diviziune')}
+                                    </th>
+                                    <th>
+                                      {t('Nume cultura')}
+                                    </th>
+                                    <th>
+                                      {t('Data plantarii')}
+                                    </th>
+                                    <th>
+                                      {t('Data recoltarii')}
+                                    </th>
+                                    <th>
+                                      {t('Dimensiune diviziune')}
+                                    </th>
+                                    <th>
+                                      {t('Bilant azot')}
+                                    </th>
+                                    <th>
+                                      {t('Azot suplimentar')}
+                                    </th>
                                     <th>
                                       {
                                         planIndex === 0 && (
@@ -141,7 +182,7 @@ useEffect(() => {
                                             }
                                           }
                                           >
-                                            Delete
+                                            {t('Sterge rotatie')}
                                           </button>
                                         )
                                       }
@@ -159,7 +200,8 @@ useEffect(() => {
                                       <td>{item.divisionSize}
                                       {planIndex === 0 && ( // Show input only in the first year
                                         <input type="text" 
-                                        placeholder="Modify size" 
+                                        placeholder="
+                                        {t('Dimensiune diviziune')}" 
                                         value={divisionSizeValues[itemIndex] || ''} 
                                         onChange={e => {
                                           let newDivisionSizeValues = [...divisionSizeValues];
@@ -200,7 +242,7 @@ useEffect(() => {
                                         }} 
                                         onBlur={e => {
                                           if (isNaN(parseFloat(e.target.value)) && parseFloat(e.target.value) > 0) {
-                                            alert("Not a number");
+                                            alert(t('Not a number'));
                                           } else if (parseFloat(e.target.value) > 1) {
                                             let newNitrogenBalanceValues = [...nitrogenBalanceValues];
                                             newNitrogenBalanceValues[itemIndex] = parseFloat(e.target.value);
@@ -230,7 +272,9 @@ useEffect(() => {
                           ))}
                         </Col>
                         <Col xs={24} md={12}>
-                          <Title level={3}>Annual Evolution</Title>
+                          <Title level={3}>
+                            {t('anual evolution')}
+                          </Title>
                           <ResponsiveContainer width="100%" height={500}>
                             <LineChart
                               width={500}

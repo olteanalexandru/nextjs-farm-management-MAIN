@@ -1,12 +1,20 @@
 import styles from '../Rotatie.module.css';
+import { useTranslations } from 'next-intl';
 
 function NoCrops() {
+  const t = useTranslations('NoCrops');
   return (
     <div className={styles.noCrops}>
-      <h3>There are no crops yet</h3>
-      <p>Why not add some?</p>
+      <h3>
+        {t('noCrops')}
+      </h3>
+      <p>
+        {t('noCropsMessage')}
+      </p>
     </div>
   );
 }
 
 export default NoCrops;
+
+

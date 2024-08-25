@@ -1,0 +1,100 @@
+{
+  "HomePage": {
+    "title": "English World Hello!"
+  },
+  "ContactUs": {
+    "title": "Agricultural Solutions Platform",
+    "subtitle": "Driving Efficiency and Sustainability",
+    "vision": "Our Vision",
+    "cropManagement": "Crop Management",
+    "cropManagementDescription": "Precise monitoring and management tools for maximizing crop performance.",
+    "supportCollaboration": "Support and Collaboration",
+    "supportCollaborationDescription": "Committed to providing top-notch support and fostering collaboration for users' success.",
+    "comprehensiveTracking": "Comprehensive Tracking",
+    "comprehensiveTrackingDescription": "Track and analyze every stage of your crops' lifecycle seamlessly.",
+    "robustAnalytics": "Robust Analytics",
+    "robustAnalyticsDescription": "Suite of analytical instruments tailored to optimize agricultural processes.",
+    "efficiencyProfitability": "Efficiency and Profitability",
+    "efficiencyProfitabilityDescription": "Engineered to enhance efficiency, reduce waste, and drive profitability for farmers.",
+    "contactUs": "Feel free to contact us",
+    "contactUsForm": "Contact us form"
+  },
+  "Contact": {
+    "Name": "Name",
+    "Email": "Email",
+    "Enter your name": "Enter your name",
+    "Enter your email": "Enter your email",
+    "We'll never share your email with anyone else.": "We'll never share your email with anyone else.",
+    "Message": "Message",
+    "Enter your message": "Enter your message",
+    "Send": "Send"
+  },
+  "News": {
+    "Latest in our newsfeed:": "Latest in our newsfeed:",
+    "title": "title",
+    "subtitle": "subtitle",
+    "vision": "vision",
+    "cropManagement": "cropManagement",
+    "cropManagementDescription": "cropManagementDescription",
+    "supportCollaboration": "supportCollaboration",
+    "supportCollaborationDescription": "supportCollaborationDescription",
+    "comprehensiveTracking": "comprehensiveTracking",
+    "comprehensiveTrackingDescription": "comprehensiveTrackingDescription",
+    "robustAnalytics": "robustAnalytics",
+    "robustAnalyticsDescription": "robustAnalyticsDescription",
+    "efficiencyProfitability": "efficiencyProfitability",
+    "efficiencyProfitabilityDescription": "efficiencyProfitabilityDescription",
+    "contactUs": "contactUs",
+    "contactUsForm": "contactUsForm"
+  },
+  "LinkAdaugaPostare": {
+    "AdaugaPostare": "Add Post"
+  },
+  "LinkParola": {
+    "ModificaParola": "Change Password"
+  },
+  "Modifica": {
+    "Modificare parola": "Change Password",
+    "Enter password": "Enter password",
+    "Confirm password": "Confirm password",
+    "Submit": "Submit",
+    "Passwords do not match": "Passwords do not match"
+  },
+  "Postari": {
+    "Postari": "Posts",
+    "Sterge": "Delete"
+  },
+  "RotatieDashboard": {
+    "Loading": "Loading",
+    "Culturi selectate": "Selected Crops",
+    "Nicio cultura selectata": "No Crop Selected",
+    "Vezi mai mult": "See More",
+    "Nu exista culturi": "No Crops Available",
+    "Rotatii": "Rotations",
+    "Dimensiune camp": "Field Size",
+    "Numar de diviziuni": "Number of Divisions",
+    "anul": "year",
+    "Diviziune": "Division",
+    "Nume cultura": "Crop Name",
+    "Data plantarii": "Planting Date",
+    "Data recoltarii": "Harvest Date",
+    "Dimensiune diviziune": "Division Size",
+    "Bilant azot": "Nitrogen Balance",
+    "Azot suplimentar": "Additional Nitrogen",
+    "Sterge rotatie": "Delete Rotation",
+    "Not a number": "Not a Number",
+    "anual evolution": "annual evolution"
+  },
+  "CropRotationForm": {
+    "fieldSize": "Field Size",
+    "numberOfDivisions": "Number of Divisions",
+    "rotationName": "Rotation Name",
+    "maxYears": "Max Years",
+    "ResidualNitrogenSupply": "Residual Nitrogen Supply",
+    "generateCropRotation": "Generate Crop Rotation"
+  },
+  "NoCrops": {
+    "noCrops": "No crops found",
+    "noCropsMessage": "There are no crops"
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "HomePage": {
+    "title": "Salut lume română!"
+  },
+  "ContactUs": {
+    "title": "Platformă de Soluții Agricole",
+    "subtitle": "Creșterea Eficienței și Sustenabilității",
+    "vision": "Viziunea Noastră",
+    "cropManagement": "Managementul Culturilor",
+    "cropManagementDescription": "Instrumente precise de monitorizare și gestionare pentru maximizarea performanței culturilor.",
+    "supportCollaboration": "Suport și Colaborare",
+    "supportCollaborationDescription": "Angajați să oferim suport de top și să promovăm colaborarea pentru succesul utilizatorilor.",
+    "comprehensiveTracking": "Urmărire Completă",
+    "comprehensiveTrackingDescription": "Urmăriți și analizați fără probleme fiecare etapă a ciclului de viață al culturilor dvs.",
+    "robustAnalytics": "Analize Robuste",
+    "robustAnalyticsDescription": "Set de instrumente analitice adaptate pentru optimizarea proceselor agricole.",
+    "efficiencyProfitability": "Eficiență și Profitabilitate",
+    "efficiencyProfitabilityDescription": "Proiectat pentru a îmbunătăți eficiența, a reduce risipa și a crește profitabilitatea fermierilor.",
+    "contactUs": "Nu ezitați să ne contactați",
+    "contactUsForm": "Formular de contact"
+  },
+  "Contact": {
+    "Name": "Nume",
+    "Email": "Email",
+    "Enter your name": "Introduceți numele dvs.",
+    "Enter your email": "Introduceți emailul dvs.",
+    "We'll never share your email with anyone else.": "Nu vom împărtăși niciodată emailul dvs. cu altcineva.",
+    "Message": "Mesaj",
+    "Enter your message": "Introduceți mesajul dvs.",
+    "Send": "Trimite"
+  },
+  "News": {
+    "Latest in our newsfeed:": "Ultimele noutăți:",
+    "title": "titlu",
+    "subtitle": "subtitlu",
+    "vision": "viziune",
+    "cropManagement": "managementul culturilor",
+    "cropManagementDescription": "descrierea managementului culturilor",
+    "supportCollaboration": "suport și colaborare",
+    "supportCollaborationDescription": "descrierea suportului și colaborării",
+    "comprehensiveTracking": "urmărire completă",
+    "comprehensiveTrackingDescription": "descrierea urmăririi complete",
+    "robustAnalytics": "analize robuste",
+    "robustAnalyticsDescription": "descrierea analizelor robuste",
+    "efficiencyProfitability": "eficiență și profitabilitate",
+    "efficiencyProfitabilityDescription": "descrierea eficienței și profitabilității",
+    "contactUs": "contactați-ne",
+    "contactUsForm": "formular de contact"
+  },
+  "LinkAdaugaPostare": {
+    "AdaugaPostare": "Adaugă Postare"
+  },
+  "LinkParola": {
+    "ModificaParola": "Modifică Parola"
+  },
+  "Modifica": {
+    "Modificare parola": "Modificare parolă",
+    "Enter password": "Introduceți parola",
+    "Confirm password": "Confirmați parola",
+    "Submit": "Trimite",
+    "Passwords do not match": "Parolele nu se potrivesc"
+  },
+  "Postari": {
+    "Postari": "Postări",
+    "Sterge": "Șterge"
+  },
+  "RotatieDashboard": {
+    "Loading": "Încărcare",
+    "Culturi selectate": "Culturi selectate",
+    "Nicio cultura selectata": "Nicio cultură selectată",
+    "Vezi mai mult": "Vezi mai mult",
+    "Nu exista culturi": "Nu există culturi",
+    "Rotatii": "Rotații",
+    "Dimensiune camp": "Dimensiune câmp",
+    "Numar de diviziuni": "Număr de diviziuni",
+    "anul": "anul",
+    "Diviziune": "Diviziune",
+    "Nume cultura": "Nume cultură",
+    "Data plantarii": "Data plantării",
+    "Data recoltarii": "Data recoltării",
+    "Dimensiune diviziune": "Dimensiune diviziune",
+    "Bilant azot": "Bilanț azot",
+    "Azot suplimentar": "Azot suplimentar",
+    "Sterge rotatie": "Șterge rotație",
+    "Not a number": "Nu este un număr",
+    "anual evolution": "evoluție anuală"
+  },
+  "CropRotationForm": {
+    "fieldSize": "Dimensiune câmp",
+    "numberOfDivisions": "Număr de diviziuni",
+    "rotationName": "Nume rotație",
+    "maxYears": "Ani maximi",
+    "ResidualNitrogenSupply": "Aprovizionare cu azot rezidual",
+    "generateCropRotation": "Generează rotația culturilor"
+  },
+  "NoCrops": {
+    "noCrops": "Nu s-au găsit culturi",
+    "noCropsMessage": "Nu există culturi"
+  }
+}
