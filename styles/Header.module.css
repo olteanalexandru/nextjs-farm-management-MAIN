@@ -1,11 +1,11 @@
-.container {
+/* .container {
   max-width: 100%;
 }
 
 
 .header {
   width: 100%;
-  /* padding: 10px ; */
+ padding: 10px ; 
   top: 0;
   left: 0;
   z-index: 10;
@@ -41,14 +41,14 @@
 
 .signInBtn {
   color: #fff;
-  background-color: rgba(108, 117, 125, 0.5); /* dark grey with 50% transparency */
+  background-color: rgba(108, 117, 125, 0.5); 
 }
 
   
     
     .footer {
       box-shadow: -1px 1rem 2rem 4px rgba(1, 2, 1, 0.25) !important ;
-      /* background-image: linear-gradient(rgba(39, 128, 25, 0.179), rgba(0, 0, 0, 0.393)), url('header-plain-green.jpg'); */
+  
       background: #FCCB8C;
       background-size: cover;
       border-radius: 0.25rem;
@@ -86,4 +86,4 @@
       .container {
         flex-direction: column;
       }
-    }
+    } */

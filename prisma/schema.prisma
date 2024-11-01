@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String            @id @default(uuid())
+  name           String
+  email          String            @unique
+  role           Role              @default(FARMER)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  crops          Crop[]
+  posts          Post[]
+  rotations      Rotation[]
+  cropSelections UserCropSelection[]
+
+  @@map("users")
+}
+
+model Crop {
+  id                             Int                @id @default(autoincrement())
+  userId                         String
+  user                          User               @relation(fields: [userId], references: [id])
+  cropName                       String
+  cropType                       String?
+  cropVariety                    String?
+  plantingDate                   DateTime?
+  harvestingDate                DateTime?
+  description                    String?           @db.Text
+  imageUrl                       String?           @db.Text
+  soilType                       String?
+  climate                        String?
+  ItShouldNotBeRepeatedForXYears Int?
+  nitrogenSupply                 Float?
+  nitrogenDemand                 Float?
+  soilResidualNitrogen          Float?
+  createdAt                     DateTime          @default(now())
+  updatedAt                     DateTime          @updatedAt
+  fertilizers                   CropDetail[]      @relation("CropFertilizers")
+  pests                         CropDetail[]      @relation("CropPests")
+  diseases                      CropDetail[]      @relation("CropDiseases")
+  rotationPlans                 RotationPlan[]
+  userSelections                UserCropSelection[]
+
+  @@map("crops")
+}
+
+model CropDetail {
+  id        Int       @id @default(autoincrement())
+  value     String
+  type      DetailType
+  cropId    Int
+  crop      Crop      @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("crop_details")
+}
+
+model Rotation {
+  id                Int            @id @default(autoincrement())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id])
+  rotationName     String
+  fieldSize        Float
+  numberOfDivisions Int
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  rotationPlans    RotationPlan[]
+
+  @@map("rotations")
+}
+
+model RotationPlan {
+  id              Int       @id @default(autoincrement())
+  rotationId      Int
+  rotation        Rotation  @relation(fields: [rotationId], references: [id], onDelete: Cascade)
+  year            Int
+  division        Int
+  cropId          Int
+  crop            Crop      @relation(fields: [cropId], references: [id])
+  plantingDate    DateTime?
+  harvestingDate  DateTime?
+  divisionSize    Float?
+  nitrogenBalance Float?
+  directlyUpdated Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("rotation_plans")
+}
+
+model Post {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  title       String
+  brief       String?  @db.Text
+  description String?  @db.Text
+  image       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("posts")
+}
+
+model UserCropSelection {
+  id            Int      @id @default(autoincrement())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  cropId        Int
+  crop          Crop     @relation(fields: [cropId], references: [id])
+  selectionCount Int     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, cropId])
+  @@map("user_crop_selections")
+}
+
+enum Role {
+  ADMIN
+  FARMER
+}
+
+enum DetailType {
+  FERTILIZER
+  PEST
+  DISEASE
+}

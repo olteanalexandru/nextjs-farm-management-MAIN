@@ -1,173 +1,171 @@
 import { NextResponse, NextRequest } from 'next/server';
-import Post from '../../../../../Models/postModel';
-import User from '../../../../../Models/userModel';
-import { connectDB } from '../../../../../../db';
-import { getSession } from '@auth0/nextjs-auth0';
+import prisma from '@/app/lib/prisma';
+import { getCurrentUser } from '@/app/lib/auth';
+import type { ApiResponse } from '@/types';
 
-connectDB()
-
-
-//paths :
-// for single post
-// API_URL + "/post/id/" + id
-// for all posts
-// API_URL + "/post/count/" + count
-// for search
-// API_URL + "/post/search/" + search
-// for all posts
-// API_URL + "/post"
-
-export async function GET(request: Request, context: any) {
+export async function GET(request: NextRequest, context: any) {
   const { params } = context;
-  let posts;
-  let message
-  if (params.posts === 'posts' && params.postsRoutes == "count") {
-    const limit = 5;
-    const count = Number(params.dinamicAction) || 0;
-    const skip = count * limit;
-    posts = await Post.find().skip(skip).limit(limit);
+  
+  try {
+    if (params.posts === 'posts' && params.postsRoutes === "count") {
+      const limit = 5;
+      const count = Number(params.dinamicAction) || 0;
+      const skip = count * limit;
 
-    if (posts.length === 0) {
-      //include a message for no more posts in posts
-      message = "No more posts";
+      const posts = await prisma.post.findMany({
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc'
+        },
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true
+            }
+          }
+        }
+      });
+
+      const message = posts.length === 0 ? "No more posts" : undefined;
+      return NextResponse.json({ posts, message });
     }
 
-  } else if (params.posts === 'posts' && params.postsRoutes == "search") {
-    posts = await Post.find({ title: { $regex: params.dinamicAction, $options: 'i' } });
-  } else if (params.posts === 'post' && params.postsRoutes == "id") {
-    posts = await Post.findById(params.dinamicAction);
-  } else if (
-    params.posts === 'posts' &&
-    params.postsRoutes == "retrieve" && params.dinamicAction == "all"
+    if (params.posts === 'posts' && params.postsRoutes === "search") {
+      const posts = await prisma.post.findMany({
+        where: {
+          title: {
+            contains: params.dinamicAction,
+            mode: 'insensitive'
+          }
+        },
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true
+            }
+          }
+        }
+      });
 
-  ) {
-    posts = await Post.find();
+      return NextResponse.json({ posts });
+    }
+
+    if (params.posts === 'post' && params.postsRoutes === "id") {
+      const post = await prisma.post.findUnique({
+        where: {
+          id: parseInt(params.dinamicAction)
+        },
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true
+            }
+          }
+        }
+      });
+
+      return NextResponse.json({ posts: post });
+    }
+  } catch (error) {
+    console.error('Request error', error);
+    return NextResponse.json({ error: 'Error fetching posts' }, { status: 500 });
   }
-
-  return NextResponse.json({ posts, message });
 }
-
-
-//POST paths and params docs
-// for single post
-// API_URL + "/post/new/" + Userid
 
 export async function POST(request: NextRequest, context: any) {
   const { params } = context;
-  const { title, brief, description, image } = await request.json();
-  const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
-  const CheckuserObject = Checkuser.toObject();
-  const { user } = await getSession();
+  
+  try {
+    const user = await getCurrentUser(request);
+    const { title, brief, description, image } = await request.json();
 
-  if ( user.sub !== CheckuserObject.auth0_id) {
-    return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
-  }
-  if (!user) {
-    return NextResponse.json({ message: 'User not found' }, { status: 404 });
-  }
-  if (
-    !user.userRoles.toString().toLowerCase().includes("admin")
-  ) {
-    return NextResponse.json({ message: 'User not Admin' }, { status: 401 });
-  }
-  if (!title) {
-    return NextResponse.json({ message: 'Title missing' }, { status: 400 });
-  }
-  if (!brief) {
-    return NextResponse.json({ message: 'Brief missing' }, { status: 400 });
-  }
-  if (!description) {
-    return NextResponse.json({ message: 'Description missing' }, { status: 400 });
-  }
-  if (
-    params.posts == "post" && params.postsRoutes == "new"
-  ) {
-    const post = new Post({
-      user: user.sub,
-      title,
-      brief,
-      description,
-      image
+    if (!title || !brief || !description) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const post = await prisma.post.create({
+      data: {
+        userId: user.sub,
+        title,
+        brief,
+        description,
+        image
+      }
     });
-    await post.save();
-    console.log("post post triggered")
-    return NextResponse.json({ message: 'Post Created' }, { status: 201 });
+
+    return NextResponse.json(post, { status: 201 });
+  } catch (error) {
+    console.error('Request error', error);
+    return NextResponse.json({ error: 'Error creating post' }, { status: 500 });
   }
 }
-
-//PUT paths and params docs
-// for single post
-// API_URL + "/post/:postId/:userId"
 
 export async function PUT(request: NextRequest, context: any) {
   const { params } = context;
-  if (
-    params.posts == "post"
-  ) {
+  
+  try {
+    const user = await getCurrentUser(request);
     const { title, brief, description, image } = await request.json();
-    const post = await Post.findById(params.postsRoutes);
-    const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
-  const CheckuserObject = Checkuser.toObject();
-    const { user } = await getSession();
-    if (user === null || user.sub !== CheckuserObject.auth0_id) {
-      return NextResponse.json({ message: 'User not authorized' }, { status: 401 });
-    }
+
+    const post = await prisma.post.findUnique({
+      where: { id: parseInt(params.postsRoutes) }
+    });
+
     if (!post) {
-      return NextResponse.json({ message: 'Post not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
-    if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+
+    if (post.userId !== user.sub) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
     }
-    if (post.user.toString() !== user.sub.toString()) {
-      return NextResponse.json({ message: 'User not authorized' }, { status: 401 });
-    }
-    post.title = title;
-    post.brief = brief;
-    post.description = description;
-    post.image = image;
-    await post.save();
-    console.log("post put triggered")
-    return NextResponse.json({ message: 'Post Updated' }, { status: 200 });
+
+    const updatedPost = await prisma.post.update({
+      where: { id: parseInt(params.postsRoutes) },
+      data: {
+        title,
+        brief,
+        description,
+        image
+      }
+    });
+
+    return NextResponse.json(updatedPost);
+  } catch (error) {
+    console.error('Request error', error);
+    return NextResponse.json({ error: 'Error updating post' }, { status: 500 });
   }
 }
 
-//API
-//DELETE paths and params docs
-// for single post
-// API_URL + "/post/:postId/:userId"
-
 export async function DELETE(request: NextRequest, context: any) {
-
   const { params } = context;
-
-  const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
-  const CheckuserObject = Checkuser.toObject();
-  const { user } = await getSession();
-
-  if ( user.sub !== CheckuserObject.auth0_id) {
-    return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
-  }
-
-
-
-  if (
-    params.posts == "post" && params.postsRoutes
-  ) {
-    const post = await Post.findById(params.postsRoutes);
-   
   
-    if (!post) {
-      return NextResponse.json({ message: 'Post not found' }, { status: 404 });
-    }
-    if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
-    }
-    if (post.user.toString() == user.sub || user.role.toLowerCase().includes('admin')) {
+  try {
+    const user = await getCurrentUser(request);
+    
+    const post = await prisma.post.findUnique({
+      where: { id: parseInt(params.postsRoutes) }
+    });
 
-      await post.deleteOne()
-      console.log("post delete triggered")
-      return NextResponse.json({ message: 'Post Deleted' }, { status: 200 });
+    if (!post) {
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
+
+    if (post.userId !== user.sub && !user.userRoles?.includes('admin')) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+    }
+
+    await prisma.post.delete({
+      where: { id: parseInt(params.postsRoutes) }
+    });
+
+    return NextResponse.json({ message: 'Post deleted' });
+  } catch (error) {
+    console.error('Request error', error);
+    return NextResponse.json({ error: 'Error deleting post' }, { status: 500 });
   }
 }
 

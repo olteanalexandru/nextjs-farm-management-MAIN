@@ -1,112 +1,129 @@
 import { NextResponse, NextRequest } from 'next/server';
-import User from '../../../Models/userModel';
-import { connectDB } from '../../../../db';
-import { getSession } from '@auth0/nextjs-auth0';
+import prisma from '@/app/lib/prisma';
+import { getCurrentUser } from '@/app/lib/auth';
+import { Role } from '@prisma/client';
 
-connectDB()
+export async function GET(request: NextRequest, context: any) {
+  const { params } = context;
+  
+  try {
+    const user = await getCurrentUser(request);
+    
+    // Only admin can fetch user lists
+    if (!user.userRoles?.includes('admin')) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+    }
 
-    export async function GET(request:NextRequest,context: any){
-        const { params } = context;
-        if(params.Action === 'fermieri'){
-            const session = await getSession();
-            const sessionUser = session?.user;
-            if (sessionUser.userRoles.map((role: string) => role.toLowerCase()).includes('admin') === false ) {
-                return NextResponse.json({ message: 'User not found' }, { status: 404 });
-              }
-
-            const fermierUsers = await User.find({ role: 'farmer' }) as  any;
-            console.log(fermierUsers)
-            return NextResponse.json(fermierUsers, { status: 200 });
-        } 
-        if(params.Action === "admin"){
-            const session = await getSession();
-            const user = session?.user;
-            if (user.userRoles.includes('Admin') === false) {
-                return NextResponse.json({ message: 'User not found' }, { status: 404 });
-              }
-            const adminUsers = await User.find({ role: 'admin' }) as  any;
-            return NextResponse.json(adminUsers, { status: 200 });
+    if (params.Action === 'fermieri') {
+      const farmers = await prisma.user.findMany({
+        where: {
+          role: Role.FARMER
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          _count: {
+            select: {
+              crops: true,
+              rotations: true
+            }
+          }
         }
-    }
-    export async function POST(request:NextRequest,context: any){ 
-            const { params } = context;
-            if(params.Action === 'register'){
-                const session = await getSession()
-                const sessionUser = session?.user;
-                if (sessionUser.userRoles.map((role: string) => role.toLowerCase()).includes('admin') === false ) {
-                    console.log(sessionUser.userRoles)
-                    return NextResponse.json({ message: 'User is not admin' }, { status: 400 });
-                }
-                const { name, email,  role } = await request.json();
+      });
 
-                const user = await User.create({
-                    name,
-                    email,
-                    role: role.toLowerCase()
-                });
-                return NextResponse.json(user, { status: 201 });
-            } else if (params.Action === 'changeRole') {
-                const session = await getSession();
-                const sessionUser = session?.user;
-                if (sessionUser.userRoles.map((role: string) => role.toLowerCase()).includes('admin') === false ) {
-                    return NextResponse.json({ message: 'User is not admin' }, { status: 401 });
-                } 
-                const { email, role } = await request.json();
-                if (role !== 'admin' && role !== 'farmer') {
-                    return NextResponse.json({ message: 'Role is invalid' }, { status: 400 });
-                }
-                const user = await User
-                    .findOneAndUpdate({
-                        email
-                    }, {
-                        role
-                    }, {
-                        new: true
-                    });
-                return NextResponse.json(user, { status: 201 });
-            }
+      return NextResponse.json(farmers);
     }
 
+    if (params.Action === 'admin') {
+      const admins = await prisma.user.findMany({
+        where: {
+          role: Role.ADMIN
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true
+        }
+      });
 
+      return NextResponse.json(admins);
+    }
+  } catch (error) {
+    console.error('Request error', error);
+    return NextResponse.json({ error: 'Error fetching users' }, { status: 500 });
+  }
+}
 
+export async function POST(request: NextRequest, context: any) {
+  const { params } = context;
+  
+  try {
+    const user = await getCurrentUser(request);
 
-export async function PUT(request:NextRequest,context: any){    
-                const { params } = context;
-                if(params.Action === 'fermieri'){
-                    const session = await getSession()
-                    const sessionUser = session?.user;
-                    if (sessionUser.userRoles.map((role: string) => role.toLowerCase()).includes('admin') === false ) {
-                        return NextResponse.json({ message: 'User not found' }, { status: 404 });
-                    }
-                    const { name, email,  role } = await request.json();
-                    const user = await User.create({
-                        name,
-                        email,
-                        role,
-                    });
-                    return NextResponse.json(user, { status: 201 });
-                }
-            }
+    // Only admin can create/modify users
+    if (!user.userRoles?.includes('admin')) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+    }
 
-export async function DELETE(request:NextRequest,context: any){
-                    const { params } = context;
-                
-                        const session = await getSession()
-                        const sessionUser = session?.user;
-                        if (sessionUser.userRoles.map((role: string) => role.toLowerCase()).includes('admin') === false ) {
-                            return NextResponse.json({ message: 'User not found' }, { status: 404 });
-                        }
-                        
-                        const user = await User.findById(params.Action);
-                        if (user) {
-                            await user.remove();
-                          NextResponse.json({ message: 'User removed' }, { status: 200 });
-                        } else {
-                           NextResponse.json({ message: 'User not found' }, { status: 404 });
-                            throw new Error('User not found');
-                        }
-                    
-                    }
+    if (params.Action === 'register') {
+      const { name, email, role } = await request.json();
+
+      const newUser = await prisma.user.create({
+        data: {
+          id: `auth0|${Math.random().toString(36).substr(2, 9)}`, // Temporary ID until Auth0 creates real one
+          name,
+          email,
+          role: role.toUpperCase() as Role
+        }
+      });
+
+      return NextResponse.json(newUser, { status: 201 });
+    }
+
+    if (params.Action === 'changeRole') {
+      const { email, role } = await request.json();
+
+      const updatedUser = await prisma.user.update({
+        where: { email },
+        data: {
+          role: role.toUpperCase() as Role
+        }
+      });
+
+      return NextResponse.json(updatedUser);
+    }
+  } catch (error) {
+    console.error('Request error', error);
+    return NextResponse.json({ error: 'Error processing user request' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest, context: any) {
+  const { params } = context;
+  
+  try {
+    const user = await getCurrentUser(request);
+
+    // Only admin can delete users
+    if (!user.userRoles?.includes('admin')) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+    }
+
+    await prisma.user.delete({
+      where: { id: params.Action }
+    });
+
+    return NextResponse.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Request error', error);
+    return NextResponse.json({ error: 'Error deleting user' }, { status: 500 });
+  }
+}
                 
 
 

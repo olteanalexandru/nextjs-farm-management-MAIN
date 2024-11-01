@@ -1,492 +1,440 @@
-import {
-    NextResponse, NextRequest
-} from 'next/server';
-import CropModel from '../../../../../Models/cropModel';
-import Rotation from '../../../../../Models/rotationModel';
-import User from '../../../../../Models/userModel';
-import { connectDB } from '../../../../../../db';
+import { NextResponse, NextRequest } from 'next/server';
+import prisma from '@/app/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
-import type {  Crop,  CropRotationInput , CropRotationItem } from '../interfaces';
+import { handleApiError } from '@/app/lib/api-utils';
 
-connectDB();
+// Types for rotation generation
+interface CropInput {
+  id: number;
+  cropName: string;
+  nitrogenSupply: number;
+  nitrogenDemand: number;
+  pests: string[];
+  diseases: string[];
+  ItShouldNotBeRepeatedForXYears: number;
+  plantingDate: string;
+  harvestingDate: string;
+}
 
-const usedCropsInYear: Map<number, Set<string>> = new Map();
-async function cropIsAvailable(crop: Crop, year: number, lastUsedYear: Map<number, Map<Crop, number>>, division: number, userId: string): Promise<boolean> {
-  
-  const divisionLastUsedYear = lastUsedYear.get(division) || new Map<Crop, number>();
-  const lastUsed = divisionLastUsedYear.get(crop) || 0;
-  // Fetch user
-  const user = await User.findOne({ auth0_id: userId });
-  let maxRepetitions = user.selectareCounts[crop._id] 
-  // Check selectareCounts for crop selection count
-  if (year - lastUsed <= crop.ItShouldNotBeRepeatedForXYears && ((user.selectareCounts[crop._id] || 0) <= maxRepetitions || maxRepetitions < 1)) {
+interface RotationInput {
+  fieldSize: number;
+  numberOfDivisions: number;
+  rotationName: string;
+  crops: CropInput[];
+  maxYears: number;
+  ResidualNitrogenSupply?: number;
+}
+
+// Utility functions for rotation generation
+function hasSharedPests(crop1: CropInput, crop2: CropInput): boolean {
+  return crop1.pests.some(pest => crop2.pests.includes(pest));
+}
+
+function hasSharedDiseases(crop1: CropInput, crop2: CropInput): boolean {
+  return crop1.diseases.some(disease => crop2.diseases.includes(disease));
+}
+
+function calculateNitrogenBalance(
+  crop: CropInput,
+  nitrogenPerDivision: number,
+  soilResidualNitrogen: number
+): number {
+  const nitrogenBalance = nitrogenPerDivision - crop.nitrogenDemand + soilResidualNitrogen;
+  return parseFloat(Math.max(0, nitrogenBalance).toFixed(2));
+}
+
+function sortCropsByNitrogenBalance(
+  crops: CropInput[],
+  nitrogenPerDivision: number,
+  soilResidualNitrogen: number
+): CropInput[] {
+  return [...crops].sort((a, b) => {
+    const balanceA = calculateNitrogenBalance(a, nitrogenPerDivision, soilResidualNitrogen);
+    const balanceB = calculateNitrogenBalance(b, nitrogenPerDivision, soilResidualNitrogen);
+    return balanceA - balanceB;
+  });
+}
+
+async function cropIsAvailable(
+  crop: CropInput,
+  year: number,
+  lastUsedYear: Map<number, Map<string, number>>,
+  division: number,
+  userId: string
+): Promise<boolean> {
+  const divisionLastUsedYear = lastUsedYear.get(division) || new Map<string, number>();
+  const lastUsed = divisionLastUsedYear.get(crop.cropName) || 0;
+
+  // Check if enough years have passed since last use
+  if (year - lastUsed <= crop.ItShouldNotBeRepeatedForXYears) {
     return false;
   }
-  // Check if crop was used in the same year
-  if (usedCropsInYear.get(year)?.has(crop._id) ) {
-    return false;
-  }
-  return true;
+
+  // Check crop selection count
+  const selection = await prisma.userCropSelection.findUnique({
+    where: {
+      userId_cropId: {
+        userId: userId,
+        cropId: crop.id
+      }
+    }
+  });
+
+  return selection ? selection.selectionCount > 0 : false;
 }
-  
-  //@route PUT /api/crops/recommendations
-  //@acces Admin
 
-  const generateCropRotation = async ( cropInput , userObj) => {
-
-    const input: CropRotationInput = cropInput;
-    let req = cropInput
-
-    const {
-      crops,
-      fieldSize,
-      numberOfDivisions,
-      maxYears ,
-      ResidualNitrogenSupply ,
-  
-    } = input
-    const TheResidualNitrogenSupply = ResidualNitrogenSupply ?? 500;
-
-
-
-
-    if (!crops || crops.length === 0) {
-      console.log(`received input is ${JSON.stringify(input)}`);
-      console.log(`destructed input is crops: ${crops}, fieldSize: ${fieldSize}, numberOfDivisions: ${numberOfDivisions}, maxYears: ${maxYears}, ResidualNitrogenSupply: ${ResidualNitrogenSupply}`);
-      console.log(`req is ${JSON.stringify(req)}`);
-      throw new Error('No crops provided');
-    }
-  
-    const rotationPlan: Map<number, CropRotationItem[]> = new Map();
-    const lastUsedYear: Map<number, Map<Crop, number>> = new Map();
-    const usedCropsInYear: Map<number, Set<string>> = new Map();
-    
-    for (let division = 1; division <= numberOfDivisions; division++) {
-      
-      const divisionLastUsedYear: Map<Crop, number> = new Map();
-      crops.forEach(crop => {
-        divisionLastUsedYear.set(crop, 0 - crop.ItShouldNotBeRepeatedForXYears);
-      });
-      lastUsedYear.set(division, divisionLastUsedYear);
-    }
-  
-    function hasSharedPests(crop1: Crop, crop2: Crop): boolean {
-      return crop1.pests.some((pest) => crop2.pests.includes(pest));
-    }
-  
-    function hasSharedDiseases(crop1: Crop, crop2: Crop): boolean {
-      return crop1.diseases.some((disease) => crop2.diseases.includes(disease));
-    }
-  
-  
-
-    for (let year = 1; year <= maxYears; year++) {
-      usedCropsInYear.set(year, new Set<string>());
-      let yearlyPlan = [];
-      rotationPlan.set(year, yearlyPlan);
-  
-      for (let division = 1; division <= numberOfDivisions; division++) {
-        const prevCrop = rotationPlan.get(year - 1)?.find((item) => item.division === division)?.crop;
-        const prevYear = rotationPlan.get(year - 1)?.find((item) => item.division === division);
-  // If there is a previous crop
-        if (prevCrop) {
-          const nitrogenPerDivision = prevCrop.nitrogenSupply + prevYear.nitrogenBalance ;
-          const divisionSize = parseFloat((fieldSize / numberOfDivisions).toFixed(2));
-          const sortedCrops = sortCropsByNitrogenBalance(crops, nitrogenPerDivision, 0);
-          let crop;
-          // Find a crop that is available and has no shared pests or diseases with the previous crop
-          for (const c of sortedCrops) {
-            const isAvailable = await cropIsAvailable(c, year, lastUsedYear, division, userObj.auth0_id );
-            if (!hasSharedPests(c, prevCrop) && !hasSharedDiseases(c, prevCrop) && isAvailable) {
-              crop = c;
-              lastUsedYear.get(division)?.set(crop, year); // Update the last used year for the division
-              break;
-            }
-          }
-    
-          if (!crop) {
-            continue; // Skip to next division if no crop is available
-          }
-  // If a crop is found, add it to the rotation plan
-          if (crop) {
-            if (!usedCropsInYear.has(year)) {
-              usedCropsInYear.set(year, new Set<string>());
-            }
-            lastUsedYear.get(division)?.set(crop, year);
-            // Add crop to used crops in year
-  usedCropsInYear.get(year)?.add(crop._id) || usedCropsInYear.set(year, new Set([crop._id]));
-             // Calculate planting and harvesting dates
-            const plantingDate = new Date(crop.plantingDate);
-            plantingDate.setFullYear(plantingDate.getFullYear() + year - 1);
-  
-            const harvestingDate = new Date(crop.harvestingDate);
-            harvestingDate.setFullYear(harvestingDate.getFullYear() + year - 1);
-  
-            const nitrogenBalance = calculateNitrogenBalance(crop, nitrogenPerDivision, 0);
-  
-            rotationPlan.set(year, [...(rotationPlan.get(year) || []), {
-              division,
-              crop,
-              plantingDate: plantingDate.toISOString().substring(0, 10),
-              harvestingDate: harvestingDate.toISOString().substring(0, 10),
-              divisionSize,
-              nitrogenBalance,
-            }]);
-          }
-          // If there is no previous crop
-        } else {
-          const cropIndex = (division + year - 2) % crops.length;
-          const crop = crops[cropIndex];
-          const divisionSize = parseFloat((fieldSize / numberOfDivisions).toFixed(2));
-  
-          if (cropIsAvailable(crop, year, lastUsedYear, division, userObj.auth0_id )) {
-            lastUsedYear.get(division)?.set(crop, year);
-            const plantingDate = new Date(crop.plantingDate);
-            plantingDate.setFullYear(plantingDate.getFullYear() + year - 1);
-            const harvestingDate = new Date(crop.harvestingDate);
-            harvestingDate.setFullYear(harvestingDate.getFullYear() + year - 1);
-            const soilResidualNitrogen: number = crop.soilResidualNitrogen ?? TheResidualNitrogenSupply;
-
-            const nitrogenBalance = calculateNitrogenBalance(crop, crop.nitrogenSupply, soilResidualNitrogen);
-  
-            rotationPlan.set(year, [...(rotationPlan.get(year) || []), {
-              division,
-              crop,
-              plantingDate: plantingDate.toISOString().substring(0, 10),
-              harvestingDate: harvestingDate.toISOString().substring(0, 10),
-              divisionSize,
-              nitrogenBalance,
-            }]);
-          }
-        }
-      }
-    }
-  
-    const rotation = new Rotation({
-      user: userObj.auth0_id,
-      fieldSize,
-      numberOfDivisions,
-      rotationName : input.rotationName,
-      crops: input.crops,
-      rotationPlan: Array.from(rotationPlan.entries()).map(([year, rotationItems]) => ({ year, rotationItems })),
-    });
-    
-    const createdRotation = await rotation.save();
-    
-    const cropsToUpdate = await CropModel.find({ _id: { $in: input.crops } });
-    
-    const user = await User.findOne({ auth0_id: userObj.auth0_id });
-    if (!user) {
-      throw new Error('User not found');
-    }
-    
-    // Increment the count of each crop in the user's selectareCounts
-    input.crops.forEach(crop => {
-      user.selectareCounts[crop._id] = (user.selectareCounts[crop._id] || 0) + 1;
-    });
-    await user.save();
-  
-    const updatePromises = cropsToUpdate.map((crop) => {
-      // Update the crop's soilResidualNitrogen with the one in the last year of the rotation
-      crop.soilResidualNitrogen =  rotationPlan.get(maxYears)?.find((item) => item.crop._id === crop._id)?.nitrogenBalance;
-      return crop.save();
-    });
-    await Promise.all(updatePromises);
-  
-    if (createdRotation) {
-      return createdRotation
- 
-    } else {
-  
-      throw new Error('Failed to generate crop rotation');
-    }
-  };
-  
-  function sortCropsByNitrogenBalance(crops: Crop[], nitrogenPerDivision: number, soilResidualNitrogen: number) {
-    return crops.sort((a, b) => {
-      const balanceA = calculateNitrogenBalance(a, nitrogenPerDivision,  soilResidualNitrogen );
-      const balanceB = calculateNitrogenBalance(b, nitrogenPerDivision,  soilResidualNitrogen );
-      return balanceA - balanceB;
-    });
-  }
-  
-  function calculateNitrogenBalance(crop: Crop, nitrogenPerDivision: number, soilResidualNitrogen: number) {
-    const nitrogenBalance = nitrogenPerDivision - crop.nitrogenDemand + soilResidualNitrogen;
-    // No negative nitrogen balance
-    const balance = nitrogenBalance < 0 ? 0 : nitrogenBalance;
-    // Set nitrogen balance to 2 decimal places
-    return parseFloat(balance.toFixed(2));
-  }
-  
-  // @route PUT /api/crops/rotation/
-  // @access Admin
-  // @route PUT /api/crops/rotation/
-  // @access Admin
-  const updateNitrogenBalanceAndRegenerateRotation = async (Inputs) => {
-    const {id,  year, rotationName, division, nitrogenBalance } = Inputs;
-    // Find the rotation for the given id
-    const rotation = await Rotation.findById(id).populate('crops');
-    if (!rotation) {
-      throw new Error('Rotation not found' + id +" " + JSON.stringify(Inputs) );
-    }
-    const { user } = await getSession();
-    if (rotation.user !== user.sub) {
-      throw new Error('User not authorized to update this crop rotation');
-    }
-    // Get the rotation plans for the specific year and the following years
-    const relevantYearPlans = rotation.rotationPlan.filter(item => item.year >= year);
-    if (!relevantYearPlans.length) {
-      throw new Error('Year plan not found');
-    }
-  
-    // Update the nitrogen balance for the division in each relevant year
-    for (const yearPlan of relevantYearPlans) {
-      // Find the division in the current year plan
-      const relevantDivision = yearPlan.rotationItems.find(item => item.division === division);
-  
-      if (relevantDivision) {
-        relevantDivision.nitrogenBalance += nitrogenBalance;
-      }
-    }
-    // Find the division in the last year plan
-    const lastYearPlan = relevantYearPlans[relevantYearPlans.length - 1];
-    const lastYearDivision = lastYearPlan.rotationItems.find(item => item.division === division);
-    if (lastYearDivision && lastYearDivision.crop) {
-      // Find the crop and update its soilResidualNitrogen
-      const crop = await rotation.crops.find(crop => crop._id.toString() === lastYearDivision.crop.toString());
-      if (crop) {
-        crop.soilResidualNitrogen = lastYearDivision.nitrogenBalance;
-        await crop.save();
-      }
-    }
-    // save the updated rotation
-    await rotation.save();
-return rotation
-  };
-
-
-  // @route PUT /api/crops/rotation/divisionSize
-// @access Admin
-const updateDivisionSizeAndRedistribute = async (input) => {
-  const {id, rotationName, division, newDivisionSize } = input
-
-  // Find the rotation for the given id
-  const rotation = await Rotation.findById(id)
-  if (!rotation) {
-    throw new Error('Rotation not found for ' + id + input.toString())
-  }
-  // Check if newDivisionSize is valid
-  if (newDivisionSize > rotation.fieldSize || newDivisionSize < 0) {
-    throw new Error('Invalid division size: ' + newDivisionSize +  " must not be above fieldsize: " + rotation.fieldSize);
-  }
-
-  const { user } = await getSession();
-  if (rotation.user !== user.sub) {
-    throw new Error('User not authorized to update this crop rotation');
-  }
-  // Calculate the remaining size to be distributed among the other divisions
-  const remainingSize = rotation.fieldSize - newDivisionSize;
-  // Calculate the size for the other divisions
-  const otherDivisionsSize = remainingSize / (rotation.numberOfDivisions - 1);
-  // Iterate over all the years
-  for (const yearPlan of rotation.rotationPlan) {
-    // Iterate over all divisions in a year
-    for (const rotationItem of yearPlan.rotationItems) {
-      if (rotationItem.division === division) {
-        // Update the specified division size
-        rotationItem.divisionSize = newDivisionSize;
-        rotationItem.directlyUpdated = true; // marking division as directly updated
-      } else if (!rotationItem.directlyUpdated) {
-        // Update the other divisions' size only if they haven't been directly updated
-        rotationItem.divisionSize = otherDivisionsSize;
-      }
-    }
-  }
-  // save the updated rotation
-  await rotation.save();
-return rotation
-}
-  const deleteCropRotation = async (input) => {
-    const cropRotation = await Rotation.findById(input);
-  
-    if (!cropRotation) {
-      throw new Error('Crop rotation not found');
-    }
-    const { user } = await getSession();
-    if (cropRotation.user !== user.sub) {
-      throw new Error('User not authorized to delete this crop rotation');
-    }
-    await cropRotation.deleteOne(
-      { _id: input }
-    );
-
-return cropRotation
-    }
-
-//new api paths:
-
-// API/Controllers/Rotation/[rotation]/[rotationRoutes]/[dinamicAction]/route.ts
-
-//GET paths and params docs
-// get crop rotation:
-// API_URL + /Rotation/getRotation/ rotation / :id
-
-
-
+// Main controller functions
 export async function GET(request: NextRequest, context: any) {
-    const { params } = context;
-    const { user } = await getSession();
-    console.log("reached get request")
-
-    if (params.rotation == 'getRotation' && params.rotationRoutes == 'rotation') {
-        const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
-        const CheckuserObject = Checkuser.toObject();
-
-        console.log("reached get request getCrop")
-
-        if (user.sub !== CheckuserObject.auth0_id) {
-
-            return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 401 });
-        }
-
-        const cropRotation = await Rotation.find({ user: user.sub }).sort({ createdAt: -1 });
-        if (cropRotation && cropRotation.length > 0) {
-            return NextResponse.json({
-                data: cropRotation
-            } , { status: 200 });
-        } else {
-         
-          return NextResponse.json({ message: 'No rotation for user 2' }, { status: 203 } );
-        }
-    }
-}
-
-
-
-//POST paths and params docs
-// generate crop rotation:
-// API_URL + /Rotation/generateRotation/ rotation / :id
-export async function POST(req: NextRequest, context: any) {
   const { params } = context;
+  const session = await getSession();
+  const user = session?.user;
 
-  if (params.rotation == 'generateRotation' && params.rotationRoutes == 'rotation') {
-    // Ensure session and user retrieval is handled correctly
-    const session = await getSession();
-    const user = session?.user;
+  try {
+    if (params.rotation === 'getRotation' && params.rotationRoutes === 'rotation') {
+      const rotations = await prisma.rotation.findMany({
+        where: {
+          userId: user.sub
+        },
+        include: {
+          rotationPlans: {
+            include: {
+              crop: {
+                include: {
+                  pests: true,
+                  diseases: true
+                }
+              }
+            },
+            orderBy: [
+              { year: 'asc' },
+              { division: 'asc' }
+            ]
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
 
-    // Fetch the user based on dynamic action parameter
-    const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
-    if (!Checkuser) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+      return NextResponse.json({ data: rotations }, { status: 200 });
     }
-
-    const CheckuserObject = Checkuser.toObject();
-   
-
-    // Check if the user from the session matches the fetched user
-    if (user.sub !== CheckuserObject.auth0_id) {
-      return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 401 });
-    }
-
-    try {
-      // Await the parsing of the JSON body from the request
-      const cropInput = await req.json();
-
-     let response =   await generateCropRotation(cropInput, CheckuserObject);
-      return NextResponse.json(response, { status: 200 });
-    } catch (error) {
-      // Handle parsing errors or other exceptions
-      console.error('Error parsing request body:', error);
-      return NextResponse.json({ message: error }, { status: 400 });
-    }
+  } catch (error) {
+    return handleApiError(error);
   }
 }
 
+export async function POST(request: NextRequest, context: any) {
+  const { params } = context;
+  const session = await getSession();
+  const user = session?.user;
 
+  try {
+    if (params.rotation === 'generateRotation' && params.rotationRoutes === 'rotation') {
+      const input: RotationInput = await request.json();
+      const {
+        fieldSize,
+        numberOfDivisions,
+        rotationName,
+        crops,
+        maxYears,
+        ResidualNitrogenSupply = 500
+      } = input;
 
-//PUT paths and params docs
-// update nitrogen balance and regenerate rotation:
-// API_URL + /Rotation/updateNitrogenBalance/ rotation / :id
-// update division size and redistribute:
-// API_URL + /Rotation/updateDivisionSizeAndRedistribute/ rotation / :id
-
-export async function PUT(req: NextRequest, context: any) {
-    const { params } = context;
-    if (params.rotation == 'updateDivisionSizeAndRedistribute' && params.rotationRoutes == 'rotation') {
-        const session = await getSession();
-        const user = session?.user;
-        const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
-        const CheckuserObject = Checkuser.toObject();
-        if (user.sub !== CheckuserObject.auth0_id ) {
-            return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
-        }
-        try {
-          let divisionNewSize = await req.json();
-        const rotation = await updateDivisionSizeAndRedistribute(divisionNewSize);
-        return NextResponse.json( rotation , { status: 200   });
-
-      } catch (err) {
-        console.error('Error parsing request body:', err);
-        return NextResponse.json({ message: err.toString() }, { status: 400 });
+      // Validation
+      if (!crops?.length) {
+        return NextResponse.json(
+          { error: 'No crops provided' },
+          { status: 400 }
+        );
       }
-    }
-    if (params.rotation == 'updateNitrogenBalance' && params.rotationRoutes == 'rotation') {
-        const session = await getSession();
-        const user = session?.user;
-        const Checkuser = await User.findOne({ auth0_id: params.dinamicAction.toString() });
-        const CheckuserObject = Checkuser.toObject();
-        if (user.sub !== CheckuserObject.auth0_id ) {
-            return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
-        }
 
-        console.log("reached put request ")
-        try {
-          let nitrogenToSuplement = await req.json();
-        const rotation = await updateNitrogenBalanceAndRegenerateRotation(nitrogenToSuplement);
-        return NextResponse.json({
+      // Initialize tracking structures
+      const rotationPlan = new Map();
+      const lastUsedYear = new Map();
+      const usedCropsInYear = new Map();
 
-            message: 'Nitrogen balance updated successfully',
-            data: rotation
-        } , { status: 200 }) 
-      } catch (err) {
-        console.error('Error parsing request body:', err);
-        return NextResponse.json({ message: err.toString() }, { status: 400 });
+      // Initialize last used year tracking for each division
+      for (let division = 1; division <= numberOfDivisions; division++) {
+        const divisionLastUsedYear = new Map();
+        crops.forEach(crop => {
+          divisionLastUsedYear.set(crop.cropName, 0 - crop.ItShouldNotBeRepeatedForXYears);
+        });
+        lastUsedYear.set(division, divisionLastUsedYear);
       }
-    }
 
+      // Generate rotation plan
+      for (let year = 1; year <= maxYears; year++) {
+        usedCropsInYear.set(year, new Set());
+        const yearlyPlan = [];
+        
+        for (let division = 1; division <= numberOfDivisions; division++) {
+          const divisionSize = parseFloat((fieldSize / numberOfDivisions).toFixed(2));
+          const prevYearPlan = rotationPlan.get(year - 1);
+          const prevCrop = prevYearPlan?.find(item => item.division === division)?.crop;
+
+          if (prevCrop) {
+            // Calculate nitrogen balance from previous year
+            const prevNitrogenBalance = prevYearPlan.find(
+              item => item.division === division
+            ).nitrogenBalance;
+            
+            const nitrogenPerDivision = prevCrop.nitrogenSupply + prevNitrogenBalance;
+            const sortedCrops = sortCropsByNitrogenBalance(crops, nitrogenPerDivision, 0);
+
+            // Find suitable crop
+            for (const candidateCrop of sortedCrops) {
+              const isAvailable = await cropIsAvailable(
+                candidateCrop,
+                year,
+                lastUsedYear,
+                division,
+                user.sub
+              );
+
+              if (
+                isAvailable &&
+                !hasSharedPests(candidateCrop, prevCrop) &&
+                !hasSharedDiseases(candidateCrop, prevCrop)
+              ) {
+                lastUsedYear.get(division)?.set(candidateCrop.cropName, year);
+                usedCropsInYear.get(year)?.add(candidateCrop.id);
+
+                const nitrogenBalance = calculateNitrogenBalance(
+                  candidateCrop,
+                  nitrogenPerDivision,
+                  0
+                );
+
+                yearlyPlan.push({
+                  division,
+                  cropId: candidateCrop.id,
+                  plantingDate: candidateCrop.plantingDate,
+                  harvestingDate: candidateCrop.harvestingDate,
+                  divisionSize,
+                  nitrogenBalance
+                });
+                break;
+              }
+            }
+          } else {
+            // First year or no previous crop
+            const cropIndex = (division + year - 2) % crops.length;
+            const crop = crops[cropIndex];
+            
+            if (await cropIsAvailable(crop, year, lastUsedYear, division, user.sub)) {
+              lastUsedYear.get(division)?.set(crop.cropName, year);
+              usedCropsInYear.get(year)?.add(crop.id);
+
+              const nitrogenBalance = calculateNitrogenBalance(
+                crop,
+                crop.nitrogenSupply,
+                ResidualNitrogenSupply
+              );
+
+              yearlyPlan.push({
+                division,
+                cropId: crop.id,
+                plantingDate: crop.plantingDate,
+                harvestingDate: crop.harvestingDate,
+                divisionSize,
+                nitrogenBalance
+              });
+            }
+          }
+        }
+        
+        rotationPlan.set(year, yearlyPlan);
+      }
+
+      // Create rotation in database
+      const rotation = await prisma.rotation.create({
+        data: {
+          userId: user.sub,
+          rotationName,
+          fieldSize,
+          numberOfDivisions,
+          rotationPlans: {
+            create: Array.from(rotationPlan.entries()).flatMap(([year, plans]) =>
+              plans.map(plan => ({
+                year,
+                ...plan
+              }))
+            )
+          }
+        },
+        include: {
+          rotationPlans: {
+            include: {
+              crop: true
+            }
+          }
+        }
+      });
+
+      return NextResponse.json(rotation);
+    }
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
-//DELETE paths and params docs
-// delete crop rotation:
+export async function PUT(request: NextRequest, context: any) {
+  const { params } = context;
+  const session = await getSession();
+  const user = session?.user;
 
-// API_URL + /Rotation/deleteRotation/:userID / :Rotationid
+  try {
+    // Update nitrogen balance
+    if (params.rotation === 'updateNitrogenBalance') {
+      const { id, year, division, nitrogenBalance, rotationName } = await request.json();
 
-export async function DELETE(req: NextRequest, context: any) {
-    const { params } = context;
-    if (params.rotation == 'deleteRotation' ) {
+      const rotation = await prisma.rotation.findUnique({
+        where: { id: parseInt(id) },
+        include: { rotationPlans: true }
+      });
 
-        const session = await getSession();
-        const user = session?.user;
-        const Checkuser = await User.findOne({ auth0_id: params.rotationRoutes.toString() });
-        const CheckuserObject = Checkuser.toObject();
-        if (user.sub !== CheckuserObject.auth0_id ) {
-            return NextResponse.json({ message: 'User not found / not the same user as in token' }, { status: 404 });
-        }
-        try {
-          let rotationToDelete = params.dinamicAction;
-        const rotation = await deleteCropRotation(rotationToDelete);
-        return NextResponse.json({
-
-            message: 'Rotation deleted successfully',
-            data: rotation
-        } , { status: 200 })
-    } catch (err) {
-        console.error('Error parsing request body:', err);
-        return NextResponse.json({ message: err.toString() }, { status: 400 });
+      if (!rotation || rotation.userId !== user.sub) {
+        return NextResponse.json(
+          { error: 'Not authorized' },
+          { status: 401 }
+        );
       }
+
+      const updatedRotation = await prisma.$transaction(async (prisma) => {
+        // Update specified plan
+        await prisma.rotationPlan.updateMany({
+          where: {
+            rotationId: parseInt(id),
+            year: parseInt(year),
+            division: parseInt(division)
+          },
+          data: {
+            nitrogenBalance: parseFloat(nitrogenBalance),
+            directlyUpdated: true
+          }
+        });
+
+        // Get updated rotation
+        return prisma.rotation.findUnique({
+          where: { id: parseInt(id) },
+          include: {
+            rotationPlans: {
+              include: {
+                crop: true
+              }
+            }
+          }
+        });
+      });
+
+      return NextResponse.json({
+        message: 'Nitrogen balance updated successfully',
+        data: updatedRotation
+      });
     }
 
+    // Update division size
+    if (params.rotation === 'updateDivisionSizeAndRedistribute') {
+      const { id, division, newDivisionSize, rotationName } = await request.json();
+
+      const rotation = await prisma.rotation.findUnique({
+        where: { id: parseInt(id) }
+      });
+
+      if (!rotation || rotation.userId !== user.sub) {
+        return NextResponse.json(
+          { error: 'Not authorized' },
+          { status: 401 }
+        );
+      }
+
+      if (newDivisionSize > rotation.fieldSize || newDivisionSize < 0) {
+        return NextResponse.json(
+          { error: 'Invalid division size' },
+          { status: 400 }
+        );
+      }
+
+      const remainingSize = rotation.fieldSize - newDivisionSize;
+      const otherDivisionsSize = remainingSize / (rotation.numberOfDivisions - 1);
+
+      const updatedRotation = await prisma.rotation.update({
+        where: { id: parseInt(id) },
+        data: {
+          rotationPlans: {
+            updateMany: [
+              {
+                where: {
+                  division: parseInt(division)
+                },
+                data: {
+                  divisionSize: newDivisionSize,
+                  directlyUpdated: true
+                }
+              },
+              {
+                where: {
+                  division: {
+                    not: parseInt(division)
+                  },
+                  directlyUpdated: false
+                },
+                data: {
+                  divisionSize: otherDivisionsSize
+                }
+              }
+            ]
+          }
+        },
+        include: {
+          rotationPlans: {
+            include: {
+              crop: true
+            }
+          }
+        }
+      });
+
+      return NextResponse.json(updatedRotation);
+    }
+  } catch (error) {
+    return handleApiError(error);
   }
+}
+
+export async function DELETE(request: NextRequest, context: any) {
+  const { params } = context;
+  const session = await getSession();
+  const user = session?.user;
+
+  try {
+    if (params.rotation === 'deleteRotation') {
+      const rotationId = parseInt(params.dinamicAction);
+
+      const rotation = await prisma.rotation.findUnique({
+        where: { id: rotationId }
+      });
+
+      if (!rotation || rotation.userId !== user.sub) {
+        return NextResponse.json(
+          { error: 'Not authorized' },
+          { status: 401 }
+        );
+      }
+
+      await prisma.rotation.delete({
+        where: { id: rotationId }
+      });
+
+      return NextResponse.json({
+        message: 'Rotation deleted successfully',
+        data: rotation
+      });
+    }
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
 
 
 
