@@ -1,8 +1,8 @@
 "use client"
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useGlobalContextCrop } from "../../Context/culturaStore";
-import { useGlobalContext } from "../../Context/UserStore";
+import { useGlobalContextCrop } from "../../providers/culturaStore";
+import { useGlobalContext } from "../../providers/UserStore";
 import useRecommendations from "./recomandari";
 import { Alert, Container, Card, Table } from "react-bootstrap";
 import React from "react";

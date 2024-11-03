@@ -1,4 +1,4 @@
-import GridGenerator from '../../../Componente/GridGen';
+import GridGenerator from '@/app/componets/GridGen';
 import Continut from '../../../Crud/GetAllInRotatie/page';
 import styles from '../Rotatie.module.css';
 

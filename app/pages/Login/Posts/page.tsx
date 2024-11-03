@@ -1,8 +1,8 @@
 "use client"
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { useGlobalContextPost } from '../../../Context/postStore';
-import { useGlobalContext} from '../../../Context/UserStore';
+import { useGlobalContextPost } from '../../../providers/postStore';
+import { useGlobalContext} from '../../../providers/UserStore';
 import { useEffect } from 'react';
 import Spinner from '../../../Crud/Spinner';
 import { UserInfos } from '../Dashboard/userInfos';

@@ -1,6 +1,6 @@
 "use client"
 import { Dropdown } from 'react-bootstrap';
-import { useGlobalContext } from '../Context/UserStore';
+import { useGlobalContext } from '../providers/UserStore';
 import styles from '../../styles/Header.module.css';
 import Link from 'next/link';
 
@@ -12,7 +12,7 @@ function HeaderLog() {
       {data && data.name ? (
         <Dropdown>
           <Dropdown.Toggle variant="outline-secondary" id="dropdownMenuButton1">
-            <Link href="/pages/Login/Dashboard/" style={{ textDecoration: 'none', color: '#fff' }}>
+            <Link href="/Dashboard/" style={{ textDecoration: 'none', color: '#fff' }}>
             {data.picture && (
   <img 
     src={data.picture} 
@@ -27,10 +27,10 @@ function HeaderLog() {
           </Dropdown.Toggle>
           <Dropdown.Menu>
             <Dropdown.Item as={Link} href="/pages/Rotatie">Crop library</Dropdown.Item>
-            <Dropdown.Item as={Link} href="/pages/Login/Dashboard/">Dashboard</Dropdown.Item>
+            <Dropdown.Item as={Link} href="/Dashboard/">Dashboard</Dropdown.Item>
             {data.role.toLowerCase() === 'farmer' && (
               <>
-                <Dropdown.Item as={Link} href="/pages/Login/RotatieDashboard/">Crop rotation</Dropdown.Item>
+                <Dropdown.Item as={Link} href="/rotation-dashboard">Crop rotation</Dropdown.Item>
                 {/* <Dropdown.Item as={Link} href="/pages/Recomandari/">Analitics</Dropdown.Item> */}
               </>
             )}

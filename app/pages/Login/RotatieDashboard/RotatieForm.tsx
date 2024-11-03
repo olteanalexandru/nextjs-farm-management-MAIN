@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGlobalContextCrop } from '../../../Context/culturaStore';
+import { useGlobalContextCrop } from '../../../providers/culturaStore';
 import { useTranslations } from 'next-intl';
 
 const CropRotationForm = ({ filteredCrops }) => {

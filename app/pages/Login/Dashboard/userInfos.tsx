@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Container } from 'react-bootstrap';
-import { useGlobalContext } from '../../../Context/UserStore';
+import { useGlobalContext } from '../../../providers/UserStore';
 import LinkParola from '../Elements/page';
 
 export const UserInfos = () => {

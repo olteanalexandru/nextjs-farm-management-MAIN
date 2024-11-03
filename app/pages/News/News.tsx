@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import Spinner from '../../Crud/Spinner';
-import { useGlobalContextPost } from '../../Context/postStore';
+import { useGlobalContextPost } from '../../providers/postStore';
 import Continut from '../../Crud/GetAllPosts/page';
 import Card from 'react-bootstrap/Card';
 import { useTranslations } from 'next-intl';

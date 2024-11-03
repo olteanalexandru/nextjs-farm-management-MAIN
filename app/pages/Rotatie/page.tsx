@@ -1,17 +1,14 @@
 'use client'
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Spinner from '../../Crud/Spinner';
-import Continut from '../../Crud/GetAllInRotatie/page';
-import GridGenerator from '../../Componente/GridGen';
-import styles from './Rotatie.module.css';
-import { useGlobalContextCrop } from '../../Context/culturaStore';
+import { useGlobalContextCrop } from '../../providers/culturaStore';
 import { useSignals } from "@preact/signals-react/runtime";
 import { useUser } from '@auth0/nextjs-auth0/client';
 import App from './Components/App';
 
 export default function Rotatie() {
   const { crops, isLoading, getAllCrops, areThereCrops } = useGlobalContextCrop();
-  const { user, error, isLoading: isUserLoading } = useUser();
+  const { isLoading: isUserLoading } = useUser();
 
   useSignals();
 

@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Container, Button, Form } from 'react-bootstrap';
-import { useGlobalContextPost } from '../../../Context/postStore';
-import { useGlobalContext } from '../../../Context/UserStore';
+import { useGlobalContextPost } from '../../../providers/postStore';
+import { useGlobalContext } from '../../../providers/UserStore';
 
 
 // interface SinglePostProps {

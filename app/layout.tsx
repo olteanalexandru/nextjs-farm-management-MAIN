@@ -4,9 +4,9 @@ import Header from './header'
 import Footer from './footer'
 
 import 'bootstrap/dist/css/bootstrap.css'
-import {GlobalContextProvider} from './Context/UserStore'
-import {GlobalContextProvider as CulturaStore} from './Context/culturaStore'
-import {GlobalContextProvider as PostStore } from './Context/postStore'
+import {GlobalContextProvider} from './providers/UserStore'
+import {GlobalContextProvider as CulturaStore} from './providers/culturaStore'
+import {GlobalContextProvider as PostStore } from './providers/postStore'
 import '../styles/globalsBot.css';
 // import Auth0ProviderWithHistory from './Auth0ProviderWrapper';
 import { UserProvider } from '@auth0/nextjs-auth0/client';

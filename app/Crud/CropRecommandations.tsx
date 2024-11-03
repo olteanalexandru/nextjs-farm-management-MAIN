@@ -2,7 +2,7 @@
 
 "use client"
 import React, { useEffect, useState } from 'react';
-import { useGlobalContextCrop } from '../Context/culturaStore';
+import { useGlobalContextCrop } from '../providers/culturaStore';
 
 export default function CropRecommendations({ cropName, token }: { cropName: string, token: string }) {
   const { getCropRecommendations } = useGlobalContextCrop();

@@ -4,11 +4,12 @@ import { getSession } from '@auth0/nextjs-auth0';
 import { handleApiError } from '@/app/lib/api-utils';
 import { Prisma } from '@prisma/client';
 
+
+
+
 export async function GET(request: NextRequest, context: any) {
    const { params } = context;
-   const session = await getSession();
-   const user = session?.user;
-
+   
    try {
       if (params.crops === 'crops' && params.cropRoute === "search") {
          const crops = await prisma.crop.findMany({
@@ -16,38 +17,36 @@ export async function GET(request: NextRequest, context: any) {
                cropName: {
                   contains: params.dinamicAction,
                   mode: 'insensitive'
-               }
+               },
+               deleted: null
             },
             include: {
-               fertilizers: { select: { value: true } },
-               pests: { select: { value: true } },
-               diseases: { select: { value: true } }
+               details: true
             }
          });
 
-         const filteredCrops = crops.map(crop => ({
+         // Transform the details into the expected format
+         const transformedCrops = crops.map(crop => ({
             ...crop,
-            fertilizers: crop.fertilizers.map(f => f.value),
-            pests: crop.pests.map(p => p.value),
-            diseases: crop.diseases.map(d => d.value)
-         })).filter(crop => 
-            crop.cropType && 
-            crop.cropVariety && 
-            crop.plantingDate && 
-            crop.harvestingDate && 
-            crop.soilType
-         );
+            fertilizers: crop.details
+               .filter(d => d.detailType === 'FERTILIZER')
+               .map(d => d.value),
+            pests: crop.details
+               .filter(d => d.detailType === 'PEST')
+               .map(d => d.value),
+            diseases: crop.details
+               .filter(d => d.detailType === 'DISEASE')
+               .map(d => d.value)
+         }));
 
-         return NextResponse.json({ crops: filteredCrops });
+         return NextResponse.json({ crops: transformedCrops });
       }
 
       if (params.crops === 'crop' && params.cropRoute === "id") {
          const crop = await prisma.crop.findUnique({
             where: { id: parseInt(params.dinamicAction) },
             include: {
-               fertilizers: { select: { value: true } },
-               pests: { select: { value: true } },
-               diseases: { select: { value: true } }
+               details: true
             }
          });
 
@@ -64,8 +63,7 @@ export async function GET(request: NextRequest, context: any) {
             },
             select: {
                cropName: true,
-               diseases: { select: { value: true } },
-               pests: { select: { value: true } },
+               details: true,
                nitrogenSupply: true,
                nitrogenDemand: true,
             }
@@ -78,9 +76,7 @@ export async function GET(request: NextRequest, context: any) {
          const [crops, selections] = await Promise.all([
             prisma.crop.findMany({
                include: {
-                  fertilizers: { select: { value: true } },
-                  pests: { select: { value: true } },
-                  diseases: { select: { value: true } }
+                  details: true
                }
             }),
             prisma.userCropSelection.findMany({
@@ -90,9 +86,15 @@ export async function GET(request: NextRequest, context: any) {
 
          const filteredCrops = crops.map(crop => ({
             ...crop,
-            fertilizers: crop.fertilizers.map(f => f.value),
-            pests: crop.pests.map(p => p.value),
-            diseases: crop.diseases.map(d => d.value)
+            fertilizers: crop.details
+               .filter(d => d.detailType === 'FERTILIZER')
+               .map(d => d.value),
+            pests: crop.details
+               .filter(d => d.detailType === 'PEST')
+               .map(d => d.value),
+            diseases: crop.details
+               .filter(d => d.detailType === 'DISEASE')
+               .map(d => d.value)
          }));
 
          return NextResponse.json({ crops: filteredCrops, selections });
@@ -125,6 +127,7 @@ export async function POST(request: NextRequest, context: any) {
       if (params.crops === 'crop' && params.cropRoute === 'single') {
          const cropData = await request.json();
 
+         // Create crop with details
          const crop = await prisma.crop.create({
             data: {
                userId: user.sub,
@@ -138,51 +141,24 @@ export async function POST(request: NextRequest, context: any) {
                soilType: cropData.soilType,
                climate: cropData.climate,
                ItShouldNotBeRepeatedForXYears: cropData.ItShouldNotBeRepeatedForXYears,
-               nitrogenSupply: cropData.nitrogenSupply,
-               nitrogenDemand: cropData.nitrogenDemand,
-               fertilizers: {
-                  create: cropData.fertilizers?.map(value => ({
-                     type: 'FERTILIZER',
-                     value
-                  })) || []
-               },
-               pests: {
-                  create: cropData.pests?.map(value => ({
-                     type: 'PEST',
-                     value
-                  })) || []
-               },
-               diseases: {
-                  create: cropData.diseases?.map(value => ({
-                     type: 'DISEASE',
-                     value
-                  })) || []
-               }
-            }
-         });
-
-         return NextResponse.json(crop, { status: 201 });
-      }
-
-      if (params.crops === 'crops' && params.cropRoute === "recommendations") {
-         const data = await request.json();
-         const crop = await prisma.crop.create({
-            data: {
-               userId: user.sub,
-               cropName: data.cropName,
-               nitrogenSupply: data.nitrogenSupply,
-               nitrogenDemand: data.nitrogenDemand,
-               pests: {
-                  create: data.pests?.map(value => ({
-                     type: 'PEST',
-                     value
-                  })) || []
-               },
-               diseases: {
-                  create: data.diseases?.map(value => ({
-                     type: 'DISEASE',
-                     value
-                  })) || []
+               nitrogenSupply: toDecimal(cropData.nitrogenSupply),
+               nitrogenDemand: toDecimal(cropData.nitrogenDemand),
+               soilResidualNitrogen: toDecimal(cropData.soilResidualNitrogen),
+               details: {
+                  create: [
+                     ...(cropData.fertilizers?.map(value => ({
+                        value,
+                        detailType: 'FERTILIZER'
+                     })) || []),
+                     ...(cropData.pests?.map(value => ({
+                        value,
+                        detailType: 'PEST'
+                     })) || []),
+                     ...(cropData.diseases?.map(value => ({
+                        value,
+                        detailType: 'DISEASE'
+                     })) || [])
+                  ]
                }
             }
          });

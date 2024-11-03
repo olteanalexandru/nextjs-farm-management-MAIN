@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { PrismaClient } from '@prisma/client';
 
 export class ApiError extends Error {
   constructor(public statusCode: number, message: string) {
@@ -74,4 +75,87 @@ export function buildWhereClause(filters: Record<string, any>) {
   });
 
   return where;
+}
+
+
+export async function deleteCropWithRelations(cropId: number) {
+  const prisma = new PrismaClient();
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Delete related records first
+      await tx.cropDetail.deleteMany({
+        where: { cropId }
+      });
+
+      await tx.userCropSelection.deleteMany({
+        where: { cropId }
+      });
+
+      await tx.rotationPlan.deleteMany({
+        where: { cropId }
+      });
+
+      // Finally delete the crop
+      await tx.crop.delete({
+        where: { id: cropId }
+      });
+    });
+  } catch (error) {
+    throw new Error(`Failed to delete crop: ${error.message}`);
+  }
+}
+
+export async function deleteUserWithRelations(userId: string) {
+  const prisma = new PrismaClient();
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Delete all related records in the correct order
+      await tx.userCropSelection.deleteMany({
+        where: { userId }
+      });
+
+      await tx.post.deleteMany({
+        where: { userId }
+      });
+
+      // Delete rotations and their plans
+      const rotations = await tx.rotation.findMany({
+        where: { userId }
+      });
+
+      for (const rotation of rotations) {
+        await tx.rotationPlan.deleteMany({
+          where: { rotationId: rotation.id }
+        });
+      }
+
+      await tx.rotation.deleteMany({
+        where: { userId }
+      });
+
+      // Delete crops and their details
+      const crops = await tx.crop.findMany({
+        where: { userId }
+      });
+
+      for (const crop of crops) {
+        await tx.cropDetail.deleteMany({
+          where: { cropId: crop.id }
+        });
+      }
+
+      await tx.crop.deleteMany({
+        where: { userId }
+      });
+
+      // Finally delete the user
+      await tx.user.delete({
+        where: { id: userId }
+      });
+    });
+  } catch (error) {
+    throw new Error(`Failed to delete user: ${error.message}`);
+  }
 }

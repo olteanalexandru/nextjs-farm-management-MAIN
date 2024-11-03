@@ -1,5 +1,5 @@
 "use client";
-import { useGlobalContextCrop } from '../Context/culturaStore';
+import { useGlobalContextCrop } from '../providers/culturaStore';
 import styles from './Rotatie.module.css';
 import { Button } from 'react-bootstrap'; 
 import React, { useEffect, useState } from 'react';

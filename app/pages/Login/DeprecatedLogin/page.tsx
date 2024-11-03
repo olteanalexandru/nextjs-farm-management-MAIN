@@ -4,7 +4,7 @@ import { FaSignInAlt, FaUser } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useGlobalContext } from '../../../Context/UserStore';
+import { useGlobalContext } from '../../../providers/UserStore';
 import Spinner from '../../../Crud/Spinner';
 import Link from 'next/link';
 

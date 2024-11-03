@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["microsoftSqlServer"]
 }
 
 datasource db {
@@ -14,13 +12,13 @@ model User {
   id             String            @id @default(uuid())
   name           String
   email          String            @unique
-  role           Role              @default(FARMER)
+  roleType       String            @default("FARMER")
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
-  crops          Crop[]
-  posts          Post[]
-  rotations      Rotation[]
-  cropSelections UserCropSelection[]
+  crops          Crop[]            @relation("UserCrops")
+  posts          Post[]            @relation("UserPosts")
+  rotations      Rotation[]        @relation("UserRotations")
+  cropSelections UserCropSelection[] @relation("UserSelections")
 
   @@map("users")
 }
@@ -28,7 +26,7 @@ model User {
 model Crop {
   id                             Int                @id @default(autoincrement())
   userId                         String
-  user                          User               @relation(fields: [userId], references: [id])
+  user                          User               @relation("UserCrops", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   cropName                       String
   cropType                       String?
   cropVariety                    String?
@@ -39,42 +37,45 @@ model Crop {
   soilType                       String?
   climate                        String?
   ItShouldNotBeRepeatedForXYears Int?
-  nitrogenSupply                 Float?
-  nitrogenDemand                 Float?
-  soilResidualNitrogen          Float?
+  nitrogenSupply                 Decimal          @db.Decimal(10,2)
+  nitrogenDemand                 Decimal          @db.Decimal(10,2)
+  soilResidualNitrogen          Decimal?         @db.Decimal(10,2)
   createdAt                     DateTime          @default(now())
   updatedAt                     DateTime          @updatedAt
-  fertilizers                   CropDetail[]      @relation("CropFertilizers")
-  pests                         CropDetail[]      @relation("CropPests")
-  diseases                      CropDetail[]      @relation("CropDiseases")
-  rotationPlans                 RotationPlan[]
-  userSelections                UserCropSelection[]
+  deleted                       DateTime?
+  
+  details                      CropDetail[]        @relation("CropDetails")
+  rotationPlans               RotationPlan[]      @relation("CropRotationPlans")
+  userSelections              UserCropSelection[] @relation("CropSelections")
 
+  @@index([userId])
+  @@index([cropName])
   @@map("crops")
 }
 
 model CropDetail {
   id        Int       @id @default(autoincrement())
   value     String
-  type      DetailType
+  detailType String   
   cropId    Int
-  crop      Crop      @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  crop      Crop      @relation("CropDetails", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_CropDetail_Crop")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  @@index([cropId, detailType])
   @@map("crop_details")
 }
 
 model Rotation {
   id                Int            @id @default(autoincrement())
   userId           String
-  user             User           @relation(fields: [userId], references: [id])
+  user             User           @relation("UserRotations", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Rotation_User")
   rotationName     String
-  fieldSize        Float
+  fieldSize        Decimal        @db.Decimal(10,2)
   numberOfDivisions Int
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
-  rotationPlans    RotationPlan[]
+  rotationPlans    RotationPlan[] @relation("RotationPlans")
 
   @@map("rotations")
 }
@@ -82,15 +83,15 @@ model Rotation {
 model RotationPlan {
   id              Int       @id @default(autoincrement())
   rotationId      Int
-  rotation        Rotation  @relation(fields: [rotationId], references: [id], onDelete: Cascade)
+  rotation        Rotation  @relation("RotationPlans", fields: [rotationId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_RotationPlan_Rotation")
   year            Int
   division        Int
   cropId          Int
-  crop            Crop      @relation(fields: [cropId], references: [id])
+  crop            Crop      @relation("CropRotationPlans", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_RotationPlan_Crop")
   plantingDate    DateTime?
   harvestingDate  DateTime?
-  divisionSize    Float?
-  nitrogenBalance Float?
+  divisionSize    Decimal?  @db.Decimal(10,2)
+  nitrogenBalance Decimal?  @db.Decimal(10,2)
   directlyUpdated Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -101,7 +102,7 @@ model RotationPlan {
 model Post {
   id          Int      @id @default(autoincrement())
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation("UserPosts", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Post_User")
   title       String
   brief       String?  @db.Text
   description String?  @db.Text
@@ -115,24 +116,13 @@ model Post {
 model UserCropSelection {
   id            Int      @id @default(autoincrement())
   userId        String
-  user          User     @relation(fields: [userId], references: [id])
+  user          User     @relation("UserSelections", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_UserCropSelection_User")
   cropId        Int
-  crop          Crop     @relation(fields: [cropId], references: [id])
+  crop          Crop     @relation("CropSelections", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_UserCropSelection_Crop")
   selectionCount Int     @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@unique([userId, cropId])
   @@map("user_crop_selections")
-}
-
-enum Role {
-  ADMIN
-  FARMER
-}
-
-enum DetailType {
-  FERTILIZER
-  PEST
-  DISEASE
 }

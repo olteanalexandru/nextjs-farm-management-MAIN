@@ -1,6 +1,6 @@
 "use client";
-import { useGlobalContextCrop } from '../Context/culturaStore';
-import { useGlobalContext } from '../Context/UserStore';
+import { useGlobalContextCrop } from '../providers/culturaStore';
+import { useGlobalContext } from '../providers/UserStore';
 import FileBase from 'react-file-base64';
 import CropRecommendations from './CropRecommandations';
 import React, { useState, useEffect, useCallback } from 'react';

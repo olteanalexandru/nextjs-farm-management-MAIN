@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from 'react';
 import Spinner from '../../Crud/Spinner';
-import { useGlobalContextPost } from '../../Context/postStore';
+import { useGlobalContextPost } from '../../providers/postStore';
 import Continut from '../../Crud/GetAllPosts/page';
 import { handleScroll, loadMorePosts } from './Components/scrollHandler';
 import debounce from './Components/debounce';

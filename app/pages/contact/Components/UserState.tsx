@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useGlobalContext } from '../../../Context/UserStore';
+import { useGlobalContext } from '../../../providers/UserStore';
 
 export default function useUserState() {
   const { data } = useGlobalContext();

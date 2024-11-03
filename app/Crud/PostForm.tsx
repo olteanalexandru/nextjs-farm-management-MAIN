@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import FileBase from 'react-file-base64';
-import { useGlobalContextPost } from '../Context/postStore';
-import { useGlobalContext } from '../Context/UserStore';
+import { useGlobalContextPost } from '../providers/postStore';
+import { useGlobalContext } from '../providers/UserStore';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 

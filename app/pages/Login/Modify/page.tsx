@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client"
 import {useEffect, useState} from 'react'
-import {useGlobalContext} from '../../../Context/UserStore'
+import {useGlobalContext} from '../../../providers/UserStore'
 import {useRouter} from 'next/navigation';
 import {toast} from 'react-toastify'
 import {FaUser} from 'react-icons/fa'

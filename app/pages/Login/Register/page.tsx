@@ -9,7 +9,7 @@ import {FaUser} from 'react-icons/fa'
 import Spinner from '../../../Crud/Spinner'
 import {Form} from 'react-bootstrap';
 import "bootstrap/dist/css/bootstrap.min.css";
-import {useGlobalContext} from '../../../Context/UserStore';
+import {useGlobalContext} from '../../../providers/UserStore';
 
 function Register() {
   const [formData, setFormData] = useState({
