@@ -5,10 +5,10 @@ import { useSignals  } from "@preact/signals-react/runtime";
 import { signal } from "@preact/signals-react";
 import { useUser } from '@auth0/nextjs-auth0/client';
 
-// const API_URL = 'http://localhost:3000/api/Controllers/Crop/';
-// const API_URL_ROTATION = 'http://localhost:3000/api/Controllers/Rotation/';
-const API_URL = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/Crop/';
-const API_URL_ROTATION = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/Rotation/';
+const API_URL = 'http://localhost:3000/api/Controllers/Crop/';
+const API_URL_ROTATION = 'http://localhost:3000/api/Controllers/Rotation/';
+// const API_URL = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/Crop/';
+// const API_URL_ROTATION = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/Rotation/';
 
 type DataType = {
   
@@ -117,7 +117,7 @@ const getCropRotation = async () => {
   
   }
 
-  console.log( "crop rotation fetched signal " + cropRotationSignal.value?.message);
+
 
 };
 
@@ -400,6 +400,7 @@ const updateDivisionSizeAndRedistribute = async (data: any) => {
   return (
     <GlobalContext.Provider
     value={{
+      isCropRotationLoading: loadingSignal,
       crops: cropsSignal,
       selections: selectionsSignal,
       isLoading: loadingSignal,

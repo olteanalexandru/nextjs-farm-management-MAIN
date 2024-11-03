@@ -2,13 +2,13 @@
 import { createContext, useContext, Dispatch, SetStateAction, useState, useCallback } from 'react';
 import axios from 'axios';
 
-// const API_URL_cropRotation = 'http://localhost:5000/api/crops/cropRotation/';
-// const API_URL_cropRecommendations = 'http://localhost:5000/api/crops/cropRecommendations';
-// const API_URL_CropFields = 'http://localhost:5000/api/crops/cropRotation/fields';
+const API_URL_cropRotation = 'http://localhost:3000/api/crops/cropRotation/';
+const API_URL_cropRecommendations = 'http://localhost:3000/api/crops/cropRecommendations';
+const API_URL_CropFields = 'http://localhost:3000/api/crops/cropRotation/fields';
 
-const API_URL_cropRotation = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRotation/';
-const API_URL_cropRecommendations = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRecommendations';
-const API_URL_CropFields = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRotation/fields';
+// const API_URL_cropRotation = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRotation/';
+// const API_URL_cropRecommendations = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRecommendations';
+// const API_URL_CropFields = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRotation/fields';
 
 type DataType = {
   _id: string;

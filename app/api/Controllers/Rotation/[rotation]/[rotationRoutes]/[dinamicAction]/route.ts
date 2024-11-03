@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
-import prisma from '@/app/lib/prisma';
+import { prisma } from '@/app/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
-import { handleApiError } from '@/app/lib/api-utils';
+
 
 // Types for rotation generation
 interface CropInput {
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest, context: any) {
       return NextResponse.json({ data: rotations }, { status: 200 });
     }
   } catch (error) {
-    return handleApiError(error);
+
   }
 }
 
@@ -274,7 +274,7 @@ export async function POST(request: NextRequest, context: any) {
       return NextResponse.json(rotation);
     }
   } catch (error) {
-    return handleApiError(error);
+
   }
 }
 
@@ -398,7 +398,7 @@ export async function PUT(request: NextRequest, context: any) {
       return NextResponse.json(updatedRotation);
     }
   } catch (error) {
-    return handleApiError(error);
+
   }
 }
 
@@ -432,7 +432,7 @@ export async function DELETE(request: NextRequest, context: any) {
       });
     }
   } catch (error) {
-    return handleApiError(error);
+
   }
 }
 

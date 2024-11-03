@@ -1,36 +1,63 @@
-// middleware.ts
-import createMiddleware from 'next-intl/middleware';
-import { withMiddlewareAuthRequired, getSession, Session } from '@auth0/nextjs-auth0/edge';
-import { NextFetchEvent, NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-const myMiddleware = async (req: NextRequest) => {
-  const res = NextResponse.next();
-  const session: Session | null = await getSession(req, res);
-  if (session) {
-    console.log('Hello from authed middleware' + " User infos access " + session.user.userRoles);
-  } else {
-    console.log('No session found');
+export function middleware(request: NextRequest) {
+  // Handle preflight requests
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Allow-Origin': request.headers.get('origin') || '*',
+      },
+    });
   }
-  return res;
-};
 
-// Combine both middlewares
-const combinedMiddleware = async (req: NextRequest, event: NextFetchEvent) => {
-  await withMiddlewareAuthRequired(myMiddleware)(req, event);
-};
+  const response = NextResponse.next();
 
-export default combinedMiddleware;
+  // Add CORS headers for actual requests
+  response.headers.set('Access-Control-Allow-Credentials', 'true');
+  response.headers.set('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
+
+  // Allow auth endpoints to pass through
+  if (request.nextUrl.pathname.startsWith('/api/auth/')) {
+    return response;
+  }
+
+  // Check if there's a valid session cookie
+  const authCookie = request.cookies.get('appSession');
+  
+  if (!authCookie && (
+    request.nextUrl.pathname.startsWith('/api/Controllers/') ||
+    request.nextUrl.pathname.startsWith('/pages/Login/') ||
+    request.nextUrl.pathname.startsWith('/Crud/GetAllInRotatie/') ||
+    request.nextUrl.pathname.startsWith('/Crud/GetAllPosts/')
+  )) {
+    // For API requests, return 401 instead of redirecting
+    if (request.nextUrl.pathname.startsWith('/api/')) {
+      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Allow-Origin': request.headers.get('origin') || '*',
+        },
+      });
+    }
+    // For page requests, redirect to login
+    return NextResponse.redirect(new URL('/api/auth/login', request.url));
+  }
+
+  return response;
+}
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/rotation-dashboard/:path*',
-    '/api/:path*',
-  ]
+    '/api/Controllers/:path*',
+    '/pages/Login/:path*',
+    '/Crud/GetAllInRotatie/:path*',
+    '/Crud/GetAllPosts/:path*'
+  ],
 };
-
-
-
-
-
-

@@ -58,7 +58,7 @@ model CropDetail {
   value     String
   detailType String   
   cropId    Int
-  crop      Crop      @relation("CropDetails", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_CropDetail_Crop")
+  crop      Crop      @relation("CropDetails", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -69,7 +69,7 @@ model CropDetail {
 model Rotation {
   id                Int            @id @default(autoincrement())
   userId           String
-  user             User           @relation("UserRotations", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Rotation_User")
+  user             User           @relation("UserRotations", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   rotationName     String
   fieldSize        Decimal        @db.Decimal(10,2)
   numberOfDivisions Int
@@ -83,11 +83,11 @@ model Rotation {
 model RotationPlan {
   id              Int       @id @default(autoincrement())
   rotationId      Int
-  rotation        Rotation  @relation("RotationPlans", fields: [rotationId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_RotationPlan_Rotation")
+  rotation        Rotation  @relation("RotationPlans", fields: [rotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   year            Int
   division        Int
   cropId          Int
-  crop            Crop      @relation("CropRotationPlans", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_RotationPlan_Crop")
+  crop            Crop      @relation("CropRotationPlans", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   plantingDate    DateTime?
   harvestingDate  DateTime?
   divisionSize    Decimal?  @db.Decimal(10,2)
@@ -102,7 +102,7 @@ model RotationPlan {
 model Post {
   id          Int      @id @default(autoincrement())
   userId      String
-  user        User     @relation("UserPosts", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Post_User")
+  user        User     @relation("UserPosts", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   title       String
   brief       String?  @db.Text
   description String?  @db.Text
@@ -116,9 +116,9 @@ model Post {
 model UserCropSelection {
   id            Int      @id @default(autoincrement())
   userId        String
-  user          User     @relation("UserSelections", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_UserCropSelection_User")
+  user          User     @relation("UserSelections", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   cropId        Int
-  crop          Crop     @relation("CropSelections", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_UserCropSelection_Crop")
+  crop          Crop     @relation("CropSelections", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   selectionCount Int     @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

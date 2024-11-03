@@ -1,8 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
-import prisma from '@/app/lib/prisma';
+import { prisma } from '@/app/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
-import { handleApiError } from '@/app/lib/api-utils';
-import { Prisma } from '@prisma/client';
+
+
 
 
 
@@ -10,6 +10,9 @@ import { Prisma } from '@prisma/client';
 export async function GET(request: NextRequest, context: any) {
    const { params } = context;
    
+   const session = await getSession();
+   const user = session?.user;
+
    try {
       if (params.crops === 'crops' && params.cropRoute === "search") {
          const crops = await prisma.crop.findMany({
@@ -114,7 +117,8 @@ export async function GET(request: NextRequest, context: any) {
       }
 
    } catch (error) {
-      return handleApiError(error);
+
+      
    }
 }
 
@@ -166,7 +170,7 @@ export async function POST(request: NextRequest, context: any) {
          return NextResponse.json(crop, { status: 201 });
       }
    } catch (error) {
-      return handleApiError(error);
+
    }
 }
 
@@ -260,7 +264,7 @@ export async function PUT(request: NextRequest, context: any) {
          return NextResponse.json(selection);
       }
    } catch (error) {
-      return handleApiError(error);
+
    }
 }
 
@@ -292,7 +296,7 @@ export async function DELETE(request: NextRequest, context: any) {
          return NextResponse.json({ message: 'Crop deleted' });
       }
    } catch (error) {
-      return handleApiError(error);
+
    }
 }
 
@@ -307,4 +311,8 @@ export async function DELETE(request: NextRequest, context: any) {
 
 
 
+
+function toDecimal(nitrogenSupply: any) {
+   return nitrogenSupply ? parseFloat(nitrogenSupply) : null;
+}
 

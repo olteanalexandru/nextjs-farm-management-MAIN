@@ -46,47 +46,26 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.env
 
 ```
 
-# app/api/auth/[auth0]/route.ts
+# app\api\auth\[auth0]\route.ts
 
 ```ts
-import { handleAuth, handleCallback } from '@auth0/nextjs-auth0';
-import prisma from '@/app/lib/prisma';
+import { handleAuth } from '@auth0/nextjs-auth0';
 
-export const GET = handleAuth({
-  callback: async (req, res) => {
-    const response = await handleCallback(req, res);
-    const { user } = response as unknown as { user: { sub: string, email: string, name: string } };
-    
-    // Create/update user in database
-    await prisma.user.upsert({
-      where: { id: user.sub },
-      create: {
-        id: user.sub,
-        email: user.email,
-        name: user.name,
-      },
-      update: {
-        email: user.email,
-        name: user.name, 
-      }
-    });
+export const GET = handleAuth();
 
-    return user;
-  }
-});
-// BF99X4UACE1UEP857PMNY46M
 ```
 
-# app/api/Controllers/Crop/[crops]/[cropRoute]/[dinamicAction]/route.ts
+# app\api\Controllers\Crop\[crops]\[cropRoute]\[dinamicAction]\route.ts
 
 ```ts
 import { NextResponse, NextRequest } from 'next/server';
-import prisma from '@/app/lib/prisma';
+import { prisma } from '@/app/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
-import { handleApiError } from '@/app/lib/api-utils';
+import { handleApiError } from '@/app/lib/api-utils'; 
 import { Prisma } from '@prisma/client';
 
 
@@ -95,13 +74,15 @@ import { Prisma } from '@prisma/client';
 export async function GET(request: NextRequest, context: any) {
    const { params } = context;
    
+   const session = await getSession();
+   const user = session?.user;
+
    try {
       if (params.crops === 'crops' && params.cropRoute === "search") {
          const crops = await prisma.crop.findMany({
             where: {
                cropName: {
-                  contains: params.dinamicAction,
-                  mode: 'insensitive'
+                  contains: params.dinamicAction
                },
                deleted: null
             },
@@ -142,8 +123,7 @@ export async function GET(request: NextRequest, context: any) {
          const crops = await prisma.crop.findMany({
             where: {
                cropName: {
-                  contains: params.dinamicAction,
-                  mode: 'insensitive'
+                  contains: params.dinamicAction
                }
             },
             select: {
@@ -294,23 +274,21 @@ export async function PUT(request: NextRequest, context: any) {
                   ItShouldNotBeRepeatedForXYears: cropData.ItShouldNotBeRepeatedForXYears,
                   nitrogenSupply: cropData.nitrogenSupply,
                   nitrogenDemand: cropData.nitrogenDemand,
-                  fertilizers: {
-                     create: cropData.fertilizers?.map(value => ({
-                        type: 'FERTILIZER',
-                        value
-                     })) || []
-                  },
-                  pests: {
-                     create: cropData.pests?.map(value => ({
-                        type: 'PEST',
-                        value
-                     })) || []
-                  },
-                  diseases: {
-                     create: cropData.diseases?.map(value => ({
-                        type: 'DISEASE',
-                        value
-                     })) || []
+                  details: {
+                     create: [
+                        ...(cropData.fertilizers?.map(value => ({
+                           value,
+                           detailType: 'FERTILIZER'
+                        })) || []),
+                        ...(cropData.pests?.map(value => ({
+                           value,
+                           detailType: 'PEST'
+                        })) || []),
+                        ...(cropData.diseases?.map(value => ({
+                           value,
+                           detailType: 'DISEASE'
+                        })) || [])
+                     ]
                   }
                }
             });
@@ -393,188 +371,183 @@ export async function DELETE(request: NextRequest, context: any) {
 
 
 
+function toDecimal(nitrogenSupply: any): any {
+   throw new Error('Function not implemented.');
+}
+
 
 ```
 
-# app/api/Controllers/Post/[posts]/[postsRoutes]/[dinamicAction]/route.ts
+# app\api\Controllers\Post\[posts]\[postsRoutes]\[dinamicAction]\route.ts
 
 ```ts
 import { NextResponse, NextRequest } from 'next/server';
-import prisma from '@/app/lib/prisma';
+import { withApiAuthRequired } from '@auth0/nextjs-auth0';
+import { prisma } from '@/app/lib/prisma';
 import { getCurrentUser } from '@/app/lib/auth';
-import type { ApiResponse } from '@/types';
+import type { ApiResponse, Post } from '@/app/types/api';
 
-export async function GET(request: NextRequest, context: any) {
+async function handler(request: NextRequest, context: any) {
   const { params } = context;
-  
-  try {
-    if (params.posts === 'posts' && params.postsRoutes === "count") {
-      const limit = 5;
-      const count = Number(params.dinamicAction) || 0;
-      const skip = count * limit;
+  const method = request.method;
 
-      const posts = await prisma.post.findMany({
-        skip,
-        take: limit,
-        orderBy: {
-          createdAt: 'desc'
-        },
-        include: {
-          user: {
-            select: {
-              name: true,
-              email: true
+  try {
+    switch (method) {
+      case 'GET':
+        if (params.posts === 'posts' && params.postsRoutes === "count") {
+          const limit = 5;
+          const count = Number(params.dinamicAction) || 0;
+          const skip = count * limit;
+
+          const posts = await prisma.post.findMany({
+            skip,
+            take: limit,
+            orderBy: {
+              createdAt: 'desc'
+            },
+            include: {
+              user: {
+                select: {
+                  name: true,
+                  email: true
+                }
+              }
             }
-          }
+          });
+
+          const message = posts.length === 0 ? "No more posts" : undefined;
+          return NextResponse.json({ posts, message });
         }
-      });
 
-      const message = posts.length === 0 ? "No more posts" : undefined;
-      return NextResponse.json({ posts, message });
-    }
-
-    if (params.posts === 'posts' && params.postsRoutes === "search") {
-      const posts = await prisma.post.findMany({
-        where: {
-          title: {
-            contains: params.dinamicAction,
-            mode: 'insensitive'
-          }
-        },
-        include: {
-          user: {
-            select: {
-              name: true,
-              email: true
+        if (params.posts === 'posts' && params.postsRoutes === "search") {
+          const posts = await prisma.post.findMany({
+            where: {
+              title: {
+                contains: params.dinamicAction,
+              }
+            },
+            include: {
+              user: {
+                select: {
+                  name: true,
+                  email: true
+                }
+              }
             }
-          }
+          });
+
+          return NextResponse.json({ posts });
         }
-      });
 
-      return NextResponse.json({ posts });
-    }
-
-    if (params.posts === 'post' && params.postsRoutes === "id") {
-      const post = await prisma.post.findUnique({
-        where: {
-          id: parseInt(params.dinamicAction)
-        },
-        include: {
-          user: {
-            select: {
-              name: true,
-              email: true
+        if (params.posts === 'post' && params.postsRoutes === "id") {
+          const post = await prisma.post.findUnique({
+            where: {
+              id: parseInt(params.dinamicAction)
+            },
+            include: {
+              user: {
+                select: {
+                  name: true,
+                  email: true
+                }
+              }
             }
-          }
+          });
+
+          return NextResponse.json({ posts: post });
         }
-      });
+        break;
 
-      return NextResponse.json({ posts: post });
+      case 'POST':
+        const user = await getCurrentUser(request);
+        const { title, brief, description, image } = await request.json();
+
+        if (!title || !brief || !description) {
+          return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        const post = await prisma.post.create({
+          data: {
+            userId: user.id,
+            title,
+            brief,
+            description,
+            image
+          }
+        });
+
+        return NextResponse.json(post, { status: 201 });
+        break;
+
+      case 'PUT':
+        const updateUser = await getCurrentUser(request);
+        const updateData = await request.json();
+
+        const existingPost = await prisma.post.findUnique({
+          where: { id: parseInt(params.postsRoutes) }
+        });
+
+        if (!existingPost) {
+          return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+        }
+
+        if (existingPost.userId !== updateUser.id) {
+          return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+        }
+
+        const updatedPost = await prisma.post.update({
+          where: { id: parseInt(params.postsRoutes) },
+          data: {
+            title: updateData.title,
+            brief: updateData.brief,
+            description: updateData.description,
+            image: updateData.image
+          }
+        });
+
+        return NextResponse.json(updatedPost);
+        break;
+
+      case 'DELETE':
+        const deleteUser = await getCurrentUser(request);
+        
+        const postToDelete = await prisma.post.findUnique({
+          where: { id: parseInt(params.postsRoutes) }
+        });
+
+        if (!postToDelete) {
+          return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+        }
+
+        if (postToDelete.userId !== deleteUser.id && !deleteUser.userRoles?.includes('admin')) {
+          return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+        }
+
+        await prisma.post.delete({
+          where: { id: parseInt(params.postsRoutes) }
+        });
+
+        return NextResponse.json({ message: 'Post deleted' });
+        break;
+
+      default:
+        return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
     }
   } catch (error) {
     console.error('Request error', error);
-    return NextResponse.json({ error: 'Error fetching posts' }, { status: 500 });
+    return NextResponse.json({ error: 'Error processing request' }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest, context: any) {
-  const { params } = context;
-  
-  try {
-    const user = await getCurrentUser(request);
-    const { title, brief, description, image } = await request.json();
-
-    if (!title || !brief || !description) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-
-    const post = await prisma.post.create({
-      data: {
-        userId: user.sub,
-        title,
-        brief,
-        description,
-        image
-      }
-    });
-
-    return NextResponse.json(post, { status: 201 });
-  } catch (error) {
-    console.error('Request error', error);
-    return NextResponse.json({ error: 'Error creating post' }, { status: 500 });
-  }
-}
-
-export async function PUT(request: NextRequest, context: any) {
-  const { params } = context;
-  
-  try {
-    const user = await getCurrentUser(request);
-    const { title, brief, description, image } = await request.json();
-
-    const post = await prisma.post.findUnique({
-      where: { id: parseInt(params.postsRoutes) }
-    });
-
-    if (!post) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
-    }
-
-    if (post.userId !== user.sub) {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
-    }
-
-    const updatedPost = await prisma.post.update({
-      where: { id: parseInt(params.postsRoutes) },
-      data: {
-        title,
-        brief,
-        description,
-        image
-      }
-    });
-
-    return NextResponse.json(updatedPost);
-  } catch (error) {
-    console.error('Request error', error);
-    return NextResponse.json({ error: 'Error updating post' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: NextRequest, context: any) {
-  const { params } = context;
-  
-  try {
-    const user = await getCurrentUser(request);
-    
-    const post = await prisma.post.findUnique({
-      where: { id: parseInt(params.postsRoutes) }
-    });
-
-    if (!post) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
-    }
-
-    if (post.userId !== user.sub && !user.userRoles?.includes('admin')) {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
-    }
-
-    await prisma.post.delete({
-      where: { id: parseInt(params.postsRoutes) }
-    });
-
-    return NextResponse.json({ message: 'Post deleted' });
-  } catch (error) {
-    console.error('Request error', error);
-    return NextResponse.json({ error: 'Error deleting post' }, { status: 500 });
-  }
-}
-
-
+// Wrap all methods with Auth0's withApiAuthRequired
+export const GET = withApiAuthRequired(handler);
+export const POST = withApiAuthRequired(handler);
+export const PUT = withApiAuthRequired(handler);
+export const DELETE = withApiAuthRequired(handler);
 
 ```
 
-# app/api/Controllers/Rotation/[rotation]/[rotationRoutes]/[dinamicAction]/route.ts
+# app\api\Controllers\Rotation\[rotation]\[rotationRoutes]\[dinamicAction]\route.ts
 
 ```ts
 import { NextResponse, NextRequest } from 'next/server';
@@ -1030,7 +1003,7 @@ export async function DELETE(request: NextRequest, context: any) {
 
 ```
 
-# app/api/Controllers/Rotation/[rotation]/[rotationRoutes]/interfaces.ts
+# app\api\Controllers\Rotation\[rotation]\[rotationRoutes]\interfaces.ts
 
 ```ts
 
@@ -1102,7 +1075,7 @@ export interface CropRotationItem {
 
 ```
 
-# app/api/Controllers/SetLanguage/route.ts
+# app\api\Controllers\SetLanguage\route.ts
 
 ```ts
 // /api/set-language.js
@@ -1138,484 +1111,137 @@ export async function POST(request: NextRequest, context: any) {
 
 ```
 
-# app/api/Controllers/User/[Action]/route.ts
+# app\api\Controllers\User\[Action]\route.ts
 
 ```ts
 import { NextResponse, NextRequest } from 'next/server';
-import prisma from '@/app/lib/prisma';
+import { withApiAuthRequired } from '@auth0/nextjs-auth0';
+import { prisma } from '@/app/lib/prisma';
 import { getCurrentUser } from '@/app/lib/auth';
-import { Role } from '@prisma/client';
 
-export async function GET(request: NextRequest, context: any) {
+// Define roles as a type
+type UserRole = 'ADMIN' | 'FARMER';
+
+async function handler(request: NextRequest, context: any) {
   const { params } = context;
-  
+  const method = request.method;
+
   try {
     const user = await getCurrentUser(request);
-    
-    // Only admin can fetch user lists
-    if (!user.userRoles?.includes('admin')) {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
-    }
 
-    if (params.Action === 'fermieri') {
-      const farmers = await prisma.user.findMany({
-        where: {
-          role: Role.FARMER
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          createdAt: true,
-          _count: {
+    switch (method) {
+      case 'GET':
+        // Only admin can fetch user lists
+        if (!user.userRoles?.includes('admin')) {
+          return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+        }
+
+        if (params.Action === 'fermieri') {
+          const farmers = await prisma.user.findMany({
+            where: {
+              role: 'FARMER'
+            },
             select: {
-              crops: true,
-              rotations: true
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              createdAt: true,
+              _count: {
+                select: {
+                  crops: true,
+                  rotations: true
+                }
+              }
             }
-          }
+          });
+
+          return NextResponse.json(farmers);
         }
-      });
 
-      return NextResponse.json(farmers);
-    }
+        if (params.Action === 'admin') {
+          const admins = await prisma.user.findMany({
+            where: {
+              role: 'ADMIN'
+            },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              createdAt: true
+            }
+          });
 
-    if (params.Action === 'admin') {
-      const admins = await prisma.user.findMany({
-        where: {
-          role: Role.ADMIN
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          createdAt: true
+          return NextResponse.json(admins);
         }
-      });
+        break;
 
-      return NextResponse.json(admins);
+      case 'POST':
+        // Only admin can create/modify users
+        if (!user.userRoles?.includes('admin')) {
+          return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+        }
+
+        if (params.Action === 'register') {
+          const { name, email, role } = await request.json();
+
+          const newUser = await prisma.user.create({
+            data: {
+              id: user.id, // Use Auth0 user ID
+              name,
+              email,
+              role: role.toUpperCase() as UserRole
+            }
+          });
+
+          return NextResponse.json(newUser, { status: 201 });
+        }
+
+        if (params.Action === 'changeRole') {
+          const { email, role } = await request.json();
+
+          const updatedUser = await prisma.user.update({
+            where: { email },
+            data: {
+              role: role.toUpperCase() as UserRole
+            }
+          });
+
+          return NextResponse.json(updatedUser);
+        }
+        break;
+
+      case 'DELETE':
+        // Only admin can delete users
+        if (!user.userRoles?.includes('admin')) {
+          return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+        }
+
+        await prisma.user.delete({
+          where: { id: params.Action }
+        });
+
+        return NextResponse.json({ message: 'User deleted successfully' });
+        break;
+
+      default:
+        return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
     }
   } catch (error) {
     console.error('Request error', error);
-    return NextResponse.json({ error: 'Error fetching users' }, { status: 500 });
+    return NextResponse.json({ error: 'Error processing request' }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest, context: any) {
-  const { params } = context;
-  
-  try {
-    const user = await getCurrentUser(request);
-
-    // Only admin can create/modify users
-    if (!user.userRoles?.includes('admin')) {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
-    }
-
-    if (params.Action === 'register') {
-      const { name, email, role } = await request.json();
-
-      const newUser = await prisma.user.create({
-        data: {
-          id: `auth0|${Math.random().toString(36).substr(2, 9)}`, // Temporary ID until Auth0 creates real one
-          name,
-          email,
-          role: role.toUpperCase() as Role
-        }
-      });
-
-      return NextResponse.json(newUser, { status: 201 });
-    }
-
-    if (params.Action === 'changeRole') {
-      const { email, role } = await request.json();
-
-      const updatedUser = await prisma.user.update({
-        where: { email },
-        data: {
-          role: role.toUpperCase() as Role
-        }
-      });
-
-      return NextResponse.json(updatedUser);
-    }
-  } catch (error) {
-    console.error('Request error', error);
-    return NextResponse.json({ error: 'Error processing user request' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: NextRequest, context: any) {
-  const { params } = context;
-  
-  try {
-    const user = await getCurrentUser(request);
-
-    // Only admin can delete users
-    if (!user.userRoles?.includes('admin')) {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
-    }
-
-    await prisma.user.delete({
-      where: { id: params.Action }
-    });
-
-    return NextResponse.json({ message: 'User deleted successfully' });
-  } catch (error) {
-    console.error('Request error', error);
-    return NextResponse.json({ error: 'Error deleting user' }, { status: 500 });
-  }
-}
-                
-
-
-
-
-
-
-
+// Wrap the handler with Auth0's withApiAuthRequired
+export const GET = withApiAuthRequired(handler);
+export const POST = withApiAuthRequired(handler);
+export const DELETE = withApiAuthRequired(handler);
 
 ```
 
-# app/api/Models/cropModel.ts
-
-```ts
-import mongoose from "mongoose";
-
-
-const cropSchema = new mongoose.Schema({
-  user: {
-    type: String,
-    required: true,
-    ref: 'User',
-  },
-  selectare: {
-    type: Boolean,
-    required: false,
-  },
-  selectareBy: {
-    type: String,
-    required: false,
-    ref: 'User',
-  },
-  cropName: {
-    type: String,
-    required: [true, 'Crop name is required'],
-  },
-  cropType: {
-    type: String,
-    required: false,
-  },
-  cropVariety: {
-    type: String,
-    required: false,
-  },
-  plantingDate: {
-    type: String,
-    required: false,
-  },
-  harvestingDate: {
-    type: String,
-    required: false,
-  },
-  description: {
-    type: String,
-    required: false,
-  },
-  imageUrl: {
-    type: String, // Ensure the data type matches how it's used in the controller
-    required: false,
-  },
-  soilType: {
-    type: String,
-    required: false,
-  },
-  climate: {
-    type: String,
-    required: false,
-  },
-  ItShouldNotBeRepeatedForXYears: {
-    type: Number,
-    required: false,
-  },
-  fertilizers: {
-    type: [String],
-    required: false,
-  },
-  pests: {
-    type: [String],
-    required: false,
-  },
-  diseases: {
-    type: [String],
-    required: false,
-  },
-  nitrogenSupply: {
-    type: Number,
-    required: false,
-  },
-  nitrogenDemand: {
-    type: Number,
-    required: false,
-  },
-  soilResidualNitrogen: {
-    type: Number,
-    required: false,
-  },
-},
-  {
-    timestamps: true,
-  });
-
-export default mongoose.models.Crop || mongoose.model('Crop', cropSchema);
-
-
-
-// https://copilot.microsoft.com/sl/cESMsv8irQW
-```
-
-# app/api/Models/postModel.ts
-
-```ts
-import mongoose from "mongoose"
-
-
-    const postSchema = new mongoose.Schema({
-        //linking to user
-        user: {
-            type: String,
-            required: true,
-            ref: 'User',
-        },
-    title: {
-        type: String,
-        required: true,
-    },
-    brief: {
-        type: String,
-        required: true,
-    },
-    description: {
-        type: String,
-        required: true,
-    },
-    image: {
-        type: String,
-        required: false,
-    },
-    date: {
-        type: Date,
-        default: Date.now,
-    },
-})
-
-export default mongoose.models.Post || mongoose.model('Post', postSchema)
-
-
-
-
-```
-
-# app/api/Models/rotationModel.ts
-
-```ts
-//export 
-export {};
-const mongoose = require('mongoose');
-import Crop from './cropModel';
-import { connectDB } from '../../db';
-connectDB()
-
-const rotationItemSchema = mongoose.Schema({
-  division: {
-    type: Number,
-    required: true,
-  },
-  crop: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Crop',
-  },
-  cropName: {
-    type: String,
-  },
-  plantingDate: {
-    type: String,
-    required: true,
-  },
-  harvestingDate: {
-    type: String,
-    required: true,
-  },
-  divisionSize: {
-    type: Number,
-    required: true,
-  },
-  nitrogenBalance: {
-    type: Number,
-    required: true,
-  },
-  directlyUpdated: { 
-    type: Boolean,
-    default: false, 
-  },
-});
-
-const rotationYearSchema = mongoose.Schema({
-  year: {
-    type: Number,
-    required: true,
-  },
-  rotationItems: [rotationItemSchema],
-});
-
-const rotationSchema = mongoose.Schema(
-  {
-    user: {
-      type: String,
-      required: true,
-      ref: 'User',
-    },
-    fieldSize: {
-      type: Number,
-      required: [true, 'Field size is required'],
-    },
-    numberOfDivisions: {
-      type: Number,
-      required: [true, 'Number of divisions is required'],
-    },
-    rotationName: {
-      type: String,
-      required: [true, 'Rotation name is required'],
-    },
-    crops: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Crop',
-      },
-    ],
-    rotationPlan: [rotationYearSchema],
-  },
-  {
-    timestamps: true,
-  }
-);
-
-
-// Populate crops in rotation plan with crop names and crop varieties before sending response to client  
-// rotationItemSchema.pre('save', function (next) {
-//   if (this.crop) {
-//     Crop.findById(this.crop, (err, crop) => {
-//       if (err) return next(err);
-//       this.cropName = crop.cropName;
-//       next();
-//     });
-//   } else {
-//     next();
-//   }
-// });
-
-export default mongoose.models.Rotation || mongoose.model('Rotation', rotationSchema);
-```
-
-# app/api/Models/selectionModel.ts
-
-```ts
-import mongoose from "mongoose"
-
-
-
-const UserCropSelectionSchema = new mongoose.Schema({
-    user: {
-        type: String,
-      ref: 'User',
-      required: true
-    },
-    crop: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Crop',
-      required: true
-    },
-    selectionCount: {
-      type: Number,
-      default: 0
-    }
-  });
-
-export default mongoose.models.UserCropSelection || mongoose.model('UserCropSelection', UserCropSelectionSchema)
-```
-
-# app/api/Models/userModel.ts
-
-```ts
-
-import mongoose from 'mongoose'
-
-const userSchema = new mongoose.Schema({
-  role: {
-    type: String,
-    enum: {
-      values: ['farmer', 'admin'],
-    },
-    required: [true, '{VALUE} is not supported or missing']
-  },
-  name: {
-    type: String,
-    required: [true, 'Please add a name']
-  },
-  email: {
-    type: String,
-    required: [true, 'Please add an email '],
-    unique: true
-  },
-  selectedCrops: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Crop'
-  }],
-
-  selectareCounts: {
-    type: mongoose.Schema.Types.Mixed,
-    default: {}
-  },
-},
-  {
-    timestamps: true
-  });
-
-export default mongoose.models.User || mongoose.model('User', userSchema)
-
-```
-
-# app/api/oauth/token/page.ts
-
-```ts
-var axios = require("axios").default;
-
-require('dotenv').config();
-
-var options = {
-    method: 'POST',
-    url: 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/',
-    headers: {'content-type': 'application/x-www-form-urlencoded'},
-    data: new URLSearchParams({
-        grant_type: process.env.GRANT_TYPE,
-        client_id: process.env.CLIENT_ID,
-        client_secret: process.env.CLIENT_SECRET,
-        audience: process.env.AUDIENCE
-    })
-};
-
-axios.request(options).then(function (response) {
-  console.log(response.data);
-}).catch(function (error) {
-  console.error(error);
-});
-
-
-console.log("it actually did something");console.log("it actually did something");console.log("it actually did something");console.log("it actually did something");console.log("it actually did something");console.log("it actually did something");
-```
-
-# app/componets/CropCard.tsx
+# app\componets\CropCard.tsx
 
 ```tsx
 const CropCard = ({ crop, onSelect, isSelected }) => {
@@ -1704,7 +1330,7 @@ const CropCard = ({ crop, onSelect, isSelected }) => {
   export default CropCard;
 ```
 
-# app/componets/Dashboard.tsx
+# app\componets\Dashboard.tsx
 
 ```tsx
 import { useState } from 'react';
@@ -1811,7 +1437,7 @@ const ModernDashboard = ({ children }) => {
 export default Dashboard;
 ```
 
-# app/componets/DashboardCard.tsx
+# app\componets\DashboardCard.tsx
 
 ```tsx
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -1875,7 +1501,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ title, metric, trend, dat
 export default DashboardCard;
 ```
 
-# app/componets/GridGen.tsx
+# app\componets\GridGen.tsx
 
 ```tsx
 
@@ -1909,7 +1535,7 @@ const GridGenerator: GridGeneratorType = ({ children, cols = 3 }) => {
 export default GridGenerator;
 ```
 
-# app/componets/hero.tsx
+# app\componets\hero.tsx
 
 ```tsx
 export function Hero() {
@@ -1972,7 +1598,7 @@ export function Hero() {
 
 ```
 
-# app/componets/LanguageSwitch.tsx
+# app\componets\LanguageSwitch.tsx
 
 ```tsx
 import React from 'react';
@@ -2033,7 +1659,49 @@ export const LanguageSwitch = () => {
   };              
 ```
 
-# app/componets/Mail.tsx
+# app\componets\LoginButton.tsx
+
+```tsx
+'use client';
+import { useUser } from '@auth0/nextjs-auth0/client';
+
+export default function LoginButton() {
+  const { user, isLoading } = useUser();
+
+  if (isLoading) return <div>Loading...</div>;
+
+  return (
+    <div className="flex items-center gap-2">
+      {user ? (
+        <div className="flex items-center gap-2">
+          {user.picture && (
+            <img 
+              src={user.picture} 
+              alt="Profile" 
+              className="h-8 w-8 rounded-full"
+            />
+          )}
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{user.name}</span>
+            <a href="/api/auth/logout" className="text-sm text-gray-600 hover:text-gray-900">
+              Logout
+            </a>
+          </div>
+        </div>
+      ) : (
+        <a 
+          href="/api/auth/login"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+        >
+          Login
+        </a>
+      )}
+    </div>
+  );
+}
+```
+
+# app\componets\Mail.tsx
 
 ```tsx
 'use client'
@@ -2048,7 +1716,7 @@ return (
 );}
 ```
 
-# app/componets/ModernCard.tsx
+# app\componets\ModernCard.tsx
 
 ```tsx
 import { useState } from 'react';
@@ -2136,7 +1804,7 @@ const ModernCard = ({
 export default ModernCard;
 ```
 
-# app/componets/ModernLayout.tsx
+# app\componets\ModernLayout.tsx
 
 ```tsx
 'use client'
@@ -2263,13 +1931,13 @@ const ModernLayout = ({ children }) => {
 export default ModernLayout;
 ```
 
-# app/componets/shared/index.ts
+# app\componets\shared\index.ts
 
 ```ts
 
 ```
 
-# app/Crud/CropForm.js
+# app\Crud\CropForm.js
 
 ```js
 "use client";
@@ -2602,7 +2270,7 @@ export default CropForm;
 
 ```
 
-# app/Crud/CropRecommandations.tsx
+# app\Crud\CropRecommandations.tsx
 
 ```tsx
 
@@ -2660,7 +2328,7 @@ export default function CropRecommendations({ cropName, token }: { cropName: str
 }
 ```
 
-# app/Crud/GetAllInRotatie/[SinglePag]/components/CropCardComponent.tsx
+# app\Crud\GetAllInRotatie\[SinglePag]\components\CropCardComponent.tsx
 
 ```tsx
 import React from 'react';
@@ -2724,7 +2392,7 @@ function CropCardComponent({
 export default CropCardComponent;
 ```
 
-# app/Crud/GetAllInRotatie/[SinglePag]/components/FormComponent.tsx
+# app\Crud\GetAllInRotatie\[SinglePag]\components\FormComponent.tsx
 
 ```tsx
 import React from 'react';
@@ -2892,7 +2560,7 @@ export default FormComponent;
 
 ```
 
-# app/Crud/GetAllInRotatie/[SinglePag]/components/SelectAreaComponent.tsx
+# app\Crud\GetAllInRotatie\[SinglePag]\components\SelectAreaComponent.tsx
 
 ```tsx
 import React from 'react';
@@ -2921,7 +2589,7 @@ export default SelectAreaComponent;
 
 ```
 
-# app/Crud/GetAllInRotatie/[SinglePag]/page.tsx
+# app\Crud\GetAllInRotatie\[SinglePag]\page.tsx
 
 ```tsx
 "use client"
@@ -3107,7 +2775,7 @@ export default SinglePag;
 
 ```
 
-# app/Crud/GetAllInRotatie/page.tsx
+# app\Crud\GetAllInRotatie\page.tsx
 
 ```tsx
 import Link from 'next/link';
@@ -3139,7 +2807,7 @@ export default function Continut({ crop }: { crop: any }): JSX.Element {
 
 ```
 
-# app/Crud/GetAllPosts/[SinglePost]/page.tsx
+# app\Crud\GetAllPosts\[SinglePost]\page.tsx
 
 ```tsx
 "use client"
@@ -3276,7 +2944,7 @@ export default function SinglePost() {
 
 ```
 
-# app/Crud/GetAllPosts/page.tsx
+# app\Crud\GetAllPosts\page.tsx
 
 ```tsx
 import Link from 'next/link';
@@ -3306,7 +2974,7 @@ export default Continut;
 
 ```
 
-# app/Crud/Header.tsx
+# app\Crud\Header.tsx
 
 ```tsx
 "use client"
@@ -3360,7 +3028,7 @@ function HeaderLog() {
 export default HeaderLog;
 ```
 
-# app/Crud/PostForm.tsx
+# app\Crud\PostForm.tsx
 
 ```tsx
 "use client"
@@ -3438,7 +3106,7 @@ function PostForm() {
 export default PostForm;
 ```
 
-# app/Crud/PostItem.tsx
+# app\Crud\PostItem.tsx
 
 ```tsx
 type postType = {
@@ -3461,7 +3129,7 @@ export default function PostItem(  { post }: { post: postType }  ) {
 
 ```
 
-# app/Crud/Rotatie.module.css
+# app\Crud\Rotatie.module.css
 
 ```css
 .cropList {
@@ -3554,7 +3222,7 @@ export default function PostItem(  { post }: { post: postType }  ) {
   
 ```
 
-# app/Crud/RotatieItem.tsx
+# app\Crud\RotatieItem.tsx
 
 ```tsx
 "use client";
@@ -3702,7 +3370,7 @@ export default RotatieItem;
 
 ```
 
-# app/Crud/Spinner.tsx
+# app\Crud\Spinner.tsx
 
 ```tsx
 function Spinner() {
@@ -3716,28 +3384,7 @@ function Spinner() {
   export default Spinner
 ```
 
-# app/db.js
-
-```js
-
-const mongoose = require('mongoose')
-
-export async function connectDB() {
-    try {
-        const conn = await mongoose.connect(process.env.MONGO_URI)
-        console.log('Connected ' + conn.connection.host)
-   
-    } catch (error){
-        console.log(error);
-        process.exit(1);
-    }
-}
-
-
-
-```
-
-# app/footer.tsx
+# app\footer.tsx
 
 ```tsx
 import Link from "next/link";
@@ -3763,7 +3410,7 @@ export default function Footer() {
 
 ```
 
-# app/globals.css
+# app\globals.css
 
 ```css
 @tailwind base;
@@ -3803,7 +3450,7 @@ export default function Footer() {
 }
 ```
 
-# app/head.tsx
+# app\head.tsx
 
 ```tsx
 
@@ -3821,7 +3468,7 @@ export default function Head() {
 
 ```
 
-# app/header.tsx
+# app\header.tsx
 
 ```tsx
 "use client"
@@ -3830,7 +3477,8 @@ import HeaderLog from './Crud/Header';
 import Image from 'next/image';
 import styles from '../styles/Header.module.css';
 import logo from '../public/Logo.png'
-import { LanguageSwitch } from './Componente/LanguageSwitch';
+import { LanguageSwitch } from '@/app/componets/LanguageSwitch';
+import  AuthButton  from '@/app/componets/LoginButton';
 
 
 
@@ -3890,7 +3538,7 @@ export default Header;
 
 ```
 
-# app/layout.tsx
+# app\layout.tsx
 
 ```tsx
 import './globals.css'
@@ -3982,231 +3630,31 @@ export default async function RootLayout({
 
 ```
 
-# app/lib/api-utils.ts
-
-```ts
-import { NextResponse } from 'next/server';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { PrismaClient } from '@prisma/client';
-
-export class ApiError extends Error {
-  constructor(public statusCode: number, message: string) {
-    super(message);
-  }
-}
-
-export function handleApiError(error: unknown) {
-  console.error('API Error:', error);
-
-  if (error instanceof ApiError) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: error.statusCode }
-    );
-  }
-
-  if (error instanceof PrismaClientKnownRequestError) {
-    // Handle Prisma errors
-    switch (error.code) {
-      case 'P2002':
-        return NextResponse.json(
-          { error: 'A unique constraint would be violated.' },
-          { status: 409 }
-        );
-      case 'P2025':
-        return NextResponse.json(
-          { error: 'Record not found.' },
-          { status: 404 }
-        );
-      default:
-        return NextResponse.json(
-          { error: 'Database error occurred.' },
-          { status: 500 }
-        );
-    }
-  }
-
-  return NextResponse.json(
-    { error: 'An unexpected error occurred.' },
-    { status: 500 }
-  );
-}
-
-export function createSuccessResponse(data: any, status = 200) {
-  return NextResponse.json({ data }, { status });
-}
-
-// Pagination utility
-export function getPaginationParams(request: Request) {
-  const url = new URL(request.url);
-  return {
-    page: parseInt(url.searchParams.get('page') || '1'),
-    limit: parseInt(url.searchParams.get('limit') || '10'),
-    orderBy: url.searchParams.get('orderBy') || 'createdAt',
-    order: (url.searchParams.get('order') || 'desc') as 'asc' | 'desc'
-  };
-}
-
-// Query builder utility
-export function buildWhereClause(filters: Record<string, any>) {
-  const where: any = {};
-  
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      if (typeof value === 'string') {
-        where[key] = { contains: value, mode: 'insensitive' };
-      } else {
-        where[key] = value;
-      }
-    }
-  });
-
-  return where;
-}
-
-
-export async function deleteCropWithRelations(cropId: number) {
-  const prisma = new PrismaClient();
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      // Delete related records first
-      await tx.cropDetail.deleteMany({
-        where: { cropId }
-      });
-
-      await tx.userCropSelection.deleteMany({
-        where: { cropId }
-      });
-
-      await tx.rotationPlan.deleteMany({
-        where: { cropId }
-      });
-
-      // Finally delete the crop
-      await tx.crop.delete({
-        where: { id: cropId }
-      });
-    });
-  } catch (error) {
-    throw new Error(`Failed to delete crop: ${error.message}`);
-  }
-}
-
-export async function deleteUserWithRelations(userId: string) {
-  const prisma = new PrismaClient();
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      // Delete all related records in the correct order
-      await tx.userCropSelection.deleteMany({
-        where: { userId }
-      });
-
-      await tx.post.deleteMany({
-        where: { userId }
-      });
-
-      // Delete rotations and their plans
-      const rotations = await tx.rotation.findMany({
-        where: { userId }
-      });
-
-      for (const rotation of rotations) {
-        await tx.rotationPlan.deleteMany({
-          where: { rotationId: rotation.id }
-        });
-      }
-
-      await tx.rotation.deleteMany({
-        where: { userId }
-      });
-
-      // Delete crops and their details
-      const crops = await tx.crop.findMany({
-        where: { userId }
-      });
-
-      for (const crop of crops) {
-        await tx.cropDetail.deleteMany({
-          where: { cropId: crop.id }
-        });
-      }
-
-      await tx.crop.deleteMany({
-        where: { userId }
-      });
-
-      // Finally delete the user
-      await tx.user.delete({
-        where: { id: userId }
-      });
-    });
-  } catch (error) {
-    throw new Error(`Failed to delete user: ${error.message}`);
-  }
-}
-```
-
-# app/lib/auth.ts
+# app\lib\auth.ts
 
 ```ts
 import { getSession } from '@auth0/nextjs-auth0';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
-export async function getCurrentUser(req: NextRequest) {
+export async function getCurrentUser(request: NextRequest) {
   const session = await getSession();
-  if (!session?.user) {
+  
+  if (!session || !session.user) {
     throw new Error('Not authenticated');
   }
-  return session.user;
-}
 
-export async function checkUserAccess(userId: string, resourceUserId: string) {
-  const session = await getSession();
-  const user = session?.user;
-  
-  if (!user) return false;
-  if (user.sub !== userId && !user.userRoles?.includes('admin')) {
-    return false;
-  }
-  return true;
+  return {
+    id: session.user.sub,
+    email: session.user.email,
+    name: session.user.name,
+    picture: session.user.picture,
+    userRoles: session.user[`${process.env.AUTH0_AUDIENCE}/roles`] || []
+  };
 }
 
 ```
 
-# app/lib/lib.ts
-
-```ts
-//connection pooling to prevent connection leaks
-
-import { PrismaClient } from '@prisma/client';
-
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-export const prisma = globalForPrisma.prisma ?? 
-  new PrismaClient({
-    log: ['query', 'error', 'warn'],
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL
-      },
-    },
-    // Add connection pooling
-    connection: {
-      pool: {
-        min: 2,
-        max: 10
-      }
-    }
-  });
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
-```
-
-# app/lib/prisma.ts
+# app\lib\prisma.ts
 
 ```ts
 import { PrismaClient } from '@prisma/client';
@@ -4215,19 +3663,15 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-const prisma = global.prisma || 
-  new PrismaClient({
-    log: ['query', 'error', 'warn'],
-  });
+export const prisma = global.prisma || new PrismaClient();
 
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;
 }
 
-export default prisma;
 ```
 
-# app/not-found.js
+# app\not-found.js
 
 ```js
 //not-found.js
@@ -4245,7 +3689,7 @@ export default function NotFound() {
 }
 ```
 
-# app/page.tsx
+# app\page.tsx
 
 ```tsx
 "use client";
@@ -4310,7 +3754,7 @@ export default function Home() {
 
 ```
 
-# app/pages/AboutUs/page.tsx
+# app\pages\AboutUs\page.tsx
 
 ```tsx
 // import Mail from "../../Componente/Mail";
@@ -4374,7 +3818,7 @@ export default function AboutUs() {
 
 ```
 
-# app/pages/contact/Components/SendEmail.tsx
+# app\pages\contact\Components\SendEmail.tsx
 
 ```tsx
 import emailjs from '@emailjs/browser';
@@ -4398,7 +3842,7 @@ export default function sendEmail(form: React.MutableRefObject<HTMLFormElement>)
 
 ```
 
-# app/pages/contact/Components/UserState.tsx
+# app\pages\contact\Components\UserState.tsx
 
 ```tsx
 import { useEffect, useState } from 'react';
@@ -4421,7 +3865,7 @@ export default function useUserState() {
 
 ```
 
-# app/pages/contact/page.tsx
+# app\pages\contact\page.tsx
 
 ```tsx
 import React, { useRef } from 'react';
@@ -4470,7 +3914,7 @@ export default function Contact(): JSX.Element {
 
 ```
 
-# app/pages/DatabasePopulation/page.js
+# app\pages\DatabasePopulation\page.js
 
 ```js
 'use client'
@@ -4525,7 +3969,7 @@ export default PostComponent;
 
 ```
 
-# app/pages/Login/Dashboard/AdminCropForm.tsx
+# app\pages\Login\Dashboard\AdminCropForm.tsx
 
 ```tsx
 import React, { useState } from 'react';
@@ -4622,7 +4066,7 @@ function AdminCropForm({ onSubmit }: { onSubmit: (data: FormData) => void }) {
 export default AdminCropForm;
 ```
 
-# app/pages/Login/Dashboard/page.tsx
+# app\pages\Login\Dashboard\page.tsx
 
 ```tsx
 "use client"
@@ -4745,7 +4189,7 @@ export default function Dashboard() {
 
 ```
 
-# app/pages/Login/Dashboard/UpdateRoleForm.tsx
+# app\pages\Login\Dashboard\UpdateRoleForm.tsx
 
 ```tsx
 import { useState } from 'react';
@@ -4790,7 +4234,7 @@ export default UpdateRoleForm;
 
 ```
 
-# app/pages/Login/Dashboard/userInfos.tsx
+# app\pages\Login\Dashboard\userInfos.tsx
 
 ```tsx
 import React from 'react';
@@ -4838,7 +4282,7 @@ export const UserInfos = () => {
 
 ```
 
-# app/pages/Login/Dashboard/UserListItem.tsx
+# app\pages\Login\Dashboard\UserListItem.tsx
 
 ```tsx
 import { useState } from 'react';
@@ -4863,126 +4307,7 @@ const UserListItem = ({ user, deleteUser } : { user: any, deleteUser: any }) => 
 export default UserListItem;
 ```
 
-# app/pages/Login/DeprecatedLogin/page.tsx
-
-```tsx
-"use client";
-import { useEffect, useState } from 'react';
-import { FaSignInAlt, FaUser } from 'react-icons/fa';
-import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { useGlobalContext } from '../../../providers/UserStore';
-import Spinner from '../../../Crud/Spinner';
-import Link from 'next/link';
-
-function Login() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-
-  const { email, password } = formData;
-
-
-
-  const { data, setData, error, loading, login } = useGlobalContext();
-
-  const navigate = useRouter();
-
-  useEffect(() => {
-    if (data.token) {
-      navigate.push('/');
-    }
-  }, [data]);
-
-  useEffect(() => {
-
-    if (error) {
-      toast.error(error);
-      alert(error)
-      setData({
-        _id: '', email: '', password: '', rol: '', token: '',
-        name: ''
-      });
-    }
-  }, [error]);
-
-  const onChange = (e) => {
-    setFormData((prevState) => ({
-      ...prevState,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const onSubmit = (e) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-    login(email, password);
-  };
-
-  if (loading) {
-    return <Spinner />;
-  }
-
-  return (
-    <div className="login-container" style={{ margin: '0 auto', maxWidth: '400px', marginTop: '100px', marginBottom: '100px' }}>
-      <section className="heading">
-        <h1>
-          <FaSignInAlt /> Login
-        </h1>
-        <p>Sign in and start managing your crops</p>
-      </section>
-
-      <section className="form">
-        <form onSubmit={onSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              className="form-control"
-              id="email"
-              name="email"
-              value={formData.email}
-              placeholder="Enter your email"
-              onChange={onChange}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              className="form-control"
-              id="password"
-              name="password"
-              value={formData.password}
-              placeholder="Enter your password"
-              onChange={onChange}
-            />
-          </div>
-
-          <div className="form-group">
-            <button type="submit" className="btn btn-block">
-              Submit
-            </button>
-          </div>
-        </form>
-        <p>Don't have an account? <Link href="/pages/Login/Register" className="text-decoration-none text-dark">Register <FaUser /></Link></p>
-      </section>
-    </div>
-  );
-}
-
-export default Login;
-
-
-
-```
-
-# app/pages/Login/Elements/LinkAdaugaPostare.tsx
+# app\pages\Login\Elements\LinkAdaugaPostare.tsx
 
 ```tsx
 import {FaUser} from 'react-icons/fa'
@@ -5006,7 +4331,7 @@ export default LinkAdaugaPostare
 
 ```
 
-# app/pages/Login/Elements/page.tsx
+# app\pages\Login\Elements\page.tsx
 
 ```tsx
 import {FaUser} from 'react-icons/fa'
@@ -5030,127 +4355,7 @@ export default LinkParola
 
 ```
 
-# app/pages/Login/Modify/page.tsx
-
-```tsx
-// @ts-nocheck
-"use client"
-import {useEffect, useState} from 'react'
-import {useGlobalContext} from '../../../providers/UserStore'
-import {useRouter} from 'next/navigation';
-import {toast} from 'react-toastify'
-import {FaUser} from 'react-icons/fa'
-import Spinner from '../../../Crud/Spinner'
-
-import "bootstrap/dist/css/bootstrap.min.css";
-import { useTranslations } from 'next-intl';
-
-function Modifica() {
-  const t = useTranslations('Modifica');
-  const navigate = useRouter()
-
-  if (localStorage.getItem('user') === null) {
-    navigate.push('/pages/Login/Login')
-  }
-  const [formData, setFormData] = useState({
-    password: '',
-    password2: '',
-  })
-
-  const { password, password2 } = formData
-
-  
-
-  const { isLoading, isError, message, modify, data, logout } = useGlobalContext()
-
-  useEffect(() => {
-
-
-    if (isError) {
-      toast.error(message)
-    }
-   
-  }, [ isError])
-
-  const onChange = (e) => {
-    setFormData((prevState) => ({
-      ...prevState,
-      [e.target.name]: e.target.value,
-    }))
-  }
-
-  
-  const onSubmit = (e) => {
-    e.preventDefault()
-    if (password !== password2) {
-      toast.error( t('Passwords do not match'))
-    } else {
-      const userData = {
-        password,
-      }
-      modify(data._id,userData.password)
-      logout()
-      navigate.push('/pages/Login/Login')
-    }
-  }
-
-  if (isLoading) {
-    return <Spinner />
-  }
-
-  return (
-    <>
-      <section className='heading'>
-        <h1>
-          <FaUser /> {t('Modificare parola')}
-        </h1>
-      </section>
-
-      <section className='form'>
-        <form onSubmit={onSubmit}>
-
-      
-          <div className='form-group'>
-            <input
-              type='password'
-              className='form-control'
-              id='password'
-              name='password'
-              value={password}
-              placeholder={t('Enter password')}
-              onChange={onChange}
-            />
-          </div>
-          <div className='form-group'>
-            <input
-              type='password'
-              className='form-control'
-              id='password2'
-              name='password2'
-              value={password2}
-              placeholder={t('Confirm password')}
-              onChange={onChange}
-            />
-          </div>
-          <div className='form-group'>
-            <button type='submit' className='btn btn-block'>
-              {t('Submit')}
-            </button>
-          </div>
-        </form>
-      </section>
-    </>
-  )
-}
-
-export default Modifica
-
-
-
-
-```
-
-# app/pages/Login/Posts/page.tsx
+# app\pages\Login\Posts\page.tsx
 
 ```tsx
 "use client"
@@ -5228,136 +4433,7 @@ export default Postari;
 
 ```
 
-# app/pages/Login/Register/page.tsx
-
-```tsx
-//ts-nocheck
-
-
-"use client"
-import {useEffect, useState} from 'react'
-import {useRouter} from 'next/navigation';
-import {toast} from 'react-toastify'
-import {FaUser} from 'react-icons/fa'
-import Spinner from '../../../Crud/Spinner'
-import {Form} from 'react-bootstrap';
-import "bootstrap/dist/css/bootstrap.min.css";
-import {useGlobalContext} from '../../../providers/UserStore';
-
-function Register() {
-  const [formData, setFormData] = useState({
-    role: '',
-    name: '',
-    email: '',
-  });
-
-  const { role, name, email } = formData;
-
-  const { data, setData, error, loading, register } = useGlobalContext();
-
-  const navigate = useRouter();
-
-  const onChange = (e) => {
-    setFormData((prevState) => ({
-      ...prevState,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  useEffect(() => {
-    if (error) {
-      toast.error(error);
-      alert(error);
-    }
-
-
-    if ( data.role.toLowerCase() !== 'admin') {
-      navigate.push('/');
-      console.log('User is not admin' + data.role);
-    }
-  }, [error, data]);
-
-  const onSubmit = (e) => {
-    e.preventDefault();
-
-      register(role, name, email);
-    
-  };
-
-  if (loading) {
-    return <Spinner />;
-  }
-
-  return (
-    <>
-       <div className="login-container" style={{ margin: '0 auto', maxWidth: '400px' , marginTop:'100px' , marginBottom:'100px' }}>
-      <section className='heading'>
-        <h1>
-          <FaUser /> Register a user
-        </h1>
-      </section>
-
-   
-      <section className='form'>
-        <Form onSubmit={onSubmit}>
-          {data.role.toLowerCase() === 'admin' && (
-            <div className='form-group'>
-              <label>
-                <select
-                  aria-label='Role'
-                  value={formData.role}
-                  onChange={onChange}
-                  name='role'
-                  id='role'
-                  className='form-control'
-                >
-                  <option>Select role</option>
-                  <option value='farmer'>Farmer</option>
-                  <option value='admin'>Administrator</option>
-                </select>
-              </label>
-            </div>
-          )}
-
-          <div className='form-group'>
-            <input
-              type='text'
-              className='form-control'
-              id='name'
-              name='name'
-              value={formData.name}
-              placeholder='Enter your name'
-              onChange={onChange}
-            />
-          </div>
-          <div className='form-group'>
-            <input
-              type='email'
-              className='form-control'
-              id='email'
-              name='email'
-              value={formData.email}
-              placeholder='Enter your email'
-              onChange={onChange}
-            />
-          </div>
-      <div className='form-group'>
-        <button type='submit' className='btn btn-block' >
-          Submit
-        </button>
-      </div>
-    </Form>
-
-  </section>
-</div>
-</>
-);
-}
-
-export default Register;
-```
-
-# app/pages/Login/RotatieDashboard/Components/helperFunctions.js
+# app\pages\Login\RotatieDashboard\Components\helperFunctions.js
 
 ```js
 export const getCropsRepeatedBySelection = (crops, selections) => {
@@ -5398,7 +4474,7 @@ export const getCropsRepeatedBySelection = (crops, selections) => {
   
 ```
 
-# app/pages/Login/RotatieDashboard/page.tsx
+# app\pages\Login\RotatieDashboard\page.tsx
 
 ```tsx
 "use client"
@@ -5734,7 +4810,7 @@ export default RotatieDashboard;
 
 ```
 
-# app/pages/Login/RotatieDashboard/RotatieDashboard.module.scss
+# app\pages\Login\RotatieDashboard\RotatieDashboard.module.scss
 
 ```scss
 .rotationItem {
@@ -5758,7 +4834,7 @@ export default RotatieDashboard;
   
 ```
 
-# app/pages/Login/RotatieDashboard/RotatieForm.tsx
+# app\pages\Login\RotatieDashboard\RotatieForm.tsx
 
 ```tsx
 import React, { useState } from 'react';
@@ -5874,7 +4950,7 @@ export default CropRotationForm;
 
 ```
 
-# app/pages/News/Components/debounce.js
+# app\pages\News\Components\debounce.js
 
 ```js
 export default function debounce(func, wait) {
@@ -5890,7 +4966,7 @@ export default function debounce(func, wait) {
   }
 ```
 
-# app/pages/News/Components/scrollHandler.js
+# app\pages\News\Components\scrollHandler.js
 
 ```js
 import debounce from './debounce';
@@ -5915,7 +4991,7 @@ export const loadMorePosts = async (setLoadingMore, error, getAllPosts, page, se
 
 ```
 
-# app/pages/News/News.tsx
+# app\pages\News\News.tsx
 
 ```tsx
 import React, { useEffect } from 'react';
@@ -5983,7 +5059,7 @@ export default function Noutati() {
 
 ```
 
-# app/pages/News/page.tsx
+# app\pages\News\page.tsx
 
 ```tsx
 "use client"
@@ -6049,7 +5125,7 @@ export default function Noutati() {
 
 ```
 
-# app/pages/Recomandari/page.tsx
+# app\pages\Recomandari\page.tsx
 
 ```tsx
 "use client"
@@ -6162,7 +5238,7 @@ function RecommendationDashboard() {
 export default RecommendationDashboard;
 ```
 
-# app/pages/Recomandari/recomandari.tsx
+# app\pages\Recomandari\recomandari.tsx
 
 ```tsx
 import { useGlobalContextCrop } from '../../providers/culturaStore';
@@ -6219,7 +5295,7 @@ export default function useRecommendations(nitrogenBalance, cropId) {
 }
 ```
 
-# app/pages/Recomandari/VremeFetch.tsx
+# app\pages\Recomandari\VremeFetch.tsx
 
 ```tsx
 import React, { useEffect, useState } from 'react';
@@ -6259,7 +5335,7 @@ export default const WeatherTable: React.FC = () => {
 
 ```
 
-# app/pages/Rotatie/Components/App.tsx
+# app\pages\Rotatie\Components\App.tsx
 
 ```tsx
 import { useState } from 'react';
@@ -6330,7 +5406,7 @@ export default App;
 
 ```
 
-# app/pages/Rotatie/Components/CropsList.tsx
+# app\pages\Rotatie\Components\CropsList.tsx
 
 ```tsx
 import GridGenerator from '@/app/componets/GridGen';
@@ -6366,7 +5442,7 @@ export default CropsList;
 
 ```
 
-# app/pages/Rotatie/Components/NoCrops.tsx
+# app\pages\Rotatie\Components\NoCrops.tsx
 
 ```tsx
 import styles from '../Rotatie.module.css';
@@ -6392,7 +5468,7 @@ export default NoCrops;
 
 ```
 
-# app/pages/Rotatie/Components/Pagination.tsx
+# app\pages\Rotatie\Components\Pagination.tsx
 
 ```tsx
 import styles from '../Rotatie.module.css';
@@ -6428,7 +5504,7 @@ export default Pagination;
 
 ```
 
-# app/pages/Rotatie/page.tsx
+# app\pages\Rotatie\page.tsx
 
 ```tsx
 'use client'
@@ -6467,7 +5543,7 @@ export default function Rotatie() {
 
 ```
 
-# app/pages/Rotatie/Rotatie.module.css
+# app\pages\Rotatie\Rotatie.module.css
 
 ```css
 .container {
@@ -6508,7 +5584,7 @@ export default function Rotatie() {
   
 ```
 
-# app/providers/culturaStore.tsx
+# app\providers\culturaStore.tsx
 
 ```tsx
 "use client";
@@ -6518,10 +5594,10 @@ import { useSignals  } from "@preact/signals-react/runtime";
 import { signal } from "@preact/signals-react";
 import { useUser } from '@auth0/nextjs-auth0/client';
 
-// const API_URL = 'http://localhost:3000/api/Controllers/Crop/';
-// const API_URL_ROTATION = 'http://localhost:3000/api/Controllers/Rotation/';
-const API_URL = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/Crop/';
-const API_URL_ROTATION = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/Rotation/';
+const API_URL = 'http://localhost:3000/api/Controllers/Crop/';
+const API_URL_ROTATION = 'http://localhost:3000/api/Controllers/Rotation/';
+// const API_URL = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/Crop/';
+// const API_URL_ROTATION = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/Rotation/';
 
 type DataType = {
   
@@ -6630,7 +5706,7 @@ const getCropRotation = async () => {
   
   }
 
-  console.log( "crop rotation fetched signal " + cropRotationSignal.value?.message);
+
 
 };
 
@@ -6913,6 +5989,7 @@ const updateDivisionSizeAndRedistribute = async (data: any) => {
   return (
     <GlobalContext.Provider
     value={{
+      isCropRotationLoading: loadingSignal,
       crops: cropsSignal,
       selections: selectionsSignal,
       isLoading: loadingSignal,
@@ -6955,16 +6032,16 @@ export const useGlobalContextCrop = () => {
 
 ```
 
-# app/providers/postStore.tsx
+# app\providers\postStore.tsx
 
 ```tsx
 "use client";
-import { createContext, useContext, Dispatch , SetStateAction , useState } from 'react';
-import axios from 'axios'
+import { createContext, useContext, Dispatch, SetStateAction, useState } from 'react';
+import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 
-//const API_URL = 'http://localhost:3000/api/Controllers/Post'
-const API_URL = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/Post'
+const API_URL = '/api/Controllers/Post'; // Use relative URL to avoid CORS issues
+
 type DataType = {
     id: string;
     _id: string;
@@ -6975,6 +6052,7 @@ type DataType = {
     user: string;
     token: string;
 }
+
 interface ContextProps {
     data: any;
     setData: Dispatch<SetStateAction<any>>;
@@ -6982,227 +6060,204 @@ interface ContextProps {
     setError: Dispatch<SetStateAction<string>>;
     loading: boolean;
     setLoading: Dispatch<SetStateAction<boolean>>;
-    createPost: ( data: DataType , token:string   ) => Promise<void>;
-    updatePost: (id: string , title: string, brief: string, description: string, image: string) => Promise<void>;
-    deletePost: (_id: string, token:string) => Promise<void>;
+    createPost: (data: DataType, token: string) => Promise<void>;
+    updatePost: (id: string, title: string, brief: string, description: string, image: string) => Promise<void>;
+    deletePost: (_id: string, token: string) => Promise<void>;
     getPost: (id: string) => Promise<void>;
-    getAllPosts: (count : number) => Promise<void>;
+    getAllPosts: (count: number) => Promise<void>;
     clearData: () => void;
-   
 }
 
-const ContextProps  = createContext<ContextProps>({
-    data: [],
-    setData: () => {},
-    error: '',
-    setError: () => {},
-    loading: false,
-    setLoading: () => {},
-    createPost: () => Promise.resolve(),
-    modify: () => Promise.resolve(),
-    deletePost: () => Promise.resolve(),
-    getPost: () => Promise.resolve(),
-    getAllPosts: () => Promise.resolve(),
-    clearData: () => {},
-});
-interface Props {
-    children: React.ReactNode;
-    }
-
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
-export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
+export const GlobalContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [data, setData] = useState<any[]>([]);
     const [error, setError] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
-    const [hasMore, setHasMore] = useState<boolean>(true);
-    const { user, error: authError, isLoading: isUserLoading  } = useUser();
+    const { user, error: authError, isLoading: isUserLoading } = useUser();
 
+    const axiosConfig = {
+        withCredentials: true, // Include cookies in requests
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+
+    const handleError = (error: any) => {
+        if (error.response?.status === 401) {
+            window.location.href = '/api/auth/login';
+            return;
+        }
+        setError(error.response?.data?.message || 'An error occurred');
+        setLoading(false);
+    };
 
     const createPost = async ({ title, brief, description, image }: any) => {
-        setLoading(true);
-        try {
-          const response = await axios.post(API_URL + "/post" + "/new/" + user.sub, {
-            title,
-            brief,
-            description,
-            image,
-          }, {
-      
-          });
-          const data = await response.data;
-          if (data.error) {
-            setError(data.error);
-            setLoading(false);
-            console.log(data.error)
-          } else {
-            setData((prevData) => [...prevData, data]);
-            setLoading(false);
-    
-          }
-        } catch (error: any) {
-          setError(error.response.data.message);
-          setLoading(false);
+        if (!user) {
+            window.location.href = '/api/auth/login';
+            return;
         }
-      }
 
-
-    const updatePost = async (postId: string, { title, brief, description, image }: any) => {
         setLoading(true);
         try {
-            const response = await axios.put(API_URL + "/post/" + postId + "/" + user.sub , {
+            const response = await axios.post(`${API_URL}/post/new/${user.sub}`, {
                 title,
                 brief,
                 description,
                 image,
-            }, {
-            });
-            const data = await response.data;
-            if (data.error) {
-                setError(data.error);
-                setLoading(false);
+            }, axiosConfig);
+
+            if (response.data.error) {
+                setError(response.data.error);
             } else {
-                setData(data);
-                setLoading(false);
+                setData((prevData) => [...prevData, response.data]);
             }
-        } catch (error:any ) {
-            setError(error.response.data.message);
+        } catch (error: any) {
+            handleError(error);
+        } finally {
             setLoading(false);
         }
-    }
- 
+    };
 
+    const updatePost = async (postId: string, { title, brief, description, image }: any) => {
+        if (!user) {
+            window.location.href = '/api/auth/login';
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await axios.put(`${API_URL}/post/${postId}/${user.sub}`, {
+                title,
+                brief,
+                description,
+                image,
+            }, axiosConfig);
+
+            if (response.data.error) {
+                setError(response.data.error);
+            } else {
+                setData(response.data);
+            }
+        } catch (error: any) {
+            handleError(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const deletePost = async (postId: string) => {
+        if (!user) {
+            window.location.href = '/api/auth/login';
+            return;
+        }
+
         setLoading(true);
         try {
+            const response = await axios.delete(`${API_URL}/post/${postId}/${user.sub}`, axiosConfig);
 
-            const response = await axios.delete(API_URL + "/post/" + postId + "/" + user.sub); {
-            }
-            const data = await response.data;
-            if (data.error) {
-                setError(data.error);
-                setLoading(false);
+            if (response.data.error) {
+                setError(response.data.error);
             } else {
-                setData(data);
-                setLoading(false);
+                setData(response.data);
             }
-        } catch (error:any ) {
-            setError(error.response.data.message);
+        } catch (error: any) {
+            handleError(error);
+        } finally {
             setLoading(false);
         }
-    }
-
-
-
+    };
 
     const getPost = async (id: string) => {
-        //solved
         setLoading(true);
         try {
-            const response = await axios.get(API_URL + "/post/id/" + id);
-            const data = await response.data;
-            if (data.error) {
-                setError(data.error);
-                setLoading(false);
+            const response = await axios.get(`${API_URL}/post/id/${id}`, axiosConfig);
+
+            if (response.data.error) {
+                setError(response.data.error);
             } else {
-                setData(data);
-                setLoading(false);
-               
+                setData(response.data);
             }
-        } catch (error:any ) {
-            setError(error.response.data.message);
+        } catch (error: any) {
+            handleError(error);
+        } finally {
             setLoading(false);
         }
-    }
+    };
 
-    
-   
     const getAllPosts = async (count: number) => {
-        //solved
         setLoading(true);
         try {
-            const url = count ? API_URL + "/posts/count/" + count : API_URL + "/posts/retrieve/all";
-            const response = await axios.get(url);
-            const data = await response.data;
-            console.log("it did trigger")
-            if (data.error) {
-                setError(data.error);
-                setLoading(false);
-            } else if (data.message === "No more posts") {
-                setError(data.message);
-                setLoading(false);
+            const url = count ? `${API_URL}/posts/count/${count}` : `${API_URL}/posts/retrieve/all`;
+            const response = await axios.get(url, axiosConfig);
+            const responseData = response.data;
+
+            if (responseData.error) {
+                setError(responseData.error);
+            } else if (responseData.message === "No more posts") {
+                setError(responseData.message);
             } else {
+                const posts = responseData.posts || [];
                 setData((prevData: any) => {
                     if (Array.isArray(prevData)) {
-                        return [...prevData, ...data.posts];
-                    } else {
-                        return [...data.posts];
+                        return [...prevData, ...posts];
                     }
+                    return posts;
                 });
-                setLoading(false);
             }
-            
         } catch (error: any) {
-            setError(error.response.data.message);
+            handleError(error);
+        } finally {
             setLoading(false);
         }
-    }
-
+    };
 
     const clearData = () => {
         setData([]);
         setError('');
-    }
-
-    
-    
-
-
+    };
 
     return (
         <GlobalContext.Provider
-         value={{ 
-        data,
-        setData,
-        error,
-        setError,
-        loading,
-        setLoading,
-        getPost,
-        getAllPosts,
-        createPost,
-        updatePost,
-        deletePost,
-        clearData
-         }}>
+            value={{
+                data,
+                setData,
+                error,
+                setError,
+                loading,
+                setLoading,
+                getPost,
+                getAllPosts,
+                createPost,
+                updatePost,
+                deletePost,
+                clearData
+            }}>
             {children}
         </GlobalContext.Provider>
     );
 };
 
-export const useGlobalContextPost = () =>{
+export const useGlobalContextPost = () => {
     return useContext(GlobalContext);
-} 
-
-
+};
 
 ```
 
-# app/providers/rotationStore.tsx
+# app\providers\rotationStore.tsx
 
 ```tsx
 "use client";
 import { createContext, useContext, Dispatch, SetStateAction, useState, useCallback } from 'react';
 import axios from 'axios';
 
-// const API_URL_cropRotation = 'http://localhost:5000/api/crops/cropRotation/';
-// const API_URL_cropRecommendations = 'http://localhost:5000/api/crops/cropRecommendations';
-// const API_URL_CropFields = 'http://localhost:5000/api/crops/cropRotation/fields';
+const API_URL_cropRotation = 'http://localhost:3000/api/crops/cropRotation/';
+const API_URL_cropRecommendations = 'http://localhost:3000/api/crops/cropRecommendations';
+const API_URL_CropFields = 'http://localhost:3000/api/crops/cropRotation/fields';
 
-const API_URL_cropRotation = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRotation/';
-const API_URL_cropRecommendations = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRecommendations';
-const API_URL_CropFields = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRotation/fields';
+// const API_URL_cropRotation = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRotation/';
+// const API_URL_cropRecommendations = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRecommendations';
+// const API_URL_CropFields = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRotation/fields';
 
 type DataType = {
   _id: string;
@@ -7481,7 +6536,7 @@ export const useGlobalContextCropRotation = () => {
 };
 ```
 
-# app/providers/UserStore.tsx
+# app\providers\UserStore.tsx
 
 ```tsx
 "use client";
@@ -7490,8 +6545,8 @@ import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 
-//const API_URL = 'http://localhost:3000/api/Controllers/User/';
-const API_URL = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/User/';
+const API_URL = 'http://localhost:3000/api/Controllers/User/';
+//const API_URL = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/Controllers/User/';
 
 
 type DataType = {
@@ -7704,6 +6759,34 @@ return useContext(GlobalContext);
 };
 ```
 
+# app\types\api.ts
+
+```ts
+export interface ApiResponse<T = any> {
+  data?: T;
+  error?: string;
+  message?: string;
+  posts?: any;
+  status?: number;
+}
+
+export interface Post {
+  id: number;
+  title: string;
+  brief: string;
+  description: string;
+  image?: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: {
+    name: string;
+    email: string;
+  };
+}
+
+```
+
 # i18n.ts
 
 ```ts
@@ -7711,18 +6794,21 @@ import { getRequestConfig } from 'next-intl/server';
 import { cookies } from 'next/headers';
 
 export default getRequestConfig(async () => {
-  const cookieStore = cookies();
+  // Use cookies() in an async context
+  const cookieStore = await cookies();
   const locale = cookieStore.get('language')?.value || 'ro';
-  console.log(locale);
+  console.log('Server', locale);
 
   return {
     locale,
-    messages: (await import(`./locales/${locale}.json`)).default
+    messages: (await import(`./locales/${locale}.json`)).default,
+    timeZone: 'Europe/Bucharest'
   };
 });
+
 ```
 
-# locales/en.json
+# locales\en.json
 
 ```json
 {
@@ -7816,7 +6902,7 @@ export default getRequestConfig(async () => {
 
 ```
 
-# locales/ro.json
+# locales\ro.json
 
 ```json
 {
@@ -7924,42 +7010,69 @@ export default getRequestConfig(async () => {
 # middleware.ts
 
 ```ts
-// middleware.ts
-import createMiddleware from 'next-intl/middleware';
-import { withMiddlewareAuthRequired, getSession, Session } from '@auth0/nextjs-auth0/edge';
-import { NextFetchEvent, NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-const myMiddleware = async (req: NextRequest) => {
-  const res = NextResponse.next();
-  const session: Session | null = await getSession(req, res);
-  if (session) {
-    console.log('Hello from authed middleware' + " User infos access " + session.user.userRoles);
-  } else {
-    console.log('No session found');
+export function middleware(request: NextRequest) {
+  // Handle preflight requests
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Allow-Origin': request.headers.get('origin') || '*',
+      },
+    });
   }
-  return res;
-};
 
-// Combine both middlewares
-const combinedMiddleware = async (req: NextRequest, event: NextFetchEvent) => {
-  await withMiddlewareAuthRequired(myMiddleware)(req, event);
-};
+  const response = NextResponse.next();
 
-export default combinedMiddleware;
+  // Add CORS headers for actual requests
+  response.headers.set('Access-Control-Allow-Credentials', 'true');
+  response.headers.set('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
+
+  // Allow auth endpoints to pass through
+  if (request.nextUrl.pathname.startsWith('/api/auth/')) {
+    return response;
+  }
+
+  // Check if there's a valid session cookie
+  const authCookie = request.cookies.get('appSession');
+  
+  if (!authCookie && (
+    request.nextUrl.pathname.startsWith('/api/Controllers/') ||
+    request.nextUrl.pathname.startsWith('/pages/Login/') ||
+    request.nextUrl.pathname.startsWith('/Crud/GetAllInRotatie/') ||
+    request.nextUrl.pathname.startsWith('/Crud/GetAllPosts/')
+  )) {
+    // For API requests, return 401 instead of redirecting
+    if (request.nextUrl.pathname.startsWith('/api/')) {
+      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Allow-Origin': request.headers.get('origin') || '*',
+        },
+      });
+    }
+    // For page requests, redirect to login
+    return NextResponse.redirect(new URL('/api/auth/login', request.url));
+  }
+
+  return response;
+}
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/rotation-dashboard/:path*',
-    '/api/:path*',
-  ]
+    '/api/Controllers/:path*',
+    '/pages/Login/:path*',
+    '/Crud/GetAllInRotatie/:path*',
+    '/Crud/GetAllPosts/:path*'
+  ],
 };
-
-
-
-
-
-
 
 ```
 
@@ -7970,7 +7083,7 @@ export const config = {
 /// <reference types="next/image-types/global" />
 
 // NOTE: This file should not be edited
-// see https://nextjs.org/docs/basic-features/typescript for more information.
+// see https://nextjs.org/docs/app/building-your-application/configuring/typescript for more information.
 
 ```
 
@@ -8018,7 +7131,7 @@ export default withNextIntl(nextConfig);
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.9",
     "@tailwindcss/typography": "^0.5.15",
-    "@types/node": "20.11.30",
+    "@types/node": "^20.11.30",
     "@types/react": "18.2.73",
     "@types/react-dom": "18.2.22",
     "ai-digest": "^1.0.7",
@@ -8042,11 +7155,11 @@ export default withNextIntl(nextConfig);
     "lucide-react": "^0.454.0",
     "mongoose": "^8.3.1",
     "mssql": "^11.0.1",
-    "next": "^14.1.4",
+    "next": "^15.0.2",
     "next-connect": "^1.0.0",
     "next-i18n-router": "^5.5.1",
     "next-i18next": "^15.3.1",
-    "next-intl": "^3.17.3",
+    "next-intl": "^3.24.0",
     "openai": "^4.29.2",
     "react": "^18.2.0",
     "react-bootstrap": "^2.10.2",
@@ -8069,6 +7182,14 @@ export default withNextIntl(nextConfig);
     "postcss-preset-env": "^10.0.8",
     "prisma": "^5.21.1",
     "tailwindcss": "^3.4.14"
+  },
+  "babel": {
+    "presets": [
+      "next/babel"
+    ],
+    "plugins": [
+      "@preact/signals-react-transform"
+    ]
   }
 }
 
@@ -8091,11 +7212,12 @@ module.exports = {
 }
 ```
 
-# prisma/schema.prisma
+# prisma\schema.prisma
 
 ```prisma
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["microsoftSqlServer"]
 }
 
 datasource db {
@@ -8153,7 +7275,7 @@ model CropDetail {
   value     String
   detailType String   
   cropId    Int
-  crop      Crop      @relation("CropDetails", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_CropDetail_Crop")
+  crop      Crop      @relation("CropDetails", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -8164,7 +7286,7 @@ model CropDetail {
 model Rotation {
   id                Int            @id @default(autoincrement())
   userId           String
-  user             User           @relation("UserRotations", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Rotation_User")
+  user             User           @relation("UserRotations", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   rotationName     String
   fieldSize        Decimal        @db.Decimal(10,2)
   numberOfDivisions Int
@@ -8178,11 +7300,11 @@ model Rotation {
 model RotationPlan {
   id              Int       @id @default(autoincrement())
   rotationId      Int
-  rotation        Rotation  @relation("RotationPlans", fields: [rotationId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_RotationPlan_Rotation")
+  rotation        Rotation  @relation("RotationPlans", fields: [rotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   year            Int
   division        Int
   cropId          Int
-  crop            Crop      @relation("CropRotationPlans", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_RotationPlan_Crop")
+  crop            Crop      @relation("CropRotationPlans", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   plantingDate    DateTime?
   harvestingDate  DateTime?
   divisionSize    Decimal?  @db.Decimal(10,2)
@@ -8197,7 +7319,7 @@ model RotationPlan {
 model Post {
   id          Int      @id @default(autoincrement())
   userId      String
-  user        User     @relation("UserPosts", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Post_User")
+  user        User     @relation("UserPosts", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   title       String
   brief       String?  @db.Text
   description String?  @db.Text
@@ -8211,9 +7333,9 @@ model Post {
 model UserCropSelection {
   id            Int      @id @default(autoincrement())
   userId        String
-  user          User     @relation("UserSelections", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_UserCropSelection_User")
+  user          User     @relation("UserSelections", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   cropId        Int
-  crop          Crop     @relation("CropSelections", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_UserCropSelection_Crop")
+  crop          Crop     @relation("CropSelections", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   selectionCount Int     @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -8221,9 +7343,10 @@ model UserCropSelection {
   @@unique([userId, cropId])
   @@map("user_crop_selections")
 }
+
 ```
 
-# prisma/seed.ts
+# prisma\seed.ts
 
 ```ts
 import { PrismaClient, Role } from '@prisma/client';
@@ -8289,7 +7412,7 @@ main()
 
 ```
 
-# public/locales/en/common.json
+# public\locales\en\common.json
 
 ```json
 {
@@ -8300,7 +7423,7 @@ main()
   }
 ```
 
-# public/locales/ro/common.json
+# public\locales\ro\common.json
 
 ```json
 {
@@ -8311,15 +7434,15 @@ main()
   }
 ```
 
-# public/Logo.png
+# public\Logo.png
 
 This is a binary file of the type: Image
 
-# public/next.svg
+# public\next.svg
 
 This is a file of the type: SVG Image
 
-# public/vercel.svg
+# public\vercel.svg
 
 This is a file of the type: SVG Image
 
@@ -8365,7 +7488,83 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/deploym
 
 ```
 
-# styles/globalsBot.css
+# scripts\init-db.ts
+
+```ts
+
+import prisma from '../app/lib/db-utils';
+
+async function main() {
+  try {
+    // Test connection first
+    await prisma.$connect();
+    console.log('Connected to database');
+
+    // Create initial admin user
+    const adminUser = await prisma.user.upsert({
+      where: { email: 'admin@example.com' },
+      update: {},
+      create: {
+        id: 'auth0|admin',
+        email: 'admin@example.com',
+        name: 'Admin User',
+        roleType: 'ADMIN'
+      }
+    });
+    console.log('Created admin user:', adminUser);
+
+    // Create sample crops
+    const wheat = await prisma.crop.create({
+      data: {
+        userId: adminUser.id,
+        cropName: 'Wheat',
+        cropType: 'Cereal',
+        cropVariety: 'Winter Wheat',
+        nitrogenDemand: 180,
+        nitrogenSupply: 40,
+        ItShouldNotBeRepeatedForXYears: 2,
+        details: {
+          create: [
+            { value: 'aphids', detailType: 'PEST' },
+            { value: 'rust', detailType: 'DISEASE' },
+            { value: 'nitrogen', detailType: 'FERTILIZER' }
+          ]
+        }
+      }
+    });
+    console.log('Created sample crop:', wheat);
+
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+main().catch(console.error);
+```
+
+# scripts\test-db.ts
+
+```ts
+
+import { testConnection } from '../app/lib/db-utils';
+
+async function main() {
+  try {
+    await testConnection();
+    console.log('Database connection test completed successfully');
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    process.exit(1);
+  }
+}
+
+main();
+```
+
+# styles\globalsBot.css
 
 ```css
 
@@ -8379,11 +7578,11 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/deploym
   }
 ```
 
-# styles/header-plain-green.jpg
+# styles\header-plain-green.jpg
 
 This is a binary file of the type: Image
 
-# styles/Header.module.css
+# styles\Header.module.css
 
 ```css
 /* .container {
@@ -8477,7 +7676,7 @@ This is a binary file of the type: Image
     } */
 ```
 
-# styles/Home.module.css
+# styles\Home.module.css
 
 ```css
 @tailwind base;
@@ -8835,7 +8034,11 @@ export default config;
 ```json
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
@@ -8853,16 +8056,27 @@ export default config;
       }
     ],
     "paths": {
-      "@/*": ["./*"]
-    }
+      "@/*": [
+        "./*"
+      ]
+    },
+    "target": "ES2017"
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "next-i18next.config.js"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next-i18next.config.js"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
 
 ```
 
-# types/index.ts
+# types\index.ts
 
 ```ts
 export interface ApiResponse<T> {
