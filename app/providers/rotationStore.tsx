@@ -1,16 +1,13 @@
 "use client";
-import { createContext, useContext, Dispatch, SetStateAction, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, type ReactNode } from 'react';
 import axios from 'axios';
+import { useUser } from '@auth0/nextjs-auth0/client';
 
-const API_URL_cropRotation = 'http://localhost:3000/api/crops/cropRotation/';
-const API_URL_cropRecommendations = 'http://localhost:3000/api/crops/cropRecommendations';
-const API_URL_CropFields = 'http://localhost:3000/api/crops/cropRotation/fields';
+// Use environment-based API URLs
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/Controllers';
+const API_URL_ROTATION = `${BASE_URL}/Rotation`;
 
-// const API_URL_cropRotation = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRotation/';
-// const API_URL_cropRecommendations = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRecommendations';
-// const API_URL_CropFields = 'https://fictional-space-giggle-pwpr6qw7w5427v6q-3000.app.github.dev/api/crops/cropRotation/fields';
-
-type DataType = {
+interface Crop {
   _id: string;
   cropName: string;
   cropType: string;
@@ -25,263 +22,240 @@ type DataType = {
   diseases: string[];
   selectare: boolean;
   user: string;
-  token: string;
   ItShouldNotBeRepeatedForXYears: number;
   nitrogenSupply: number;
   nitrogenDemand: number;
   residualNitrogen: number;
-};
+}
 
-type RecommendationType = {
-  cropName: string;
-  nitrogenSupply: number;
-  nitrogenDemand: number;
-  pests: string[];
-  diseases: string[];
-};
+interface CropRotation {
+  _id: string;
+  fieldSize: number;
+  numberOfDivisions: number;
+  rotationName: string;
+  crops: Crop[];
+  maxYears: number;
+  ResidualNitrogenSupply: number;
+}
 
-interface ContextProps {
+interface RotationContextState {
+  cropRotation: CropRotation[];
   isLoading: boolean;
-  setIsLoading: Dispatch<SetStateAction<boolean>>;
-  isError: boolean;
-  setIsError: Dispatch<SetStateAction<boolean>>;
+  error: string | null;
   isSuccess: boolean;
-  setIsSuccess: Dispatch<SetStateAction<boolean>>;
   message: string;
-  setMessage: Dispatch<SetStateAction<string>>;
-  cropRotation: any;
-  setCropRotation: Dispatch<SetStateAction<any>>;
-  generateCropRotation: ( fieldSize: number, numberOfDivisions: number, rotationName: string, filteredCrops: any, token: string , maxYears: number, ResidualNitrogenSupply: number ) => Promise<void>;
-  addTheCropRecommendation: (data: RecommendationType, token: string) => Promise<void>;
-  getCropRotation: (token: string) => Promise<void>;
-  updateNitrogenBalanceAndRegenerateRotation: (token:string , data: DataType) => Promise<void>;
-  updateDivisionSizeAndRedistribute: (token:string , data: DataType) => Promise<void>;
 }
 
-const ContextProps = createContext<ContextProps>({
-  isLoading: false,
-  setIsLoading: () => {},
-  isError: false,
-  setIsError: () => {},
-  isSuccess: false,
-  setIsSuccess: () => {},
-  message: '',
-  setMessage: () => {},
+interface RotationContextType extends RotationContextState {
+  generateCropRotation: (params: {
+    fieldSize: number;
+    numberOfDivisions: number;
+    rotationName: string;
+    crops: Crop[];
+    maxYears: number;
+    ResidualNitrogenSupply: number;
+  }) => Promise<void>;
+  getCropRotation: () => Promise<void>;
+  deleteCropRotation: (id: string) => Promise<void>;
+  updateNitrogenBalanceAndRegenerateRotation: (data: {
+    rotationName: string;
+    year: number;
+    division: number;
+    nitrogenBalance: number;
+  }) => Promise<void>;
+  updateDivisionSizeAndRedistribute: (data: {
+    rotationName: string;
+    division: number;
+    newDivisionSize: number;
+  }) => Promise<void>;
+}
+
+const initialState: RotationContextState = {
   cropRotation: [],
-  setCropRotation: () => {},
-  generateCropRotation: () => Promise.resolve(),
-  getCropRotation: () => Promise.resolve(),
-  addTheCropRecommendation: () => Promise.resolve(),
-  updateNitrogenBalanceAndRegenerateRotation: () => Promise.resolve(),
-  updateDivisionSizeAndRedistribute: () => Promise.resolve(),
-});
+  isLoading: false,
+  error: null,
+  isSuccess: false,
+  message: '',
+};
 
-interface Props {
-  children: React.ReactNode;
+const RotationContext = createContext<RotationContextType | null>(null);
+
+interface ProviderProps {
+  children: ReactNode;
 }
 
-const GlobalContext = createContext<ContextProps>({} as ContextProps);
-export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [message, setMessage] = useState('');
-  const [cropRotation, setCropRotation] = useState([]);
+export const GlobalContextProvider = ({ children }: ProviderProps) => {
+  const [state, setState] = useState<RotationContextState>(initialState);
+  const { user } = useUser();
 
-  const generateCropRotation = async (
-    fieldSize: number,
-    numberOfDivisions: number,
-    rotationName: string,
-    crops: DataType,
-    maxYears: number,
-    ResidualNitrogenSupply:number,
-  ) => {
-    setIsLoading(true);
+  const setLoading = (isLoading: boolean) => 
+    setState(prev => ({ ...prev, isLoading }));
+
+  const setError = (error: string | null) => 
+    setState(prev => ({ ...prev, error, isSuccess: false, message: error || '' }));
+
+  const setSuccess = (message: string) => 
+    setState(prev => ({ ...prev, isSuccess: true, error: null, message }));
+
+  const handleApiError = (error: unknown) => {
+    console.error('API Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    setError(errorMessage);
+    setLoading(false);
+  };
+
+  const generateCropRotation = async (params: {
+    fieldSize: number;
+    numberOfDivisions: number;
+    rotationName: string;
+    crops: Crop[];
+    maxYears: number;
+    ResidualNitrogenSupply: number;
+  }) => {
+    if (!user?.sub) return;
+    setLoading(true);
     try {
-      const response = await axios.post(
-        `${API_URL_cropRotation}`,
-        { 
-          fieldSize, 
-          numberOfDivisions,
-          rotationName,
-          crops,
-          maxYears,
-          ResidualNitrogenSupply,
-        },
-        {
-        }
+      const response = await axios.post<CropRotation[]>(
+        `${API_URL_ROTATION}/generateRotation/rotation/${user.sub}`,
+        params
+      );
+      if (response.status === 200 || response.status === 201) {
+        setState(prev => ({
+          ...prev,
+          cropRotation: response.data,
+          error: null,
+          isSuccess: true,
+          message: 'Crop rotation generated successfully'
+        }));
+        await getCropRotation();
+      }
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCropRotation = async () => {
+    if (!user?.sub) return;
+    setLoading(true);
+    try {
+      const response = await axios.get<CropRotation[]>(
+        `${API_URL_ROTATION}/getRotation/rotation/${user.sub}`
+      );
+      if (response.status === 200 || response.status === 203) {
+        setState(prev => ({
+          ...prev,
+          cropRotation: response.data,
+          error: null
+        }));
+      }
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteCropRotation = async (id: string) => {
+    if (!user?.sub) return;
+    const confirmDelete = window.confirm("Are you sure you want to delete this crop rotation?");
+    if (!confirmDelete) return;
+
+    setLoading(true);
+    try {
+      const response = await axios.delete(
+        `${API_URL_ROTATION}/deleteRotation/${user.sub}/${id}`
       );
       if (response.status === 200) {
-        setCropRotation(response.data);
-      } else {
-        setIsError(true);
-        setMessage('Error generating crop rotation');
+        setSuccess('Crop rotation deleted successfully');
+        // Refresh the rotation list
+        getCropRotation();
       }
-    } catch (err) {
-      setIsError(true);
-      setMessage('Error generating crop rotation');
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoading(false);
     }
-    setIsLoading(false);
   };
 
-  const getCropRotation = async (token: string) => {
-    setIsLoading(true);
+  const updateNitrogenBalanceAndRegenerateRotation = async (data: {
+    rotationName: string;
+    year: number;
+    division: number;
+    nitrogenBalance: number;
+  }) => {
+    if (!user?.sub) return;
+    setLoading(true);
     try {
-      const response = await axios.get(`${API_URL_cropRotation}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.put<CropRotation[]>(
+        `${API_URL_ROTATION}/updateNitrogenBalance/rotation/${user.sub}`,
+        data
+      );
       if (response.status === 200) {
-        setCropRotation(response.data);
-      } else if (response.status === 204) {
-        setMessage('Nu exista nici o rotatie de culturi');
-        setCropRotation(response.data);
-      } else
-       {
-        setIsError(true);
-        setMessage('Eroare la preluarea rotatiei de culturi');
+        setState(prev => ({
+          ...prev,
+          cropRotation: response.data,
+          isSuccess: true,
+          message: 'Nitrogen Balance and Crop Rotation updated successfully',
+          error: null
+        }));
       }
-    } catch (err) {
-      setIsError(true);
-      setMessage('Eroare la preluarea rotatiei de culturi');
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoading(false);
     }
-    setIsLoading(false);
   };
 
-  const deleteCropRotation = async (id: string, token: string) => {
-    setIsLoading(true);
+  const updateDivisionSizeAndRedistribute = async (data: {
+    rotationName: string;
+    division: number;
+    newDivisionSize: number;
+  }) => {
+    if (!user?.sub) return;
+    setLoading(true);
     try {
-      const response = await axios.delete(`${API_URL_cropRotation}${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.put<CropRotation[]>(
+        `${API_URL_ROTATION}/updateDivisionSizeAndRedistribute/rotation/${user.sub}`,
+        data
+      );
       if (response.status === 200) {
-        setIsSuccess(true);
-        setMessage('Crop rotation deleted successfully');
-      } else {
-        setIsError(true);
-        setMessage('Error deleting crop rotation');
+        setState(prev => ({
+          ...prev,
+          cropRotation: response.data,
+          isSuccess: true,
+          message: 'Division Size and Crop Rotation updated successfully',
+          error: null
+        }));
       }
-    } catch (err) {
-      setIsError(true);
-      setMessage('Error deleting crop rotation');
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoading(false);
     }
-    setIsLoading(false);
   };
 
-
-
-
-  const getCropRecommendations = useCallback(async (cropName: string, token: string) => {
-    let recommendations = [];
-    if (cropName !== '') {
-      try {
-        const response = await axios.get(
-          `${API_URL_cropRecommendations}?cropName=${cropName}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (response.status === 200 && response.data.length > 0) { // check if response data is not empty
-          recommendations = response.data;
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    }
-    return recommendations;
-  }, []);
-  
-
-
-  
-  const updateNitrogenBalanceAndRegenerateRotation = async ( token: string, data: any) => {
-  setIsLoading(true);
-  const {rotationName, year, division, nitrogenBalance } = data;
-  try {
-    const response = await axios.put(`${API_URL_cropRotation}`, {year, rotationName,division, nitrogenBalance }, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (response.status === 200) {
-      setIsSuccess(true);
-      setMessage('Nitrogen Balance and Crop Rotation updated successfully');
-      setCropRotation(response.data);
-    } else {
-      setIsError(true);
-      setMessage('Error updating Nitrogen Balance and Crop Rotation');
-    }
-  } catch (err) {
-    setIsError(true);
-    setMessage('Error updating Nitrogen Balance and Crop Rotation');
-  }
-  setIsLoading(false);
-};
-
-  
-const updateDivisionSizeAndRedistribute = async (token: string, data: any) => {
-  const { rotationName, division, newDivisionSize } = data;
-  setIsLoading(true);
-  try {
-    const response = await axios.put(`${API_URL_cropRotation}`, { rotationName, division, newDivisionSize }, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (response.status === 200) {
-      setIsSuccess(true);
-      setMessage('Division Size and Crop Rotation updated successfully');
-      setCropRotation(response.data);
-    } else {
-      setIsError(true);
-      setMessage('Error updating Division Size and Crop Rotation');
-    }
-  } catch (err) {
-    setIsError(true);
-    setMessage('Error updating Division Size and Crop Rotation');
-  }
-  setIsLoading(false);
-};
-
-
-
-
-  
+  const contextValue: RotationContextType = {
+    ...state,
+    generateCropRotation,
+    getCropRotation,
+    deleteCropRotation,
+    updateNitrogenBalanceAndRegenerateRotation,
+    updateDivisionSizeAndRedistribute,
+  };
 
   return (
-    <GlobalContext.Provider
-      value={{
-        isLoading,
-        setIsLoading,
-        isError,
-        setIsError,
-        isSuccess,
-        setIsSuccess,
-        message,
-        setMessage,
-        setCropRotation,
-        generateCropRotation,
-        getCropRotation,
-        cropRotation,
-        updateNitrogenBalanceAndRegenerateRotation,
-        updateDivisionSizeAndRedistribute,
-      
-
-      }}
-    >
+    <RotationContext.Provider value={contextValue}>
       {children}
-    </GlobalContext.Provider>
+    </RotationContext.Provider>
   );
 };
 
-export const useGlobalContextCrop = () => {
-  return useContext(GlobalContext);
-};
-export const useGlobalContextCropRotation = () => {
-  return useContext(GlobalContext);
+export const useGlobalContextRotation = () => {
+  const context = useContext(RotationContext);
+  if (!context) {
+    throw new Error('useGlobalContextRotation must be used within a GlobalContextProvider');
+  }
+  return context;
 };

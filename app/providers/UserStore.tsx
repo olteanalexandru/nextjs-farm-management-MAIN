@@ -2,8 +2,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 
+interface User {
+  sub: string;
+  email?: string;
+  name?: string;
+}
+
 interface UserContextType {
-  user: any;
+  user: User | null;
   isLoading: boolean;
   error: Error | null;
   isAuthenticated: boolean;
@@ -24,8 +30,15 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     setIsAuthenticated(!!user);
   }, [user]);
 
+  // Type-safe user object
+  const typedUser = user ? {
+    sub: user.sub as string,
+    email: user.email as string | undefined,
+    name: user.name as string | undefined,
+  } : null;
+
   const value = {
-    user,
+    user: typedUser,
     isLoading,
     error,
     isAuthenticated,
@@ -38,4 +51,10 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
   );
 }
 
-export const useUserContext = () => useContext(UserContext);
+export const useUserContext = () => {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error('useUserContext must be used within a UserContextProvider');
+  }
+  return context;
+};

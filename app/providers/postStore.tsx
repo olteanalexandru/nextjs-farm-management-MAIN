@@ -1,206 +1,234 @@
 "use client";
-import { createContext, useContext, Dispatch, SetStateAction, useState } from 'react';
+import React, { createContext, useContext, useState, type ReactNode } from 'react';
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 
-const API_URL = '/api/Controllers/Post'; // Use relative URL to avoid CORS issues
+// Use environment-based API URL
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/Controllers';
+const API_URL = `${BASE_URL}/Post`;
 
-type DataType = {
-    id: string;
-    _id: string;
-    title: string;
-    brief: string;
-    description: string;
-    image: string;
-    user: string;
-    token: string;
+interface Post {
+  id: string;
+  _id: string;
+  title: string;
+  brief: string;
+  description: string;
+  image: string;
+  user: string;
 }
 
-interface ContextProps {
-    data: any;
-    setData: Dispatch<SetStateAction<any>>;
-    error: string;
-    setError: Dispatch<SetStateAction<string>>;
-    loading: boolean;
-    setLoading: Dispatch<SetStateAction<boolean>>;
-    createPost: (data: DataType, token: string) => Promise<void>;
-    updatePost: (id: string, title: string, brief: string, description: string, image: string) => Promise<void>;
-    deletePost: (_id: string, token: string) => Promise<void>;
-    getPost: (id: string) => Promise<void>;
-    getAllPosts: (count: number) => Promise<void>;
-    clearData: () => void;
+interface PostContextState {
+  data: Post[];
+  error: string | null;
+  loading: boolean;
 }
 
-const GlobalContext = createContext<ContextProps>({} as ContextProps);
+interface PostContextType extends PostContextState {
+  setData: (data: Post[] | ((prevData: Post[]) => Post[])) => void;
+  setError: (error: string | null) => void;
+  setLoading: (loading: boolean) => void;
+  createPost: (data: Omit<Post, 'id' | '_id' | 'user'>) => Promise<void>;
+  updatePost: (id: string, data: Partial<Post>) => Promise<void>;
+  deletePost: (id: string) => Promise<void>;
+  getPost: (id: string) => Promise<void>;
+  getAllPosts: (count?: number) => Promise<void>;
+  clearData: () => void;
+}
 
-export const GlobalContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [data, setData] = useState<any[]>([]);
-    const [error, setError] = useState<string>('');
-    const [loading, setLoading] = useState<boolean>(false);
-    const { user, error: authError, isLoading: isUserLoading } = useUser();
+const initialState: PostContextState = {
+  data: [],
+  error: null,
+  loading: false,
+};
 
-    const axiosConfig = {
-        withCredentials: true, // Include cookies in requests
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    };
+const PostContext = createContext<PostContextType | null>(null);
 
-    const handleError = (error: any) => {
-        if (error.response?.status === 401) {
-            window.location.href = '/api/auth/login';
-            return;
-        }
-        setError(error.response?.data?.message || 'An error occurred');
-        setLoading(false);
-    };
+interface ProviderProps {
+  children: ReactNode;
+}
 
-    const createPost = async ({ title, brief, description, image }: any) => {
-        if (!user) {
-            window.location.href = '/api/auth/login';
-            return;
-        }
+export const GlobalContextProvider = ({ children }: ProviderProps) => {
+  const [state, setState] = useState<PostContextState>(initialState);
+  const { user } = useUser();
 
-        setLoading(true);
-        try {
-            const response = await axios.post(`${API_URL}/post/new/${user.sub}`, {
-                title,
-                brief,
-                description,
-                image,
-            }, axiosConfig);
+  const setData = (dataOrUpdater: Post[] | ((prevData: Post[]) => Post[])) => {
+    setState(prev => ({
+      ...prev,
+      data: typeof dataOrUpdater === 'function' ? dataOrUpdater(prev.data) : dataOrUpdater
+    }));
+  };
+  
+  const setError = (error: string | null) => setState(prev => ({ ...prev, error }));
+  const setLoading = (loading: boolean) => setState(prev => ({ ...prev, loading }));
 
-            if (response.data.error) {
-                setError(response.data.error);
-            } else {
-                setData((prevData) => [...prevData, response.data]);
-            }
-        } catch (error: any) {
-            handleError(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const axiosConfig = {
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  };
 
-    const updatePost = async (postId: string, { title, brief, description, image }: any) => {
-        if (!user) {
-            window.location.href = '/api/auth/login';
-            return;
-        }
+  const handleApiError = (error: unknown) => {
+    console.error('API Error:', error);
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      window.location.href = '/api/auth/login';
+      return;
+    }
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    setError(errorMessage);
+    setLoading(false);
+  };
 
-        setLoading(true);
-        try {
-            const response = await axios.put(`${API_URL}/post/${postId}/${user.sub}`, {
-                title,
-                brief,
-                description,
-                image,
-            }, axiosConfig);
+  const createPost = async (data: Omit<Post, 'id' | '_id' | 'user'>) => {
+    if (!user?.sub) {
+      window.location.href = '/api/auth/login';
+      return;
+    }
 
-            if (response.data.error) {
-                setError(response.data.error);
-            } else {
-                setData(response.data);
-            }
-        } catch (error: any) {
-            handleError(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    setLoading(true);
+    try {
+      const response = await axios.post<Post>(
+        `${API_URL}/post/new/${user.sub}`,
+        data,
+        axiosConfig
+      );
 
-    const deletePost = async (postId: string) => {
-        if (!user) {
-            window.location.href = '/api/auth/login';
-            return;
-        }
+      if ('error' in response.data) {
+        setError((response.data as any).error);
+      } else {
+        setData(prevData => [...prevData, response.data]);
+      }
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setLoading(true);
-        try {
-            const response = await axios.delete(`${API_URL}/post/${postId}/${user.sub}`, axiosConfig);
+  const updatePost = async (postId: string, data: Partial<Post>) => {
+    if (!user?.sub) {
+      window.location.href = '/api/auth/login';
+      return;
+    }
 
-            if (response.data.error) {
-                setError(response.data.error);
-            } else {
-                setData(response.data);
-            }
-        } catch (error: any) {
-            handleError(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    setLoading(true);
+    try {
+      const response = await axios.put<Post[]>(
+        `${API_URL}/post/${postId}/${user.sub}`,
+        data,
+        axiosConfig
+      );
 
-    const getPost = async (id: string) => {
-        setLoading(true);
-        try {
-            const response = await axios.get(`${API_URL}/post/id/${id}`, axiosConfig);
+      if ('error' in response.data) {
+        setError((response.data as any).error);
+      } else {
+        setData(response.data);
+      }
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            if (response.data.error) {
-                setError(response.data.error);
-            } else {
-                setData(response.data);
-            }
-        } catch (error: any) {
-            handleError(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const deletePost = async (postId: string) => {
+    if (!user?.sub) {
+      window.location.href = '/api/auth/login';
+      return;
+    }
 
-    const getAllPosts = async (count: number) => {
-        setLoading(true);
-        try {
-            const url = count ? `${API_URL}/posts/count/${count}` : `${API_URL}/posts/retrieve/all`;
-            const response = await axios.get(url, axiosConfig);
-            const responseData = response.data;
+    setLoading(true);
+    try {
+      const response = await axios.delete<Post[]>(
+        `${API_URL}/post/${postId}/${user.sub}`,
+        axiosConfig
+      );
 
-            if (responseData.error) {
-                setError(responseData.error);
-            } else if (responseData.message === "No more posts") {
-                setError(responseData.message);
-            } else {
-                const posts = responseData.posts || [];
-                setData((prevData: any) => {
-                    if (Array.isArray(prevData)) {
-                        return [...prevData, ...posts];
-                    }
-                    return posts;
-                });
-            }
-        } catch (error: any) {
-            handleError(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+      if ('error' in response.data) {
+        setError((response.data as any).error);
+      } else {
+        setData(response.data);
+      }
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const clearData = () => {
-        setData([]);
-        setError('');
-    };
+  const getPost = async (id: string) => {
+    setLoading(true);
+    try {
+      const response = await axios.get<Post>(
+        `${API_URL}/post/id/${id}`,
+        axiosConfig
+      );
 
-    return (
-        <GlobalContext.Provider
-            value={{
-                data,
-                setData,
-                error,
-                setError,
-                loading,
-                setLoading,
-                getPost,
-                getAllPosts,
-                createPost,
-                updatePost,
-                deletePost,
-                clearData
-            }}>
-            {children}
-        </GlobalContext.Provider>
-    );
+      if ('error' in response.data) {
+        setError((response.data as any).error);
+      } else {
+        setData([response.data]);
+      }
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getAllPosts = async (count?: number) => {
+    setLoading(true);
+    try {
+      const url = count ? `${API_URL}/posts/count/${count}` : `${API_URL}/posts/retrieve/all`;
+      const response = await axios.get<{ posts?: Post[]; error?: string; message?: string }>(
+        url,
+        axiosConfig
+      );
+      const responseData = response.data;
+
+      if (responseData.error) {
+        setError(responseData.error);
+      } else if (responseData.message === "No more posts") {
+        setError(responseData.message);
+      } else {
+        const posts = responseData.posts || [];
+        setData(prevData => [...prevData, ...posts]);
+      }
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearData = () => {
+    setState(initialState);
+  };
+
+  const contextValue: PostContextType = {
+    ...state,
+    setData,
+    setError,
+    setLoading,
+    createPost,
+    updatePost,
+    deletePost,
+    getPost,
+    getAllPosts,
+    clearData,
+  };
+
+  return (
+    <PostContext.Provider value={contextValue}>
+      {children}
+    </PostContext.Provider>
+  );
 };
 
 export const useGlobalContextPost = () => {
-    return useContext(GlobalContext);
+  const context = useContext(PostContext);
+  if (!context) {
+    throw new Error('useGlobalContextPost must be used within a GlobalContextProvider');
+  }
+  return context;
 };
