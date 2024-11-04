@@ -10,9 +10,10 @@ datasource db {
 
 model User {
   id             String            @id @default(uuid())
+  auth0Id        String            @unique
   name           String
   email          String            @unique
-  roleType       String            @default("FARMER")
+  roleType       String            @default("FARMER") 
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   crops          Crop[]            @relation("UserCrops")
@@ -20,6 +21,8 @@ model User {
   rotations      Rotation[]        @relation("UserRotations")
   cropSelections UserCropSelection[] @relation("UserSelections")
 
+  @@index([auth0Id])
+  @@index([email])
   @@map("users")
 }
 

@@ -1,29 +1,7 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
-
-
-// Types for rotation generation
-interface CropInput {
-  id: number;
-  cropName: string;
-  nitrogenSupply: number;
-  nitrogenDemand: number;
-  pests: string[];
-  diseases: string[];
-  ItShouldNotBeRepeatedForXYears: number;
-  plantingDate: string;
-  harvestingDate: string;
-}
-
-interface RotationInput {
-  fieldSize: number;
-  numberOfDivisions: number;
-  rotationName: string;
-  crops: CropInput[];
-  maxYears: number;
-  ResidualNitrogenSupply?: number;
-}
+import { CropInput, RotationInput, RouteContext } from '../interfaces';
 
 // Utility functions for rotation generation
 function hasSharedPests(crop1: CropInput, crop2: CropInput): boolean {
@@ -65,12 +43,10 @@ async function cropIsAvailable(
   const divisionLastUsedYear = lastUsedYear.get(division) || new Map<string, number>();
   const lastUsed = divisionLastUsedYear.get(crop.cropName) || 0;
 
-  // Check if enough years have passed since last use
   if (year - lastUsed <= crop.ItShouldNotBeRepeatedForXYears) {
     return false;
   }
 
-  // Check crop selection count
   const selection = await prisma.userCropSelection.findUnique({
     where: {
       userId_cropId: {
@@ -83,14 +59,22 @@ async function cropIsAvailable(
   return selection ? selection.selectionCount > 0 : false;
 }
 
-// Main controller functions
-export async function GET(request: NextRequest, context: any) {
-  const { params } = context;
+// Helper function to handle authentication
+async function authenticateUser() {
   const session = await getSession();
-  const user = session?.user;
+  if (!session?.user) {
+    return Response.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+  return session;
+}
 
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    if (params.rotation === 'getRotation' && params.rotationRoutes === 'rotation') {
+    const session = await authenticateUser();
+    if (session instanceof Response) return session;
+    const user = session.user;
+
+    if (context.params.rotation === 'getRotation' && context.params.rotationRoutes === 'rotation') {
       const rotations = await prisma.rotation.findMany({
         where: {
           userId: user.sub
@@ -116,20 +100,23 @@ export async function GET(request: NextRequest, context: any) {
         }
       });
 
-      return NextResponse.json({ data: rotations }, { status: 200 });
+      return Response.json({ data: rotations }, { status: 200 });
     }
-  } catch (error) {
 
+    return Response.json({ error: 'Invalid route' }, { status: 400 });
+  } catch (error) {
+    console.error('GET request error:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest, context: any) {
-  const { params } = context;
-  const session = await getSession();
-  const user = session?.user;
-
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
-    if (params.rotation === 'generateRotation' && params.rotationRoutes === 'rotation') {
+    const session = await authenticateUser();
+    if (session instanceof Response) return session;
+    const user = session.user;
+
+    if (context.params.rotation === 'generateRotation' && context.params.rotationRoutes === 'rotation') {
       const input: RotationInput = await request.json();
       const {
         fieldSize,
@@ -140,20 +127,17 @@ export async function POST(request: NextRequest, context: any) {
         ResidualNitrogenSupply = 500
       } = input;
 
-      // Validation
       if (!crops?.length) {
-        return NextResponse.json(
+        return Response.json(
           { error: 'No crops provided' },
           { status: 400 }
         );
       }
 
-      // Initialize tracking structures
       const rotationPlan = new Map();
       const lastUsedYear = new Map();
       const usedCropsInYear = new Map();
 
-      // Initialize last used year tracking for each division
       for (let division = 1; division <= numberOfDivisions; division++) {
         const divisionLastUsedYear = new Map();
         crops.forEach(crop => {
@@ -162,7 +146,6 @@ export async function POST(request: NextRequest, context: any) {
         lastUsedYear.set(division, divisionLastUsedYear);
       }
 
-      // Generate rotation plan
       for (let year = 1; year <= maxYears; year++) {
         usedCropsInYear.set(year, new Set());
         const yearlyPlan = [];
@@ -173,7 +156,6 @@ export async function POST(request: NextRequest, context: any) {
           const prevCrop = prevYearPlan?.find(item => item.division === division)?.crop;
 
           if (prevCrop) {
-            // Calculate nitrogen balance from previous year
             const prevNitrogenBalance = prevYearPlan.find(
               item => item.division === division
             ).nitrogenBalance;
@@ -181,7 +163,6 @@ export async function POST(request: NextRequest, context: any) {
             const nitrogenPerDivision = prevCrop.nitrogenSupply + prevNitrogenBalance;
             const sortedCrops = sortCropsByNitrogenBalance(crops, nitrogenPerDivision, 0);
 
-            // Find suitable crop
             for (const candidateCrop of sortedCrops) {
               const isAvailable = await cropIsAvailable(
                 candidateCrop,
@@ -217,7 +198,6 @@ export async function POST(request: NextRequest, context: any) {
               }
             }
           } else {
-            // First year or no previous crop
             const cropIndex = (division + year - 2) % crops.length;
             const crop = crops[cropIndex];
             
@@ -246,7 +226,6 @@ export async function POST(request: NextRequest, context: any) {
         rotationPlan.set(year, yearlyPlan);
       }
 
-      // Create rotation in database
       const rotation = await prisma.rotation.create({
         data: {
           userId: user.sub,
@@ -271,22 +250,24 @@ export async function POST(request: NextRequest, context: any) {
         }
       });
 
-      return NextResponse.json(rotation);
+      return Response.json(rotation);
     }
-  } catch (error) {
 
+    return Response.json({ error: 'Invalid route' }, { status: 400 });
+  } catch (error) {
+    console.error('POST request error:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function PUT(request: NextRequest, context: any) {
-  const { params } = context;
-  const session = await getSession();
-  const user = session?.user;
-
+export async function PUT(request: NextRequest, context: RouteContext) {
   try {
-    // Update nitrogen balance
-    if (params.rotation === 'updateNitrogenBalance') {
-      const { id, year, division, nitrogenBalance, rotationName } = await request.json();
+    const session = await authenticateUser();
+    if (session instanceof Response) return session;
+    const user = session.user;
+
+    if (context.params.rotation === 'updateNitrogenBalance') {
+      const { id, year, division, nitrogenBalance } = await request.json();
 
       const rotation = await prisma.rotation.findUnique({
         where: { id: parseInt(id) },
@@ -294,14 +275,13 @@ export async function PUT(request: NextRequest, context: any) {
       });
 
       if (!rotation || rotation.userId !== user.sub) {
-        return NextResponse.json(
+        return Response.json(
           { error: 'Not authorized' },
           { status: 401 }
         );
       }
 
       const updatedRotation = await prisma.$transaction(async (prisma) => {
-        // Update specified plan
         await prisma.rotationPlan.updateMany({
           where: {
             rotationId: parseInt(id),
@@ -314,7 +294,6 @@ export async function PUT(request: NextRequest, context: any) {
           }
         });
 
-        // Get updated rotation
         return prisma.rotation.findUnique({
           where: { id: parseInt(id) },
           include: {
@@ -327,29 +306,28 @@ export async function PUT(request: NextRequest, context: any) {
         });
       });
 
-      return NextResponse.json({
+      return Response.json({
         message: 'Nitrogen balance updated successfully',
         data: updatedRotation
       });
     }
 
-    // Update division size
-    if (params.rotation === 'updateDivisionSizeAndRedistribute') {
-      const { id, division, newDivisionSize, rotationName } = await request.json();
+    if (context.params.rotation === 'updateDivisionSizeAndRedistribute') {
+      const { id, division, newDivisionSize } = await request.json();
 
       const rotation = await prisma.rotation.findUnique({
         where: { id: parseInt(id) }
       });
 
       if (!rotation || rotation.userId !== user.sub) {
-        return NextResponse.json(
+        return Response.json(
           { error: 'Not authorized' },
           { status: 401 }
         );
       }
 
       if (newDivisionSize > rotation.fieldSize || newDivisionSize < 0) {
-        return NextResponse.json(
+        return Response.json(
           { error: 'Invalid division size' },
           { status: 400 }
         );
@@ -395,28 +373,31 @@ export async function PUT(request: NextRequest, context: any) {
         }
       });
 
-      return NextResponse.json(updatedRotation);
+      return Response.json(updatedRotation);
     }
-  } catch (error) {
 
+    return Response.json({ error: 'Invalid route' }, { status: 400 });
+  } catch (error) {
+    console.error('PUT request error:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function DELETE(request: NextRequest, context: any) {
-  const { params } = context;
-  const session = await getSession();
-  const user = session?.user;
-
+export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    if (params.rotation === 'deleteRotation') {
-      const rotationId = parseInt(params.dinamicAction);
+    const session = await authenticateUser();
+    if (session instanceof Response) return session;
+    const user = session.user;
+
+    if (context.params.rotation === 'deleteRotation') {
+      const rotationId = parseInt(context.params.dinamicAction);
 
       const rotation = await prisma.rotation.findUnique({
         where: { id: rotationId }
       });
 
       if (!rotation || rotation.userId !== user.sub) {
-        return NextResponse.json(
+        return Response.json(
           { error: 'Not authorized' },
           { status: 401 }
         );
@@ -426,25 +407,15 @@ export async function DELETE(request: NextRequest, context: any) {
         where: { id: rotationId }
       });
 
-      return NextResponse.json({
+      return Response.json({
         message: 'Rotation deleted successfully',
         data: rotation
       });
     }
-  } catch (error) {
 
+    return Response.json({ error: 'Invalid route' }, { status: 400 });
+  } catch (error) {
+    console.error('DELETE request error:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
-
-
-
-
-
-
-
- 
-
-
-
-

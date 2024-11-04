@@ -1,11 +1,11 @@
 "use client"
 import { Dropdown } from 'react-bootstrap';
-import { useGlobalContext } from '../providers/UserStore';
+import { useUserContext } from '../providers/UserStore';
 import styles from '../../styles/Header.module.css';
 import Link from 'next/link';
 
 function HeaderLog() {
-  const { data , login , logout} = useGlobalContext();
+
 
   return (
     <header className={`${styles.headerModule} py-2`}>

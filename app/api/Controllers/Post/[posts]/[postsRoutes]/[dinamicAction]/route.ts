@@ -1,9 +1,24 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { prisma } from '@/app/lib/prisma';
 import { getCurrentUser } from '@/app/lib/auth';
 
-async function handler(request: NextRequest, context: any) {
+type RouteContext = {
+  params: {
+    posts: string;
+    postsRoutes: string;
+    dinamicAction: string;
+  };
+};
+
+type PostData = {
+  title: string;
+  brief: string;
+  description: string;
+  image?: string;
+};
+
+async function handler(request: NextRequest, context: RouteContext) {
   const { params } = context;
   const method = request.method;
 
@@ -32,7 +47,7 @@ async function handler(request: NextRequest, context: any) {
           });
 
           const message = posts.length === 0 ? "No more posts" : undefined;
-          return NextResponse.json({ posts, message });
+          return Response.json({ posts, message });
         }
 
         if (params.posts === 'posts' && params.postsRoutes === "search") {
@@ -40,6 +55,7 @@ async function handler(request: NextRequest, context: any) {
             where: {
               title: {
                 contains: params.dinamicAction,
+                mode: 'insensitive'
               }
             },
             include: {
@@ -52,7 +68,7 @@ async function handler(request: NextRequest, context: any) {
             }
           });
 
-          return NextResponse.json({ posts });
+          return Response.json({ posts });
         }
 
         if (params.posts === 'post' && params.postsRoutes === "id") {
@@ -70,16 +86,22 @@ async function handler(request: NextRequest, context: any) {
             }
           });
 
-          return NextResponse.json({ posts: post });
+          if (!post) {
+            return Response.json({ error: 'Post not found' }, { status: 404 });
+          }
+
+          return Response.json({ posts: post });
         }
-        break;
+
+        return Response.json({ error: 'Invalid route' }, { status: 400 });
 
       case 'POST':
         const user = await getCurrentUser(request);
-        const { title, brief, description, image } = await request.json();
+        const postData = await request.json() as PostData;
+        const { title, brief, description, image } = postData;
 
         if (!title || !brief || !description) {
-          return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+          return Response.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
         const post = await prisma.post.create({
@@ -92,23 +114,22 @@ async function handler(request: NextRequest, context: any) {
           }
         });
 
-        return NextResponse.json(post, { status: 201 });
-        break;
+        return Response.json(post, { status: 201 });
 
       case 'PUT':
         const updateUser = await getCurrentUser(request);
-        const updateData = await request.json();
+        const updateData = await request.json() as PostData;
 
         const existingPost = await prisma.post.findUnique({
           where: { id: parseInt(params.postsRoutes) }
         });
 
         if (!existingPost) {
-          return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+          return Response.json({ error: 'Post not found' }, { status: 404 });
         }
 
         if (existingPost.userId !== updateUser.id) {
-          return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+          return Response.json({ error: 'Not authorized' }, { status: 401 });
         }
 
         const updatedPost = await prisma.post.update({
@@ -121,8 +142,7 @@ async function handler(request: NextRequest, context: any) {
           }
         });
 
-        return NextResponse.json(updatedPost);
-        break;
+        return Response.json(updatedPost);
 
       case 'DELETE':
         const deleteUser = await getCurrentUser(request);
@@ -132,26 +152,28 @@ async function handler(request: NextRequest, context: any) {
         });
 
         if (!postToDelete) {
-          return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+          return Response.json({ error: 'Post not found' }, { status: 404 });
         }
 
         if (postToDelete.userId !== deleteUser.id && !deleteUser.userRoles?.includes('admin')) {
-          return NextResponse.json({ error: 'Not authorized' }, { status: 401 });
+          return Response.json({ error: 'Not authorized' }, { status: 401 });
         }
 
         await prisma.post.delete({
           where: { id: parseInt(params.postsRoutes) }
         });
 
-        return NextResponse.json({ message: 'Post deleted' });
-        break;
+        return Response.json({ message: 'Post deleted' });
 
       default:
-        return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+        return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
   } catch (error) {
-    console.error('Request error', error);
-    return NextResponse.json({ error: 'Error processing request' }, { status: 500 });
+    console.error('Request error:', error);
+    if (error instanceof Error && error.message === 'Not authenticated') {
+      return Response.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

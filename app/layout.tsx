@@ -32,17 +32,18 @@ export default async function RootLayout({
       <head />
       <body className="bg-light">
         <div className="d-flex flex-column align-items-center" style={{minHeight:'98vh'}}>
-        
+      
           <div className=" w-100">
 
         
-           
+         
  <UserProvider>
             <PostStore>
               <CulturaStore>
                 <GlobalContextProvider>
               
                   <ModernLayout>
+                  <Header />
                   <div className="container bg-white shadow-sm p-3 mb-5 rounded" style={{ maxWidth: '1400px' }}>
                   <NextIntlClientProvider messages={messages}>
                     {children}

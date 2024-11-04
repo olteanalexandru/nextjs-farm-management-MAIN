@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Camera, Home, Repeat, Users, Settings, LogOut } from 'lucide-react';
+import { Camera, Home, Repeat, Users, Settings, LogOut , LogIn} from 'lucide-react';
 
 import { useUser } from '@auth0/nextjs-auth0/client';
 
@@ -15,7 +15,7 @@ const ModernLayout = ({ children }) => {
     { name: 'Home', href: '/', icon: Home },
     { name: 'News', href: '/pages/News', icon: Home },
     { name: 'Crop Rotation', href: '/pages/Rotatie', icon: Repeat },
-    { name: 'Dashboard', href: '/Dashboard', icon: Camera },
+    { name: 'Dashboard', href: '/pages/Login/Dashboard', icon: Camera },
     { name: 'Users', href: '/pages/Login/Register', icon: Users, adminOnly: true },
   ];
 
@@ -46,7 +46,7 @@ const ModernLayout = ({ children }) => {
       </div>
       
       <div className="flex items-center space-x-4">
-        {!isLoading && user && (
+        {!isLoading && user ? (
           <div className="hidden md:flex items-center space-x-4">
             <div className="flex flex-col items-end">
               <span className="text-sm font-medium text-gray-900">{user.name}</span>
@@ -58,6 +58,14 @@ const ModernLayout = ({ children }) => {
               className="h-10 w-10 rounded-full border-2 border-gray-200 object-cover"
             />
           </div>
+        ) : (
+          <Link
+            href="/api/auth/login"
+            className="flex items-center px-3 py-2 mt-auto text-sm font-medium text-green-700 rounded-lg hover:bg-green-50"
+          >
+            <LogIn className="w-5 h-5 mr-3 text-green-400" />
+            Login
+          </Link>
         )}
       </div>
     </div>
@@ -94,7 +102,7 @@ const ModernLayout = ({ children }) => {
               );
             })}
 
-            {user && (
+            {user ? (
               <Link
                 href="/api/auth/logout"
                 className="flex items-center px-3 py-2 mt-auto text-sm font-medium text-red-700 rounded-lg hover:bg-red-50"
@@ -102,7 +110,18 @@ const ModernLayout = ({ children }) => {
                 <LogOut className="w-5 h-5 mr-3 text-red-400" />
                 Logout
               </Link>
+            ) : (
+              <Link
+                href="/api/auth/login"
+                className="flex items-center px-3 py-2 mt-auto text-sm font-medium text-green-700 rounded-lg hover:bg-green-50"
+              >
+                <LogIn className="w-5 h-5 mr-3 text-green-400" />
+                Login
+              </Link>
             )}
+
+
+                
           </nav>
         </div>
       </aside>
