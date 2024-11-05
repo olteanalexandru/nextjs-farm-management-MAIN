@@ -1,14 +1,34 @@
 "use client";
 import { useGlobalContextCrop } from '../providers/culturaStore';
 import { useGlobalContext } from '../providers/UserStore';
-import FileBase from 'react-file-base64';
 import CropRecommendations from './CropRecommandations';
 import React, { useState, useEffect, useCallback } from 'react';
 import { debounce } from 'lodash';
 
+
+
+
+// Add this function at the top of your component
+const convertToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const fileReader = new FileReader();
+    fileReader.readAsDataURL(file);
+    fileReader.onload = () => {
+      resolve(fileReader.result as string);
+    };
+    fileReader.onerror = (error) => {
+      reject(error);
+    };
+  });
+};
+
+
+
+
+
+
 const CropForm = () => {
   const { createCrop } = useGlobalContextCrop();
-  const { data } = useGlobalContext();
 
   const [cropName, setCropName] = useState(sessionStorage.getItem('cropName') || '');
   const [cropType, setCropType] = useState('');
@@ -31,24 +51,26 @@ const CropForm = () => {
     e.preventDefault();
 
     const newCrop = {
-      cropName,
-      cropType,
-      cropVariety,
-      plantingDate,
-      harvestingDate,
-      description,
-      imageUrl,
-      soilType,
-      climate,
-      fertilizers,
-      pests,
-      diseases,
-      ItShouldNotBeRepeatedForXYears: !isNaN(parseInt(ItShouldNotBeRepeatedForXYears))
-        ? parseInt(ItShouldNotBeRepeatedForXYears)
-        : null,
-      nitrogenSupply: nitrogenSupply,
-      nitrogenDemand: nitrogenDemand,
-    };
+        cropName,
+        cropType,
+        cropVariety,
+        plantingDate,
+        harvestingDate,
+        description,
+        imageUrl,
+        soilType,
+        climate,
+        fertilizers,
+        pests,
+        diseases,
+        ItShouldNotBeRepeatedForXYears: !isNaN(parseInt(ItShouldNotBeRepeatedForXYears))
+          ? parseInt(ItShouldNotBeRepeatedForXYears)
+          : null,
+        nitrogenSupply: !isNaN(parseFloat(nitrogenSupply)) ? parseFloat(nitrogenSupply) : 0,
+        nitrogenDemand: !isNaN(parseFloat(nitrogenDemand)) ? parseFloat(nitrogenDemand) : 0,
+        selectare: false,
+        residualNitrogen: 0,
+      };
 
     createCrop(newCrop);
   };
@@ -291,7 +313,31 @@ const CropForm = () => {
               <div className="row">
                 <div className="col-md-3 form-group">
                   <h3 className="text-center mb-4">Add Image</h3>
-                  <FileBase multiple={false} onDone={({ base64 }) => setImageUrl(base64)} />
+                  <div className="col-md-3 form-group">
+  <h3 className="text-center mb-4">Add Image</h3>
+  <input
+    type="file"
+    accept="image/*"
+    onChange={async (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const base64 = await convertToBase64(e.target.files[0]);
+        setImageUrl(base64);
+      }
+    }}
+    className="form-control"
+  />
+  {imageUrl && (
+    <img 
+      src={imageUrl} 
+      alt="Preview" 
+      style={{ 
+        marginTop: '10px',
+        maxWidth: '100%',
+        height: 'auto' 
+      }} 
+    />
+  )}
+</div>
                 </div>
               </div>
             </>
@@ -300,7 +346,31 @@ const CropForm = () => {
           <div className="row">
             <div className="col-md-3 form-group">
               <h3 className="text-center mb-4">Add Image</h3>
-              <FileBase multiple={false} onDone={({ base64 }) => setImageUrl(base64)} />
+              <div className="col-md-3 form-group">
+  <h3 className="text-center mb-4">Add Image</h3>
+  <input
+    type="file"
+    accept="image/*"
+    onChange={async (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const base64 = await convertToBase64(e.target.files[0]);
+        setImageUrl(base64);
+      }
+    }}
+    className="form-control"
+  />
+  {imageUrl && (
+    <img 
+      src={imageUrl} 
+      alt="Preview" 
+      style={{ 
+        marginTop: '10px',
+        maxWidth: '100%',
+        height: 'auto' 
+      }} 
+    />
+  )}
+</div>
             </div>
           </div>
           <br />
@@ -315,7 +385,7 @@ const CropForm = () => {
       {cropName && (
         <>
           <h2 className="text-center mb-4">Similar Crops</h2>
-          <CropRecommendations cropName={cropName}  />
+          <CropRecommendations cropName={cropName} token={''}  />
         </>
       )}
     </div>

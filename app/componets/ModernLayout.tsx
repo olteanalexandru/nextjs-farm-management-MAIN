@@ -15,7 +15,7 @@ const ModernLayout = ({ children }) => {
     { name: 'Home', href: '/', icon: Home },
     { name: 'News', href: '/pages/News', icon: Home },
     { name: 'Crop Rotation', href: '/pages/Rotatie', icon: Repeat },
-    { name: 'Dashboard', href: '/pages/Login/Dashboard', icon: Camera },
+    { name: 'Dashboard', href: '/dashboard', icon: Camera },
     { name: 'Users', href: '/pages/Login/Register', icon: Users, adminOnly: true },
   ];
 

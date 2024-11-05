@@ -1,8 +1,18 @@
 "use client";
 import { useGlobalContextCrop } from '../providers/culturaStore';
 import styles from './Rotatie.module.css';
-import { Button } from 'react-bootstrap'; 
+// import { Button } from 'react-bootstrap'; 
 import React, { useEffect, useState } from 'react';
+
+
+//this should be replaced with a typescript button
+function Button({ variant, size, onClick, children }) {
+  return (
+    <button onClick={onClick} className={`btn btn-${variant} btn-${size}`}>
+      {children}
+    </button>
+  );
+}
 
 function RotatieItem({ crops, userID }) {
   const { deleteCrop, message } = useGlobalContextCrop();

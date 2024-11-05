@@ -30,13 +30,13 @@ function App({ crops, areThereCrops }) {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
 
   // Filter crops based on search term
-  const filteredCrops = crops.filter(crop => {
+  const filteredCrops = crops?.filter(crop => {
     const regex = new RegExp(searchTerm, 'i');
     return regex.test(crop.cropName) || regex.test(crop.cropType) || regex.test(crop.cropVariety);
   });
 
-  const currentItems = filteredCrops.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredCrops.length / itemsPerPage);
+  const currentItems = filteredCrops?.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredCrops?.length / itemsPerPage);
 
   return (
     <div className={` text-center `}>

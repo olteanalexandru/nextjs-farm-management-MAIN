@@ -9,7 +9,7 @@ export const loadMorePosts = async (setLoadingMore, error, getAllPosts, page, se
   setLoadingMore(true);
 
   if (error === "No more posts") {
-    console.log("erarea" + error)
+    console.log("eroare no ore posts " + error)
     setHasMore(false);
   } else {
     await getAllPosts(page);
