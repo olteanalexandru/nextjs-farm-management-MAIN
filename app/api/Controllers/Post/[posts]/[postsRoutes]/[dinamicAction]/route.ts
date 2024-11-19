@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
-import { prisma } from '@/app/lib/prisma';
-import { getCurrentUser } from '@/app/lib/auth';
+import { prisma } from 'app/lib/prisma';
+import { getCurrentUser } from 'app/lib/auth';
+import { ApiResponse, Post, PostCreate } from 'app/types/api';
 
 type RouteContext = {
   params: {
@@ -9,13 +10,6 @@ type RouteContext = {
     postsRoutes: string;
     dinamicAction: string;
   };
-};
-
-type PostData = {
-  title: string;
-  brief: string;
-  description: string;
-  image?: string;
 };
 
 export const GET = withApiAuthRequired(async function GET(
@@ -45,8 +39,11 @@ export const GET = withApiAuthRequired(async function GET(
         }
       });
 
-      const message = posts.length === 0 ? "No more posts" : undefined;
-      return Response.json({ posts, message });
+      const response: ApiResponse<Post> = {
+        posts,
+        message: posts.length === 0 ? "No more posts" : undefined
+      };
+      return Response.json(response);
     }
 
     // Handle post search
@@ -54,8 +51,7 @@ export const GET = withApiAuthRequired(async function GET(
       const posts = await prisma.post.findMany({
         where: {
           title: {
-            contains: params.dinamicAction,
-            mode: 'insensitive'
+            contains: params.dinamicAction.toLowerCase()
           }
         },
         include: {
@@ -68,7 +64,8 @@ export const GET = withApiAuthRequired(async function GET(
         }
       });
 
-      return Response.json({ posts });
+      const response: ApiResponse<Post> = { posts };
+      return Response.json(response);
     }
 
     // Handle single post fetch
@@ -88,10 +85,15 @@ export const GET = withApiAuthRequired(async function GET(
       });
 
       if (!post) {
-        return Response.json({ error: 'Post not found' }, { status: 404 });
+        const response: ApiResponse<Post> = { 
+          error: 'Post not found',
+          status: 404
+        };
+        return Response.json(response, { status: 404 });
       }
 
-      return Response.json({ posts: post });
+      const response: ApiResponse<Post> = { posts: [post] };
+      return Response.json(response);
     }
 
     if (params.posts === 'posts' && params.postsRoutes === "retrieve" && params.dinamicAction === "all") {
@@ -109,13 +111,22 @@ export const GET = withApiAuthRequired(async function GET(
         }
       });
 
-      return Response.json({ posts });
+      const response: ApiResponse<Post> = { posts };
+      return Response.json(response);
     }
 
-    return Response.json({ error: 'Invalid route' }, { status: 400 });
+    const response: ApiResponse = { 
+      error: 'Invalid route',
+      status: 400
+    };
+    return Response.json(response, { status: 400 });
   } catch (error) {
     console.error('GET request error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    const response: ApiResponse = { 
+      error: 'Internal server error',
+      status: 500
+    };
+    return Response.json(response, { status: 500 });
   } 
 });
 
@@ -125,11 +136,15 @@ export const POST = withApiAuthRequired(async function POST(
 ) {
   try {
     const user = await getCurrentUser(request);
-    const postData = await request.json() as PostData;
+    const postData = await request.json() as PostCreate;
     const { title, brief, description, image } = postData;
 
     if (!title || !brief || !description) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
+      const response: ApiResponse = { 
+        error: 'Missing required fields',
+        status: 400
+      };
+      return Response.json(response, { status: 400 });
     }
 
     const post = await prisma.post.create({
@@ -139,13 +154,26 @@ export const POST = withApiAuthRequired(async function POST(
         brief,
         description,
         image
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true
+          }
+        }
       }
     });
 
-    return Response.json(post, { status: 201 });
+    const response: ApiResponse<Post> = { data: post };
+    return Response.json(response, { status: 201 });
   } catch (error) {
     console.error('POST request error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    const response: ApiResponse = { 
+      error: 'Internal server error',
+      status: 500
+    };
+    return Response.json(response, { status: 500 });
   }
 });
 
@@ -155,18 +183,26 @@ export const PUT = withApiAuthRequired(async function PUT(
 ) {
   try {
     const updateUser = await getCurrentUser(request);
-    const updateData = await request.json() as PostData;
+    const updateData = await request.json() as PostCreate;
 
     const existingPost = await prisma.post.findUnique({
       where: { id: parseInt(params.postsRoutes) }
     });
 
     if (!existingPost) {
-      return Response.json({ error: 'Post not found' }, { status: 404 });
+      const response: ApiResponse = { 
+        error: 'Post not found',
+        status: 404
+      };
+      return Response.json(response, { status: 404 });
     }
 
     if (existingPost.userId !== updateUser.id) {
-      return Response.json({ error: 'Not authorized' }, { status: 401 });
+      const response: ApiResponse = { 
+        error: 'Not authorized',
+        status: 401
+      };
+      return Response.json(response, { status: 401 });
     }
 
     const updatedPost = await prisma.post.update({
@@ -176,13 +212,26 @@ export const PUT = withApiAuthRequired(async function PUT(
         brief: updateData.brief,
         description: updateData.description,
         image: updateData.image
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true
+          }
+        }
       }
     });
 
-    return Response.json(updatedPost);
+    const response: ApiResponse<Post> = { data: updatedPost };
+    return Response.json(response);
   } catch (error) {
     console.error('PUT request error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    const response: ApiResponse = { 
+      error: 'Internal server error',
+      status: 500
+    };
+    return Response.json(response, { status: 500 });
   }
 });
 
@@ -198,20 +247,36 @@ export const DELETE = withApiAuthRequired(async function DELETE(
     });
 
     if (!postToDelete) {
-      return Response.json({ error: 'Post not found' }, { status: 404 });
+      const response: ApiResponse = { 
+        error: 'Post not found',
+        status: 404
+      };
+      return Response.json(response, { status: 404 });
     }
 
     if (postToDelete.userId !== deleteUser.id && !deleteUser.userRoles?.includes('admin')) {
-      return Response.json({ error: 'Not authorized' }, { status: 401 });
+      const response: ApiResponse = { 
+        error: 'Not authorized',
+        status: 401
+      };
+      return Response.json(response, { status: 401 });
     }
 
     await prisma.post.delete({
       where: { id: parseInt(params.postsRoutes) }
     });
 
-    return Response.json({ message: 'Post deleted' });
+    const response: ApiResponse = { 
+      message: 'Post deleted',
+      status: 200
+    };
+    return Response.json(response);
   } catch (error) {
     console.error('DELETE request error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    const response: ApiResponse = { 
+      error: 'Internal server error',
+      status: 500
+    };
+    return Response.json(response, { status: 500 });
   }
 });

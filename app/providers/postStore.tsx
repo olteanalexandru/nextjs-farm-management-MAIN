@@ -1,21 +1,11 @@
-"use client";
+   "use client";
 import React, { createContext, useContext, useState, type ReactNode } from 'react';
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
+import { ApiResponse, Post, PostCreate, PostUpdate } from '../types/api';
 
-// Use environment-based API URL
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/Controllers';
 const API_URL = `${BASE_URL}/Post`;
-
-interface Post {
-  id: string;
-  _id: string;
-  title: string;
-  brief: string;
-  description: string;
-  image: string;
-  user: string;
-}
 
 interface PostContextState {
   data: Post[];
@@ -27,10 +17,10 @@ interface PostContextType extends PostContextState {
   setData: (data: Post[] | ((prevData: Post[]) => Post[])) => void;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
-  createPost: (data: Omit<Post, 'id' | '_id' | 'user'>) => Promise<void>;
-  updatePost: (id: string, data: Partial<Post>) => Promise<void>;
-  deletePost: (id: string) => Promise<void>;
-  getPost: (id: string) => Promise<void>;
+  createPost: (data: PostCreate) => Promise<void>;
+  updatePost: (id: number, data: PostUpdate) => Promise<void>;
+  deletePost: (id: number) => Promise<void>;
+  getPost: (id: number) => Promise<void>;
   getAllPosts: (count?: number) => Promise<void>;
   clearData: () => void;
 }
@@ -70,16 +60,19 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
 
   const handleApiError = (error: unknown) => {
     console.error('API Error:', error);
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      window.location.href = '/api/auth/login';
-      return;
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        window.location.href = '/api/auth/login';
+        return;
+      }
+      setError(error.response?.data?.error || error.message);
+    } else {
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
     }
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    setError(errorMessage);
     setLoading(false);
   };
 
-  const createPost = async (data: Omit<Post, 'id' | '_id' | 'user'>) => {
+  const createPost = async (data: PostCreate) => {
     if (!user?.sub) {
       window.location.href = '/api/auth/login';
       return;
@@ -87,16 +80,16 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
 
     setLoading(true);
     try {
-      const response = await axios.post<Post>(
+      const response = await axios.post<ApiResponse<Post>>(
         `${API_URL}/post/new/${user.sub}`,
         data,
         axiosConfig
       );
 
-      if ('error' in response.data) {
-        setError((response.data as any).error);
-      } else {
-        setData(prevData => [...prevData, response.data]);
+      if (response.data.error) {
+        setError(response.data.error);
+      } else if (response.data.data) {
+        setData(prevData => [...prevData, response.data.data!]);
       }
     } catch (error) {
       handleApiError(error);
@@ -105,7 +98,7 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     }
   };
 
-  const updatePost = async (postId: string, data: Partial<Post>) => {
+  const updatePost = async (postId: number, data: PostUpdate) => {
     if (!user?.sub) {
       window.location.href = '/api/auth/login';
       return;
@@ -113,16 +106,20 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
 
     setLoading(true);
     try {
-      const response = await axios.put<Post[]>(
+      const response = await axios.put<ApiResponse<Post>>(
         `${API_URL}/post/${postId}/${user.sub}`,
         data,
         axiosConfig
       );
 
-      if ('error' in response.data) {
-        setError((response.data as any).error);
-      } else {
-        setData(response.data);
+      if (response.data.error) {
+        setError(response.data.error);
+      } else if (response.data.data) {
+        setData(prevData => 
+          prevData.map(post => 
+            post.id === postId ? { ...post, ...response.data.data } : post
+          )
+        );
       }
     } catch (error) {
       handleApiError(error);
@@ -131,7 +128,7 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     }
   };
 
-  const deletePost = async (postId: string) => {
+  const deletePost = async (postId: number) => {
     if (!user?.sub) {
       window.location.href = '/api/auth/login';
       return;
@@ -139,15 +136,15 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
 
     setLoading(true);
     try {
-      const response = await axios.delete<Post[]>(
+      const response = await axios.delete<ApiResponse<void>>(
         `${API_URL}/post/${postId}/${user.sub}`,
         axiosConfig
       );
 
-      if ('error' in response.data) {
-        setError((response.data as any).error);
+      if (response.data.error) {
+        setError(response.data.error);
       } else {
-        setData(response.data);
+        setData(prevData => prevData.filter(post => post.id !== postId));
       }
     } catch (error) {
       handleApiError(error);
@@ -156,18 +153,22 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     }
   };
 
-  const getPost = async (id: string) => {
+  const getPost = async (id: number) => {
     setLoading(true);
     try {
-      const response = await axios.get<Post>(
+      const response = await axios.get<ApiResponse<Post>>(
         `${API_URL}/post/id/${id}`,
         axiosConfig
       );
 
-      if ('error' in response.data) {
-        setError((response.data as any).error);
-      } else {
-        setData([response.data]);
+      if (response.data.error) {
+        setError(response.data.error);
+      } else if (response.data.posts) {
+        // Handle the case where the API returns posts array with a single post
+        const post = Array.isArray(response.data.posts) 
+          ? response.data.posts[0] 
+          : response.data.posts;
+        setData([post]);
       }
     } catch (error) {
       handleApiError(error);
@@ -180,19 +181,17 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     setLoading(true);
     try {
       const url = count ? `${API_URL}/posts/count/${count}` : `${API_URL}/posts/retrieve/all`;
-      const response = await axios.get<{ posts?: Post[]; error?: string; message?: string }>(
+      const response = await axios.get<ApiResponse<Post>>(
         url,
         axiosConfig
       );
-      const responseData = response.data;
 
-      if (responseData.error) {
-        setError(responseData.error);
-      } else if (responseData.message === "No more posts") {
-        setError(responseData.message);
-      } else {
-        const posts = responseData.posts || [];
-        setData(prevData => [...prevData, ...posts]);
+      if (response.data.error) {
+        setError(response.data.error);
+      } else if (response.data.message === "No more posts") {
+        setError(response.data.message);
+      } else if (response.data.posts) {
+        setData(prevData => [...prevData, ...response.data.posts!]);
       }
     } catch (error) {
       handleApiError(error);
