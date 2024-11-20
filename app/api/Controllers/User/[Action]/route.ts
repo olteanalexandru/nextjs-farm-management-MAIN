@@ -1,96 +1,92 @@
-import { NextRequest } from 'next/server';
-import { prisma } from '@/app/lib/prisma';
-import { getSession } from '@auth0/nextjs-auth0';
+// import { NextRequest } from 'next/server';
+// import { prisma } from '@/app/lib/prisma';
+// import { getSession } from '@auth0/nextjs-auth0/edge'; // Updated import
 
-type RoleType = 'ADMIN' | 'FARMER';
+// type RoleType = 'ADMIN' | 'FARMER';
 
-interface UserData {
-    auth0Id: string;
-    name: string | null;
-    email: string;
-    roleType: RoleType;
-}
+// interface UserData {
+//     auth0Id: string;
+//     name: string | null;
+//     email: string;
+//     roleType: RoleType;
+// }
 
-// Helper function to handle authentication
-async function authenticateUser() {
-    try {
-        const session = await getSession();
-        if (!session?.user) {
-            return Response.json(
-                { error: 'Authentication required' },
-                { status: 401 }
-            );
-        }
-        return session;
-    } catch (error) {
-        console.error('Authentication error:', error);
-        return Response.json(
-            { error: 'Authentication failed' },
-            { status: 500 }
-        );
-    }
-}
+// // Helper function to handle authentication
+// async function authenticateUser(request: NextRequest) {
+//     try {
+//         const session = await getSession(request); // Pass the request object
+//         if (!session?.user) {
+//             return new Response(
+//                 JSON.stringify({ error: 'Authentication required' }),
+//                 { status: 401, headers: { 'Content-Type': 'application/json' } }
+//             );
+//         }
+//         return session;
+//     } catch (error) {
+//         console.error('Authentication error:', error);
+//         return new Response(
+//             JSON.stringify({ error: 'Authentication failed' }),
+//             { status: 500, headers: { 'Content-Type': 'application/json' } }
+//         );
+//     }
+// }
 
+// export async function DELETE(request: NextRequest, { params }) {
+//     try {
+//         const session = await authenticateUser(request);
+//         if (session instanceof Response) return session;
 
+//         const id = params.Action;
 
-export async function DELETE(request: NextRequest , { params }) {
-    try {
+//         if (!id) {
+//             return Response.json(
+//                 { error: 'User ID is required' },
+//                 { status: 400 }
+//             );
+//         }
 
+//         const currentUser = await prisma.user.findUnique({
+//             where: { auth0Id: session.user.sub }
+//         });
 
-        const session = await authenticateUser();
-        if (session instanceof Response) return session;
+//         if (!currentUser) {
+//             return Response.json(
+//                 { error: 'Current user not found' },
+//                 { status: 404 }
+//             );
+//         }
 
-        const id = params.Action
+//         if (currentUser.roleType !== 'ADMIN') {
+//             return Response.json(
+//                 { error: 'Only administrators can delete users' },
+//                 { status: 403 }
+//             );
+//         }
 
-        if (!id) {
-            return Response.json(
-                { error: 'User ID is required' },
-                { status: 400 }
-            );
-        }
+//         const targetUser = await prisma.user.findUnique({
+//             where: { id: parseInt(id as string) }
+//         });
 
-        const currentUser = await prisma.user.findUnique({
-            where: { auth0Id: session.user.sub }
-        });
+//         if (!targetUser) {
+//             return Response.json(
+//                 { error: 'Target user not found' },
+//                 { status: 404 }
+//             );
+//         }
 
-        if (!currentUser) {
-            return Response.json(
-                { error: 'Current user not found' },
-                { status: 404 }
-            );
-        }
+//         await prisma.user.delete({
+//             where: { id: parseInt(id as string) }
+//         });
 
-        if (currentUser.roleType !== 'ADMIN') {
-            return Response.json(
-                { error: 'Only administrators can delete users' },
-                { status: 403 }
-            );
-        }
-
-        const targetUser = await prisma.user.findUnique({
-            where: { id: parseInt(id as string) }
-        });
-
-        if (!targetUser) {
-            return Response.json(
-                { error: 'Target user not found' },
-                { status: 404 }
-            );
-        }
-
-        await prisma.user.delete({
-            where: { id: parseInt(id as string) }
-        });
-
-        return Response.json({
-            message: 'User deleted successfully',
-            user: targetUser
-        });
-    } catch (error) {
-        console.error('User deletion error:', error);
-        return Response.json(
-            { error: 'Failed to delete user' },
-            { status: 500 }
-        );
-    }
-}
+//         return Response.json({
+//             message: 'User deleted successfully',
+//             user: targetUser
+//         });
+//     } catch (error) {
+//         console.error('User deletion error:', error);
+//         return Response.json(
+//             { error: 'Failed to delete user' },
+//             { status: 500 }
+//         );
+//     }
+// }

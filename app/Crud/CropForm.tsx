@@ -51,6 +51,8 @@ const CropForm = () => {
     e.preventDefault();
 
     const newCrop = {
+        _id: '', // Add a default or generated ID
+        user: '', // Add the user information
         cropName,
         cropType,
         cropVariety,

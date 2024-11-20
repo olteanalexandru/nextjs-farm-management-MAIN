@@ -9,16 +9,18 @@ interface UserData {
   email: string | null;
   role: string;
   _id?: string;
-  token?: string;
 }
 
 interface UserContextType {
   data: UserData;
   isUserLoggedIn: boolean;
+  isLoading: boolean;
   updateRole: (email: string, roleType: string) => Promise<void>;
   fetchFermierUsers: () => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
   fermierUsers: any[];
+  login: () => void;
+  logout: () => void;
 }
 
 const API_URL = '/api/Controllers/User/';
@@ -28,52 +30,60 @@ const initialUserData: UserData = {
   email: null,
   role: '',
   _id: '',
-  token: ''
 };
 
 const UserContext = createContext<UserContextType | null>(null);
 
-export function GlobalContextProvider({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useUser();
+export function UserProvider({ children }: { children: React.ReactNode }) {
+  const { user, isLoading: authLoading } = useUser();
   const [data, setData] = useState<UserData>(initialUserData);
   const [fermierUsers, setFermierUsers] = useState<any[]>([]);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Sync Auth0 user data with our format
   useEffect(() => {
-    if (user && !isLoading) {
-      // Make API call to get or create user in our database
-      axios.post(API_URL, {
-        auth0Id: user.sub,
-        name: user.name,
-        email: user.email
-      }).then(response => {
-        setData({
-          name: user.name || null,
-          email: user.email || null,
-          role: response.data.user.roleType || 'FARMER',
-          _id: response.data.user.id,
-          token: response.data.token
-        });
-        setIsUserLoggedIn(true);
-      }).catch(error => {
-        console.error('Error syncing user data:', error);
-      });
-    } else if (!isLoading) {
-      setData(initialUserData);
-      setIsUserLoggedIn(false);
-    }
-  }, [user, isLoading]);
+    const syncUser = async () => {
+      if (authLoading) {
+        return;
+      }
+
+      if (user) {
+        try {
+          // Create/update user in our database
+          const response = await axios.post(API_URL);
+          const userData = response.data.user;
+          
+          setData({
+            name: user.name,
+            email: user.email,
+            role: userData.roleType,
+            _id: userData.id
+          });
+          setIsUserLoggedIn(true);
+        } catch (error) {
+          console.error('Error syncing user:', error);
+          // On error, redirect to login
+          window.location.href = '/api/auth/login';
+          return;
+        }
+      } else if (!authLoading) {
+        // Only reset if we're not loading and there's no user
+        setData(initialUserData);
+        setIsUserLoggedIn(false);
+      }
+      setIsLoading(false);
+    };
+
+    syncUser();
+  }, [user, authLoading]);
 
   const updateRole = async (email: string, roleType: string) => {
     try {
       const response = await axios.put(API_URL, { email, roleType });
       if (response.status === 200) {
-        // Update local state if the current user's role was changed
         if (email === data.email) {
           setData(prev => ({ ...prev, role: roleType }));
         }
-        // Refresh farmer users list if needed
         await fetchFermierUsers();
       }
     } catch (error) {
@@ -86,7 +96,6 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     try {
       const response = await axios.get(API_URL);
       if (response.status === 200) {
-        // Filter for farmer users if needed
         const farmers = response.data.users.filter(user => user.roleType === 'FARMER');
         setFermierUsers(farmers);
       }
@@ -100,7 +109,6 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     try {
       const response = await axios.delete(`${API_URL}/${userId}`);
       if (response.status === 200) {
-        // Remove user from local state
         setFermierUsers(prev => prev.filter(user => user.id !== userId));
       }
     } catch (error) {
@@ -112,10 +120,13 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
   const value = {
     data,
     isUserLoggedIn,
+    isLoading: authLoading || isLoading,
     updateRole,
     fetchFermierUsers,
     deleteUser,
-    fermierUsers
+    fermierUsers,
+    login: () => window.location.href = '/api/auth/login',
+    logout: () => window.location.href = '/api/auth/logout'
   };
 
   return (
@@ -125,10 +136,10 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
   );
 }
 
-export const useGlobalContext = () => {
+export const useUserContext = () => {
   const context = useContext(UserContext);
   if (!context) {
-    throw new Error('useGlobalContext must be used within a GlobalContextProvider');
+    throw new Error('useUserContext must be used within a UserProvider');
   }
   return context;
 };

@@ -13,7 +13,7 @@ export interface WeatherData {
   precipitation: number;
 }
 
-export default const WeatherTable: React.FC = () => {
+const WeatherTable: React.FC = () => {
   const [weatherData, setWeatherData] = useState<WeatherData[]>([]);
 
   useEffect(() => {
@@ -30,5 +30,32 @@ export default const WeatherTable: React.FC = () => {
       })
       .catch(error => console.error(error));
   }, []);
+
+  return (
+    <div className="weather-table">
+      <h2>Weather Forecast</h2>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Temperature (°C)</th>
+            <th>Description</th>
+            <th>Precipitation (mm)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {weatherData.map((day, index) => (
+            <tr key={index}>
+              <td>{day.date}</td>
+              <td>{day.temperature.toFixed(1)}</td>
+              <td>{day.description}</td>
+              <td>{day.precipitation}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
+export default WeatherTable;

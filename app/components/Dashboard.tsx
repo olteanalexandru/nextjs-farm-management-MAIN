@@ -59,7 +59,7 @@ const Dashboard = () => {
             </li>
             <li>
               <Link
-                href="/pages/News"
+                href="/news"
                 className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100"
               >
                 <svg className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
@@ -72,7 +72,7 @@ const Dashboard = () => {
             </li>
             <li>
               <Link
-                href="/pages/Rotatie"
+                href="/rotation"
                 className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100"
               >
                 <svg className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900"
@@ -94,15 +94,15 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="p-4 bg-blue-50 rounded-lg">
               <h2 className="text-lg font-semibold mb-2">Crop Management</h2>
-              <Link href="/pages/Recomandari" className="text-blue-600 hover:underline">View Recommendations →</Link>
+              <Link href="/recommendations" className="text-blue-600 hover:underline">View Recommendations →</Link>
             </div>
             <div className="p-4 bg-green-50 rounded-lg">
               <h2 className="text-lg font-semibold mb-2">Rotation Planning</h2>
-              <Link href="/pages/Rotatie" className="text-green-600 hover:underline">Plan Rotation →</Link>
+              <Link href="/rotation" className="text-green-600 hover:underline">Plan Rotation →</Link>
             </div>
             <div className="p-4 bg-yellow-50 rounded-lg">
               <h2 className="text-lg font-semibold mb-2">Latest News</h2>
-              <Link href="/pages/News" className="text-yellow-600 hover:underline">View News →</Link>
+              <Link href="/news" className="text-yellow-600 hover:underline">View News →</Link>
             </div>
           </div>
         </div>

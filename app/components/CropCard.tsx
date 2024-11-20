@@ -1,4 +1,25 @@
-const CropCard = ({ crop, onSelect, isSelected }) => {
+"use client";
+
+interface Crop {
+  _id: string;
+  cropName: string;
+  cropType: string;
+  cropVariety: string;
+  imageUrl?: string;
+  plantingDate: string;
+  harvestingDate: string;
+  soilType: string;
+  nitrogenSupply: number;
+  nitrogenDemand: number;
+}
+
+interface CropCardProps {
+  crop: Crop;
+  onSelect: (crop: Crop) => void;
+  isSelected: boolean;
+}
+
+const CropCard = ({ crop, onSelect, isSelected }: CropCardProps) => {
     return (
       <div className={`
         relative bg-white rounded-xl shadow-sm border transition-all duration-200
@@ -70,7 +91,7 @@ const CropCard = ({ crop, onSelect, isSelected }) => {
               {isSelected ? 'Selected' : 'Select Crop'}
             </button>
             <button
-              onClick={() => window.location.href = `/Crud/GetAllInRotatie/SinglePag?crop=${crop._id}`}
+              onClick={() => window.location.href = `/rotation/${crop._id}`}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
             >
               Details

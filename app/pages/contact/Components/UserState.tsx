@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useGlobalContext } from '../../../providers/UserStore';
+import { useUserContext } from '../../../providers/UserStore';
 
 export default function useUserState() {
-  const { data } = useGlobalContext();
+  const { data } = useUserContext();
   const [user, setUser] = useState('');
   const [email, setEmail] = useState('');
 

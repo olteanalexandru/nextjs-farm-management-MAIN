@@ -5,22 +5,11 @@ import { FaUser } from 'react-icons/fa';
 import CropForm from '../Crud/CropForm';
 import RotatieItem from '../Crud/RotatieItem';
 import Spinner from '../Crud/Spinner'; 
-import { useGlobalContext } from '../providers/UserStore';
+import { useUserContext } from '../providers/UserStore';
 import { useGlobalContextCrop } from '../providers/culturaStore';
 import { useUser } from '@auth0/nextjs-auth0/client';
 
-interface User {
-  _id: string;
-  role: string;
-  [key: string]: any;
-}
-
 interface FermierUser {
-  _id: string;
-  [key: string]: any;
-}
-
-interface Crop {
   _id: string;
   [key: string]: any;
 }
@@ -49,29 +38,29 @@ export default function Dashboard() {
     deleteUser,
     data,
     fermierUsers,
-  } = useGlobalContext();
+    isUserLoggedIn
+  } = useUserContext();
 
   const { isLoading: isUserLoading } = useUser();
 
   useEffect(() => {
-    const apiCalls = async () => {
-      await getCrops();
-      if (data?.role?.toLowerCase() === 'admin') {
-        await fetchFermierUsers();
-      }
-    };
-
-    if (!isUserLoading) {
+    if (!isUserLoading && isUserLoggedIn && data?.role) {
+      const apiCalls = async () => {
+        await getCrops();
+        if (data.role.toLowerCase() === 'admin') {
+          await fetchFermierUsers();
+        }
+      };
       apiCalls();
     }
-  }, [ 
-    data?.role, 
-    isUserLoading,
-    fetchFermierUsers
-  ]);
+  }, [isUserLoading, isUserLoggedIn, data?.role]);
 
-  if (isCropLoading || isUserLoading) {
+  if (isUserLoading || !data) {
     return <Spinner />;
+  }
+
+  if (!isUserLoggedIn) {
+    return <div>Please log in to access the dashboard</div>;
   }
 
   const handleAddCropRecommendation = async (cropData: any) => {
@@ -133,7 +122,7 @@ export default function Dashboard() {
           <section className="content">
             {Array.isArray(crops) && crops.length > 0 ? (
               <div className="crops">
-                <RotatieItem crops={crops} userID={data?._id} />
+                <RotatieItem crops={crops}  />
               </div>
             ) : (
               <h3>No crops were added</h3>

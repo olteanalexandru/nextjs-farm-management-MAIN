@@ -12,10 +12,11 @@ type RouteContext = {
   };
 };
 
-export const GET = withApiAuthRequired(async function GET(
+export const GET = async function GET(
   request: NextRequest,
-  { params }: RouteContext
+  context: RouteContext
 ) {
+  const { params } = context;
   try {
     // Handle posts pagination
     if (params.posts === 'posts' && params.postsRoutes === "count") {
@@ -128,12 +129,13 @@ export const GET = withApiAuthRequired(async function GET(
     };
     return Response.json(response, { status: 500 });
   } 
-});
+}
 
 export const POST = withApiAuthRequired(async function POST(
   request: NextRequest,
-  { params }: RouteContext
+  context: RouteContext
 ) {
+  const { params } = context;
   try {
     const user = await getCurrentUser(request);
     const postData = await request.json() as PostCreate;
@@ -179,8 +181,9 @@ export const POST = withApiAuthRequired(async function POST(
 
 export const PUT = withApiAuthRequired(async function PUT(
   request: NextRequest,
-  { params }: RouteContext
+  context: RouteContext
 ) {
+  const { params } = context;
   try {
     const updateUser = await getCurrentUser(request);
     const updateData = await request.json() as PostCreate;
@@ -237,8 +240,9 @@ export const PUT = withApiAuthRequired(async function PUT(
 
 export const DELETE = withApiAuthRequired(async function DELETE(
   request: NextRequest,
-  { params }: RouteContext
+  context: RouteContext
 ) {
+  const { params } = context;
   try {
     const deleteUser = await getCurrentUser(request);
     

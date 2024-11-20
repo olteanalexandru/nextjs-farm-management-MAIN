@@ -1,32 +1,25 @@
-"use client"
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { useGlobalContextPost } from '../../../providers/postStore';
-import { useGlobalContext} from '../../../providers/UserStore';
-import { useEffect } from 'react';
+"use client";
+import React, { useEffect } from 'react';
+import { usePostContext } from '../../../providers/postStore'; // Corrected import
 import Spinner from '../../../Crud/Spinner';
-import { UserInfos } from '../Dashboard/userInfos';
+import { UserInfos } from '../../../componets/UserInfos';
 import { Container, Card, Button } from 'react-bootstrap';
 import PostForm from '../../../Crud/PostForm';
 import Continut from '../../../Crud/GetAllPosts/page';
 import { useTranslations } from 'next-intl';
-function Postari() {
-    const { data, loading, getAllPosts, deletePost , clearData } = useGlobalContextPost();
 
+function Postari() {
+    const { data, loading, getAllPosts, deletePost, clearData } = usePostContext();
     const t = useTranslations('Postari');
 
+    useEffect(() => {
+        const fetchData = async () => {
+            clearData();
+            await getAllPosts(0);
+        };
 
-useEffect(() => {
-    const fetchData = async () => {
-      clearData();
-
-
-      await getAllPosts();
-    };
-
-    fetchData();
-  }, []);
-
+        fetchData();
+    }, []);
 
     return (
         <div>
@@ -49,24 +42,18 @@ useEffect(() => {
                 </h1>
                 <ul>
                     {Array.isArray(data) && data.map((post) => (
-                    
-                        <li key={post._id}>
+                        <li key={post.id}>
                             <h2>{post.title}</h2>
                             <p>{post.brief}</p>
-                            <Button variant="danger" onClick={() => deletePost(post._id)}>
+                            <Button variant="danger" onClick={() => deletePost(post.id)}>
                                 {t('Sterge')}
                             </Button>
-                            
                         </li>
                     ))}
                 </ul>
             </div>
-
         </div>
-
     );
 }
 
 export default Postari;
-
-

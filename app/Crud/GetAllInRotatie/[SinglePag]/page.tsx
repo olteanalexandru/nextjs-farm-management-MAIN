@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Form, Container, Button, Card, ListGroup } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
-import { useGlobalContext } from '../../../providers/UserStore';
+import { useUserContext } from '../../../providers/UserStore';
 import { useGlobalContextCrop } from '../../../providers/culturaStore';
 import FormComponent from './components/FormComponent';
 import CropCardComponent from './components/CropCardComponent';
@@ -13,7 +13,7 @@ import { useUser } from '@auth0/nextjs-auth0/client';
 
 function SinglePag() {
   useSignals();
-  const { data: userData } = useGlobalContext();
+  const { data: userData } = useUserContext();
   const { user, error, isLoading: isUserLoading } = useUser();
 
   const {
@@ -51,44 +51,39 @@ function SinglePag() {
     soilResidualNitrogen: crops?.soilResidualNitrogen,
   }));
   
-
-
   const canEdit = userData.role.toLocaleLowerCase() === 'admin' ||  crops?.user == userData._id;
   const editPressed = () => {
     setEditMode(true);
   }
   
-
-    useEffect(() => {
-      if (!isUserLoading) {
-       
-        SinglePage(_id);
-       console.log('SinglePage call');
-      }
-    }, [isUserLoading]);
-
-    if (isError.message) {
-      console.log("Eroare  " + message);
+  useEffect(() => {
+    if (!isUserLoading) {
+      SinglePage(_id);
+      console.log('SinglePage call');
     }
-    useEffect(() => {
-      setUpdatedCrop({
-        cropName: crops?.cropName,
-        ItShouldNotBeRepeatedForXYears: crops?.ItShouldNotBeRepeatedForXYears,
-        description: crops?.description,
-        cropType: crops?.cropType,
-        cropVariety: crops?.cropVariety,
-        diseases: crops?.diseases,
-        fertilizers: crops?.fertilizers,
-        pests: crops?.pests,
-        soilType: crops?.soilType,
-        nitrogenDemand: crops?.nitrogenDemand,
-        nitrogenSupply: crops?.nitrogenSupply,
-        plantingDate: crops?.plantingDate,
-        harvestingDate: crops?.harvestingDate,
-        soilResidualNitrogen: crops?.soilResidualNitrogen,
-      });
-    }, [crops]); // Only re-run the effect if crops changes
-    
+  }, [isUserLoading]);
+
+  if (isError.message) {
+    console.log("Eroare  " + message);
+  }
+  useEffect(() => {
+    setUpdatedCrop({
+      cropName: crops?.cropName,
+      ItShouldNotBeRepeatedForXYears: crops?.ItShouldNotBeRepeatedForXYears,
+      description: crops?.description,
+      cropType: crops?.cropType,
+      cropVariety: crops?.cropVariety,
+      diseases: crops?.diseases,
+      fertilizers: crops?.fertilizers,
+      pests: crops?.pests,
+      soilType: crops?.soilType,
+      nitrogenDemand: crops?.nitrogenDemand,
+      nitrogenSupply: crops?.nitrogenSupply,
+      plantingDate: crops?.plantingDate,
+      harvestingDate: crops?.harvestingDate,
+      soilResidualNitrogen: crops?.soilResidualNitrogen,
+    });
+  }, [crops]); // Only re-run the effect if crops changes
   
 console.log('crops', crops);
 
@@ -100,10 +95,6 @@ console.log('crops', crops);
     </div>
   );
 }
-
-  // if (isError) {
-  //   return <h1>{message}</h1>;
-  // }
 
   const handleDelete = async () => {
     try {
@@ -119,11 +110,9 @@ console.log('crops', crops);
     e.preventDefault();
     await updateCrop(_id, updatedCrop);
     setEditMode(false);
-    
   };
 
   const handleChange = (e) => {
-    
     const { name, value } = e.target;
     setUpdatedCrop({ ...updatedCrop, [name]: value });
   };
@@ -145,12 +134,12 @@ console.log('crops', crops);
 
   return (
     <div>
-       <CropCardComponent 
-  crops={crops} 
-  handleDelete={handleDelete} 
-  canEdit={canEdit} 
-  setEditMode={setEditMode} 
-/>
+      <CropCardComponent 
+        crops={crops} 
+        handleDelete={handleDelete} 
+        canEdit={canEdit} 
+        setEditMode={setEditMode} 
+      />
       <FormComponent 
         handleUpdate={handleUpdate} 
         handleChange={handleChange} 
@@ -159,7 +148,6 @@ console.log('crops', crops);
         editMode={editMode} 
         setEditMode={setEditMode} 
       />
-
       <SelectAreaComponent 
         onSubmit={onSubmit} 
         selectarea={selectarea} 
@@ -170,7 +158,6 @@ console.log('crops', crops);
     </div>
   );
 }
-
 
 export default SinglePag;
 

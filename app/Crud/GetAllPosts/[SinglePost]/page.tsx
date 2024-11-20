@@ -1,20 +1,14 @@
-"use client"
+"use client";
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Container, Button, Form } from 'react-bootstrap';
-import { useGlobalContextPost } from '../../../providers/postStore';
-import { useGlobalContext } from '../../../providers/UserStore';
-
-
-// interface SinglePostProps {
-//   postId: string;
-// }
+import { usePostContext } from '../../../providers/postStore';
+import { useUserContext } from '../../../providers/UserStore';
 
 export default function SinglePost() {
   const postId = useSearchParams().get("post") as string;
-  const { data: allData, loading, getPost, deletePost, updatePost } = useGlobalContextPost();
-  const data = allData?.posts;
-  const { data: user } = useGlobalContext();
+  const { data, loading, getPost, deletePost, updatePost } = usePostContext();
+  const { data: user } = useUserContext();
   const isAdmin = user?.role.toLowerCase() === 'admin';
   const [editMode, setEditMode] = useState(false);
   const [updatedPost, setUpdatedPost] = useState({
@@ -28,22 +22,23 @@ export default function SinglePost() {
   }, [ postId]);
 
   useEffect(() => {
-    if (data) {
+    if (data.length > 0) {
+      const post = data[0];
       setUpdatedPost({
-        title: data.title,
-        brief: data.brief,
-        description: data.description,
+        title: post.title,
+        brief: post.brief,
+        description: post.description,
       });
     }
   }, [data]);
 
   const handleDelete = async () => {
-    await deletePost(data?._id);
+    await deletePost(data[0]?.id);
   };
 
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await updatePost(data?._id, {
+    await updatePost(data[0]?.id, {
       title: updatedPost.title,
       brief: updatedPost.brief,
       description: updatedPost.description,
@@ -60,7 +55,7 @@ export default function SinglePost() {
     return <h1>Loading...</h1>;
   }
 
-  if (!data) {
+  if (data.length === 0) {
     return <h1>Nothing to show</h1>;
   }
 
@@ -106,9 +101,9 @@ export default function SinglePost() {
         </Form>
       ) : (
         <>
-          <h1>{data.title}</h1>
-          <p>{data.brief}</p>
-          <p>{data.description}</p>
+          <h1>{data[0].title}</h1>
+          <p>{data[0].brief}</p>
+          <p>{data[0].description}</p>
           {isAdmin && (
             <>
               <Button variant="danger" onClick={handleDelete}>
@@ -125,7 +120,7 @@ export default function SinglePost() {
   );
 };
 
- 
+
 
 
 

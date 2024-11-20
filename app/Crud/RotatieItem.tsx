@@ -14,8 +14,8 @@ function Button({ variant, size, onClick, children }) {
   );
 }
 
-function RotatieItem({ crops, userID }) {
-  const { deleteCrop, message } = useGlobalContextCrop();
+function RotatieItem({ crops }) {
+  const { deleteCrop } = useGlobalContextCrop();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 8;

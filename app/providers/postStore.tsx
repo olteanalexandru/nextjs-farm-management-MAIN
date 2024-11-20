@@ -1,4 +1,4 @@
-   "use client";
+"use client";
 import React, { createContext, useContext, useState, type ReactNode } from 'react';
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
@@ -18,9 +18,9 @@ interface PostContextType extends PostContextState {
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
   createPost: (data: PostCreate) => Promise<void>;
-  updatePost: (id: number, data: PostUpdate) => Promise<void>;
-  deletePost: (id: number) => Promise<void>;
-  getPost: (id: number) => Promise<void>;
+  updatePost: (id: number | string, data: PostUpdate) => Promise<void>;
+  deletePost: (id: number | string) => Promise<void>;
+  getPost: (id: number | string) => Promise<void>;
   getAllPosts: (count?: number) => Promise<void>;
   clearData: () => void;
 }
@@ -37,7 +37,7 @@ interface ProviderProps {
   children: ReactNode;
 }
 
-export const GlobalContextProvider = ({ children }: ProviderProps) => {
+export function PostProvider({ children }: ProviderProps) {
   const [state, setState] = useState<PostContextState>(initialState);
   const { user } = useUser();
 
@@ -62,7 +62,7 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     console.error('API Error:', error);
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 401) {
-        window.location.href = '/api/auth/login';
+        // window.location.href = '/api/auth/login';
         return;
       }
       setError(error.response?.data?.error || error.message);
@@ -177,6 +177,7 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     }
   };
 
+
   const getAllPosts = async (count?: number) => {
     setLoading(true);
     try {
@@ -215,6 +216,7 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     getPost,
     getAllPosts,
     clearData,
+
   };
 
   return (
@@ -222,12 +224,12 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
       {children}
     </PostContext.Provider>
   );
-};
+}
 
-export const useGlobalContextPost = () => {
+export const usePostContext = () => {
   const context = useContext(PostContext);
   if (!context) {
-    throw new Error('useGlobalContextPost must be used within a GlobalContextProvider');
+    throw new Error('usePostContext must be used within a PostProvider');
   }
   return context;
 };

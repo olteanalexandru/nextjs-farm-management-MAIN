@@ -5,7 +5,7 @@ import styles from '../../styles/Header.module.css';
 import Link from 'next/link';
 
 function HeaderLog() {
-
+  const { data, logout, login } = useUserContext();
 
   return (
     <header className={`${styles.headerModule} py-2`}>
@@ -13,15 +13,6 @@ function HeaderLog() {
         <Dropdown>
           <Dropdown.Toggle variant="outline-secondary" id="dropdownMenuButton1">
             <Link href="/Dashboard/" style={{ textDecoration: 'none', color: '#fff' }}>
-            {data.picture && (
-  <img 
-    src={data.picture} 
-    alt="User Avatar" 
-    width="40" 
-    height="40" 
-    style={{ borderRadius: "25%", marginRight: "10px" }} 
-  />
-)}
               {data.name}
             </Link>
           </Dropdown.Toggle>

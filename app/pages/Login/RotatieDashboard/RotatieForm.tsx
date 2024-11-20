@@ -21,14 +21,14 @@ const CropRotationForm = ({ filteredCrops }) => {
       rotationName &&
       parseInt(maxYears) > 0
     ) {
-      generateCropRotation(
-        parseInt(fieldSize),
-        parseInt(numberOfDivisions),
+      generateCropRotation({
+        fieldSize: parseInt(fieldSize),
+        numberOfDivisions: parseInt(numberOfDivisions),
         rotationName,
-        filteredCrops,
-        parseInt(maxYears),
-        parseInt(ResidualNitrogenSupply)
-      );
+        crops: filteredCrops,
+        maxYears: parseInt(maxYears),
+        ResidualNitrogenSupply: parseInt(ResidualNitrogenSupply)
+      });
       setFieldSize('');
       setNumberOfDivisions('');
       setRotationName('');

@@ -1,15 +1,14 @@
-"use client"
+"use client";
 import { useEffect, useState } from 'react';
 import Spinner from '../../Crud/Spinner';
-import { useGlobalContextPost } from '../../providers/postStore';
+import { usePostContext } from '../../providers/postStore'; // Corrected import
 import Continut from '../../Crud/GetAllPosts/page';
 import { handleScroll, loadMorePosts } from './Components/scrollHandler';
 import debounce from './Components/debounce';
 import { useTranslations } from 'next-intl';
 
-
 export default function Noutati() {
-  const { data, loading, getAllPosts , error , clearData} = useGlobalContextPost();
+  const { data, loading, getAllPosts, error, clearData } = usePostContext();
   const [page, setPage] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -42,7 +41,7 @@ export default function Noutati() {
         <div>
           {data.map((data) => {
             return (
-              <div key={data._id} className="mb-5 border-bottom pb-4">
+              <div key={data.id} className="mb-5 border-bottom pb-4">
                 <Continut data={data} />
               </div>
             );

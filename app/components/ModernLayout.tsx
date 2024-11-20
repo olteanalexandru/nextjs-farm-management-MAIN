@@ -3,10 +3,17 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Camera, Home, Repeat, Users, Settings, LogOut , LogIn} from 'lucide-react';
-
 import { useUser } from '@auth0/nextjs-auth0/client';
+import React from 'react';
 
-const ModernLayout = ({ children }) => {
+interface UserProfile {
+  name: string;
+  email: string;
+  picture: string;
+  userRoles?: string[];
+}
+
+const ModernLayout = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
   const { user, isLoading } = useUser();
@@ -19,7 +26,7 @@ const ModernLayout = ({ children }) => {
     { name: 'Users', href: '/pages/Login/Register', icon: Users, adminOnly: true },
   ];
 
-  const isActivePath = (path) => pathname === path;
+  const isActivePath = (path: string) => pathname === path;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,7 +70,9 @@ const ModernLayout = ({ children }) => {
             href="/api/auth/login"
             className="flex items-center px-3 py-2 mt-auto text-sm font-medium text-green-700 rounded-lg hover:bg-green-50"
           >
-            <LogIn className="w-5 h-5 mr-3 text-green-400" />
+            <span className="w-5 h-5 mr-3 text-green-400">
+              <LogIn />
+            </span>
             Login
           </Link>
         )}
@@ -80,7 +89,7 @@ const ModernLayout = ({ children }) => {
         <div className="h-full px-3 py-4 overflow-y-auto">
           <nav className="space-y-1">
             {navigationItems.map((item) => {
-              if (item.adminOnly && (!user || !user.userRoles?.includes('admin'))) {
+              if (item.adminOnly && (!user || !(user as unknown as UserProfile).userRoles?.includes('admin'))) {
                 return null;
               }
               
@@ -94,9 +103,11 @@ const ModernLayout = ({ children }) => {
                       : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
-                  <item.icon className={`w-5 h-5 mr-3 ${
-                    isActivePath(item.href) ? 'text-blue-700' : 'text-gray-400'
-                  }`} />
+                  {React.cloneElement(<item.icon />, {
+                    className: `w-5 h-5 mr-3 ${
+                      isActivePath(item.href) ? 'text-blue-700' : 'text-gray-400'
+                    }`
+                  })}
                   {item.name}
                 </Link>
               );
@@ -107,7 +118,9 @@ const ModernLayout = ({ children }) => {
                 href="/api/auth/logout"
                 className="flex items-center px-3 py-2 mt-auto text-sm font-medium text-red-700 rounded-lg hover:bg-red-50"
               >
-                <LogOut className="w-5 h-5 mr-3 text-red-400" />
+                <div className="w-5 h-5 mr-3 text-red-400">
+                  <LogOut />
+                </div>
                 Logout
               </Link>
             ) : (
@@ -115,13 +128,10 @@ const ModernLayout = ({ children }) => {
                 href="/api/auth/login"
                 className="flex items-center px-3 py-2 mt-auto text-sm font-medium text-green-700 rounded-lg hover:bg-green-50"
               >
-                <LogIn className="w-5 h-5 mr-3 text-green-400" />
+                {React.cloneElement(<LogIn />, { className: "w-5 h-5 mr-3 text-green-400" })}
                 Login
               </Link>
             )}
-
-
-                
           </nav>
         </div>
       </aside>

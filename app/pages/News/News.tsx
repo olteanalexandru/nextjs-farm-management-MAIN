@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import Spinner from '../../Crud/Spinner';
-import { useGlobalContextPost } from '../../providers/postStore';
+import { usePostContext } from '../../providers/postStore'; // Corrected import
 import Continut from '../../Crud/GetAllPosts/page';
 import Card from 'react-bootstrap/Card';
 import { useTranslations } from 'next-intl';
 
 export default function Noutati() {
-  const { data, loading, getAllPosts, clearData } = useGlobalContextPost();
+  const { data, loading, getAllPosts, clearData } = usePostContext();
   const t = useTranslations('News');
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function Noutati() {
   // Sort the data to get the two most recent posts
   let latestPosts = [];
   if (data && Array.isArray(data)) {
-    latestPosts = [...data].sort((a, b) => b.date - a.date).slice(0, 2);
+    latestPosts = [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 2);
   } 
 
   return (

@@ -11,7 +11,7 @@ export interface ApiResponse<T = any> {
 }
 
 export interface Post {
-  id: number;
+  id: string | number;
   userId: string;
   title: string;
   brief: string | null;

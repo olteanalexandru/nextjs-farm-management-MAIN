@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useRef } from 'react';
 import { Form, Button, Container, Row, Col } from 'react-bootstrap';
 import useUserState from './Components/UserState';
@@ -38,6 +40,3 @@ export default function Contact(): JSX.Element {
     </Container>
   );
 }
-
-
-

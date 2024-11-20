@@ -2,11 +2,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGlobalContextCrop } from "../../providers/culturaStore";
-import { useGlobalContext } from "../../providers/UserStore";
+import { useUserContext } from "../../providers/UserStore";
 import useRecommendations from "./recomandari";
 import { Alert, Container, Card, Table } from "react-bootstrap";
 import React from "react";
-
 
 function RotationItem({ item }) {
   const recommendations = useRecommendations(item.nitrogenBalance, item.crop);
@@ -33,8 +32,7 @@ function RotationItem({ item }) {
 function RecommendationDashboard() {
   const [isError, setIsError] = useState(false);
   const [message, setMessage] = useState("");
-  const { data } = useGlobalContext();
-  const token = data?.token; 
+  const { data } = useUserContext();
   const { getCropRotation, cropRotation } = useGlobalContextCrop();
   const navigate = useRouter();
 
@@ -45,15 +43,15 @@ function RecommendationDashboard() {
     if (!data) {
       navigate.replace('/login');
     } else {
-      getCropRotation(token);
+      getCropRotation();
     }
-  }, [token, isError, message, data, navigate]);
+  }, [ isError, message, data, navigate]);
 
   if (isError) {
     return <Alert variant="danger">{message}</Alert>;
   }
 
-  if (data?.rol === "Fermier") {
+  if (data?.role === "Fermier") {
     return (
       <Container className="mt-4 mb-4">
         <Card className="p-4">
