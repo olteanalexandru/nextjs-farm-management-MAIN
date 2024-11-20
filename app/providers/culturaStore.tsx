@@ -1,16 +1,15 @@
 "use client";
-import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import React, { createContext, useContext, type ReactNode } from 'react';
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { signal } from "@preact/signals-react";
+
 // Use environment-based API URLs
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/Controllers/';
 const API_URL = `${BASE_URL}Crop/`;
-const API_URL_ROTATION = `${BASE_URL}/Rotation/`;
 
 type DataType = {
-  
-  _id: string;
+  _id: string | number;
   cropName: string;
   cropType: string;
   cropVariety: string;
@@ -28,7 +27,6 @@ type DataType = {
   nitrogenSupply: number;
   nitrogenDemand: number;
   residualNitrogen: number;
-
 };
 
 type RecommendationType = {
@@ -37,7 +35,6 @@ type RecommendationType = {
   nitrogenDemand: number;
   pests: string[];
   diseases: string[];
-
 };
 
 interface ContextProps {
@@ -50,301 +47,189 @@ interface ContextProps {
   createCrop: (data: DataType) => Promise<void>;
   getCrops: () => Promise<void>;
   deleteCrop: (cropId: string) => Promise<void>;
-  selectare: (cropId: number, selectare: boolean, numSelections: number) => Promise<void>;
+  selectare: (cropId: string | number, selectare: boolean, numSelections: number) => Promise<void>;
   SinglePage: (id: string) => Promise<void>;
   getAllCrops: () => Promise<void>;
   updateCrop: (cropId: string, data: DataType) => Promise<void>;
   areThereCrops: any;
-  setCropRotation: any;
-  generateCropRotation: (fieldSize: number, numberOfDivisions: number, rotationName: string, crops: DataType, maxYears: number, ResidualNitrogenSupply: number) => Promise<void>;
   getCropRecommendations: (cropName: string) => Promise<any>;
-  getCropRotation: () => Promise<void>;
-  deleteCropRotation: (id: string) => Promise<void>;
-  cropRotation: any;
   singleCrop: any;
-  updateNitrogenBalanceAndRegenerateRotation: (data: any) => Promise<void>;
-  updateDivisionSizeAndRedistribute: (data: any) => Promise<void>;
   addTheCropRecommendation: (data: RecommendationType) => Promise<void>;
-  isCropRotationLoading: any;
-
 }
-
-
 
 interface Props {
   children: React.ReactNode;
 }
 
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
+
 export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
+  const cropsSignal = signal([]);
+  const loadingSignal = signal(false);
+  const isErrorSignal = signal(false);
+  const isSuccessSignal = signal(false);
+  const messageSignal = signal('');
+  const singleCropSignal = signal(null);
+  const areThereCropsSignal = signal(false);
+  const selectionsSignal = signal([]);
+  const userStatus = signal(false);
 
-const cropsSignal = signal([]);
-const loadingSignal = signal(false);
-const isErrorSignal = signal(false);
-const isSuccessSignal = signal(false);
-const messageSignal = signal('');
-const cropRotationSignal = signal([]);
-const singleCropSignal = signal(null);
-const areThereCropsSignal = signal(false);
-const selectionsSignal = signal([]);
-const userStatus = signal(false);
+  const { user, error: authError, isLoading: isUserLoading } = useUser();
 
-const { user, error: authError, isLoading: isUserLoading  } = useUser();
+  userStatus.value = isUserLoading;
 
-userStatus.value = isUserLoading;
-
-
-
-const getCropRotation = async () => {
- // useSignals(); 
-  // Wait until isUserLoading is false
-  loadingSignal.value = true;
+  const createCrop = async (data: DataType) => {
+    console.log('createCrop triggered with object props: ' + JSON.stringify(data));
+    loadingSignal.value = true;
     try {
-    console.log("making a get request to get crop rotation try");
-    const response = await axios.get(API_URL_ROTATION + "getRotation/rotation/" + user.sub);
-    if (response.status === 200 || response.status === 203) {
-      cropRotationSignal.value = response.data;
-      console.log("crop rotation fetched 1 " + response?.data + response?.data?.message );
-    } 
-  } catch (err) {
-    console.error(err);
-  } finally {
-    loadingSignal.value = false
-
-  
-  }
-
-  console.log("crop rotation fetched signal ", cropRotationSignal.value);
-
-};
-
-
-const createCrop = async (data) => {
-  console.log('createCrop triggered with object props: ' + JSON.stringify(data));
-  loadingSignal.value = true
-  try {
-    const response = await axios.post(`${API_URL}crop/single`, data);
-    if (response.status === 201) {
-      isSuccessSignal.value = true
-      messageSignal.value ='Crop created successfully';
-    } else {
-      isErrorSignal.value = true
-      messageSignal.value = 'Error creating crop';
-    }
-  } catch (err) {
-    console.error(err)
-  }
-  loadingSignal.value = false
-};
-
-const updateCrop = async (cropId: string, data: DataType) => {
-
-  loadingSignal.value = true
-  try {
-    const response = await axios.put(`${API_URL}crop/${cropId}/${user.sub}`, data, {});
-    if (response.status === 200) {
-      isSuccessSignal.value = true
-      messageSignal.value ='Crop updated successfully';
-    } else {
-      isErrorSignal.value = true
-      messageSignal.value = 'Error updating crop';
-    }
-  } catch (err) {
-    console.error(err)
-  }
-  loadingSignal.value = false
-};
-const getCrops = async () => {
-
-
-  console.log("getting crops..")
-  try {
-    loadingSignal.value = true
-    const response = await axios.get(`${API_URL}crops/retrieve/all`, {});
-
-    if (response.status === 200) {
-      const newCrops = response.data.crops;
-      if (newCrops !== cropsSignal.value) {
-        cropsSignal.value = newCrops;
-        areThereCropsSignal.value = true
+      const response = await axios.post(`${API_URL}crop/single`, data);
+      if (response.status === 201) {
+        isSuccessSignal.value = true;
+        messageSignal.value = 'Crop created successfully';
+      } else {
+        isErrorSignal.value = true;
+        messageSignal.value = 'Error creating crop';
       }
-    } else {
-      const newCrops = response.data.crops;
-      if (newCrops !== cropsSignal.value) {
-        cropsSignal.value = newCrops;
-        isErrorSignal.value = true
-        messageSignal.value = 'Error getting crops';
+    } catch (err) {
+      console.error(err);
+    }
+    loadingSignal.value = false;
+  };
+
+  const updateCrop = async (cropId: string, data: DataType) => {
+    loadingSignal.value = true;
+    try {
+      const response = await axios.put(`${API_URL}crop/${cropId}/${user.sub}`, data, {});
+      if (response.status === 200) {
+        isSuccessSignal.value = true;
+        messageSignal.value = 'Crop updated successfully';
+      } else {
+        isErrorSignal.value = true;
+        messageSignal.value = 'Error updating crop';
       }
+    } catch (err) {
+      console.error(err);
     }
-  } catch (err) {
-    console.error(err)
-  } finally {
-    loadingSignal.value = false
-  }
+    loadingSignal.value = false;
+  };
 
-  console.log("crops are done in getCrops: " + !loadingSignal.value)
-};
+  const getCrops = async () => {
+    console.log("getting crops..");
+    try {
+      loadingSignal.value = true;
+      const response = await axios.get(`${API_URL}crops/retrieve/all`, {});
 
-const deleteCrop = async (cropId: string) => {
-
-
-  loadingSignal.value = true
-  try {
-    const response = await axios.delete(`${API_URL}crops/${user.sub}/${cropId}`, {});
-    if (response.status === 200) {
-      isSuccessSignal.value = true
-      messageSignal.value = 'Crop deleted successfully';
-    } else {
-      isErrorSignal.value = true
-      messageSignal.value = 'Error deleting crop';
+      if (response.status === 200) {
+        const newCrops = response.data.crops;
+        if (newCrops !== cropsSignal.value) {
+          cropsSignal.value = newCrops;
+          areThereCropsSignal.value = true;
+        }
+      } else {
+        const newCrops = response.data.crops;
+        if (newCrops !== cropsSignal.value) {
+          cropsSignal.value = newCrops;
+          isErrorSignal.value = true;
+          messageSignal.value = 'Error getting crops';
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      loadingSignal.value = false;
     }
-  } catch (err) {
-    console.error(err)
-  } finally {
-  loadingSignal.value = false
-  }
-};
+  };
 
-const selectare = async (cropId: number, selectare: boolean, numSelections: number) => {
-
-
-  loadingSignal.value = true
-  try {
-    const response = await axios.put(`${API_URL}crops/${cropId}/selectare`, { selectare: selectare, numSelections: numSelections }, {});
-    if (response.status === 200) {
-      isSuccessSignal.value = true
-      messageSignal.value = 'Crop selected successfully';
-    } 
-  } catch (err) {
-    console.error(err)
-  }  finally {
-  loadingSignal.value = false
-  } 
-};
-
-const SinglePage = async (id: string) => {
-
-  
-  loadingSignal.value = true
-  try {
-    const response = await axios.get(`${API_URL}crop/id/${id}`, {});
-    if (response.status === 200) {
-      const data = await response.data;
-      isSuccessSignal.value = true
-      singleCropSignal.value = data.crops[0];
-    } else {
-      isErrorSignal.value = true
-      messageSignal.value = 'Error in single page crop';
+  const deleteCrop = async (cropId: string) => {
+    loadingSignal.value = true;
+    try {
+      const response = await axios.delete(`${API_URL}crops/${user.sub}/${cropId}`, {});
+      if (response.status === 200) {
+        isSuccessSignal.value = true;
+        messageSignal.value = 'Crop deleted successfully';
+      } else {
+        isErrorSignal.value = true;
+        messageSignal.value = 'Error deleting crop';
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      loadingSignal.value = false;
     }
-  } catch (err) {
-    console.error(err)
-  }finally {
-    loadingSignal.value = false
+  };
+
+  const selectare = async (cropId: number, selectare: boolean, numSelections: number) => {
+    loadingSignal.value = true;
+    try {
+      const response = await axios.put(`${API_URL}crops/${cropId}/selectare`, { selectare: selectare, numSelections: numSelections }, {});
+      if (response.status === 200) {
+        isSuccessSignal.value = true;
+        messageSignal.value = 'Crop selected successfully';
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      loadingSignal.value = false;
     }
-console.log("the state of loading is " + loadingSignal.value)
-};
+  };
+
+  const SinglePage = async (id: string) => {
+    loadingSignal.value = true;
+    try {
+      const response = await axios.get(`${API_URL}crop/id/${id}`, {});
+      if (response.status === 200) {
+        const data = await response.data;
+        isSuccessSignal.value = true;
+        singleCropSignal.value = data.crops[0];
+      } else {
+        isErrorSignal.value = true;
+        messageSignal.value = 'Error in single page crop';
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      loadingSignal.value = false;
+    }
+  };
 
   const addTheCropRecommendation = async (data: RecommendationType) => {
-    loadingSignal.value = true
+    loadingSignal.value = true;
     try {
       const response = await axios.post(`${API_URL}crops/recommendations/${user.sub}`, data, {});
       if (response.status === 201) {
-        isSuccessSignal.value = true
-        messageSignal.value ='Recommendation added successfully';
-      } 
+        isSuccessSignal.value = true;
+        messageSignal.value = 'Recommendation added successfully';
+      }
     } catch (err) {
       console.error(err);
     }
-    loadingSignal.value = false
+    loadingSignal.value = false;
   };
-  
-  const generateCropRotation = async (
-    fieldSize: number,
-    numberOfDivisions: number,
-    rotationName: string,
-    crops: DataType,
-    maxYears: number,
-    ResidualNitrogenSupply: number,
-  ) => {
-
-    loadingSignal.value = true
-  
-    try {
-      const response = await axios.post(
-        `${API_URL_ROTATION}generateRotation/rotation/${user.sub}`,
-        { 
-          fieldSize, 
-          numberOfDivisions,
-          rotationName,
-          crops,
-          maxYears,
-          ResidualNitrogenSupply,
-        },
-        {}
-      );
-      if (response.status === 200 || response.status === 201) {
-        cropRotationSignal.value = response.data;
-      } 
-    } catch (err) {
-      console.error(err);
-    } finally {
-    loadingSignal.value = false
-    getCropRotation();
-  
-    }
-  };
-  
 
   const getAllCrops = async () => {
-
-
     try {
-      loadingSignal.value = true
+      loadingSignal.value = true;
       const response = await axios.get(`${API_URL}crops/retrieve/all`, {});
-      loadingSignal.value = false
       if (response.status === 200) {
-        console.log("getting all crops..")
+        console.log("getting all crops..");
         const data = await response.data;
         cropsSignal.value = data.crops;
-        areThereCropsSignal.value = true
+        areThereCropsSignal.value = true;
         selectionsSignal.value = data.selections;
-       
-      }  else {
+      } else {
         cropsSignal.value = response.data.crops;
-        isErrorSignal.value = true
+        isErrorSignal.value = true;
         messageSignal.value = 'Error getting crops';
       }
     } catch (err) {
-      console.error(err)
-      areThereCropsSignal.value = false
+      console.error(err);
+      areThereCropsSignal.value = false;
     } finally {
-      loadingSignal.value = false
+      loadingSignal.value = false;
     }
-    console.log("crops are done fetching loading  signal is: " +  loadingSignal)
   };
-  
-  const deleteCropRotation = async (id: string) => {
 
-    const confirmDelete = window.confirm("Are you sure you want to delete this crop rotation?");
-    if (!confirmDelete) {
-      return;
-    }
-    loadingSignal.value = true
-    try {
-      const response = await axios.delete(`${API_URL_ROTATION}deleteRotation/${user.sub}/${id}`, {});
-      if (response.status === 200) {
-        isSuccessSignal.value = true
-        messageSignal.value = ('Crop rotation deleted successfully');
-      } 
-    } catch (err) {
-      console.error(err)
-    }
-    loadingSignal.value = false
-  };
-  
   const getCropRecommendations = async (cropName: string) => {
-
-
     let recommendations = [];
     if (cropName !== '') {
       try {
@@ -359,70 +244,28 @@ console.log("the state of loading is " + loadingSignal.value)
     console.log("recommendations: ", recommendations);
     return recommendations;
   };
-  
-  
-  const updateNitrogenBalanceAndRegenerateRotation = async (data: any) => {
-    const { id, rotationName, year, division, nitrogenBalance } = data;
-    loadingSignal.value = true
-    try {
-      const response = await axios.put(`${API_URL_ROTATION}updateNitrogenBalance/rotation/${user.sub}`, {id, year, rotationName, division, nitrogenBalance }, {});
-      if (response.status === 200) {
-        isSuccessSignal.value = true
-        messageSignal.value = ('Nitrogen Balance and Crop Rotation updated successfully');
-        cropRotationSignal.value =(response.data);
-      } 
-    } catch (err) {
-      console.error(err);
-    }
-    loadingSignal.value = false
-  };
-  
-
-const updateDivisionSizeAndRedistribute = async (data: any) => {
-  const { id, rotationName, division, newDivisionSize } = data;
-  loadingSignal.value = true
-  try {
-    const response = await axios.put(`${API_URL_ROTATION}updateDivisionSizeAndRedistribute/rotation/${user.sub}`, {id, rotationName, division, newDivisionSize }, {});
-    if (response.status === 200) {
-      isSuccessSignal.value = true
-      messageSignal.value = ('Division Size and Crop Rotation updated successfully');
-      cropRotationSignal.value = (response.data);
-    } 
-  } catch (err) {
-    console.error(err)
-  }
-  loadingSignal.value = false
-};
 
   return (
     <GlobalContext.Provider
-    value={{
-      crops: cropsSignal,
-      selections: selectionsSignal,
-      isLoading: loadingSignal,
-      isError: isErrorSignal,
-      isSuccess: isSuccessSignal,
-      message: messageSignal,
-      createCrop,
-      getCrops,
-      deleteCrop,
-      selectare,
-      SinglePage,
-      getAllCrops,
-      updateCrop,
-      areThereCrops: areThereCropsSignal,
-      setCropRotation: cropRotationSignal,
-      generateCropRotation,
-      getCropRecommendations,
-      getCropRotation,
-      deleteCropRotation,
-      cropRotation: cropRotationSignal,
-      singleCrop: singleCropSignal,
-      updateNitrogenBalanceAndRegenerateRotation,
-      updateDivisionSizeAndRedistribute,
-      addTheCropRecommendation,
-      isCropRotationLoading: loadingSignal,
-    }}
+      value={{
+        crops: cropsSignal,
+        selections: selectionsSignal,
+        isLoading: loadingSignal,
+        isError: isErrorSignal,
+        isSuccess: isSuccessSignal,
+        message: messageSignal,
+        createCrop,
+        getCrops,
+        deleteCrop,
+        selectare,
+        SinglePage,
+        getAllCrops,
+        updateCrop,
+        areThereCrops: areThereCropsSignal,
+        getCropRecommendations,
+        singleCrop: singleCropSignal,
+        addTheCropRecommendation
+      }}
     >
       {children}
     </GlobalContext.Provider>
@@ -432,6 +275,3 @@ const updateDivisionSizeAndRedistribute = async (data: any) => {
 export const useGlobalContextCrop = () => {
   return useContext(GlobalContext);
 };
-
-// Path: app\features\Context\culturaStore.tsx
-

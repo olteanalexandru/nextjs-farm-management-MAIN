@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useGlobalContextCrop } from "../../providers/culturaStore";
+import { useGlobalContextRotation } from "../../providers/rotationStore";
 import { useUserContext } from "../../providers/UserStore";
 import useRecommendations from "./recomandari";
 import { Alert, Container, Card, Table } from "react-bootstrap";
@@ -33,7 +33,7 @@ function RecommendationDashboard() {
   const [isError, setIsError] = useState(false);
   const [message, setMessage] = useState("");
   const { data } = useUserContext();
-  const { getCropRotation, cropRotation } = useGlobalContextCrop();
+  const { getCropRotation, cropRotation } = useGlobalContextRotation();
   const navigate = useRouter();
 
   useEffect(() => {
@@ -81,7 +81,7 @@ function RecommendationDashboard() {
                         {rotation.rotationPlan.map((plan, planIndex) => (
                           <React.Fragment key={planIndex}>
                             <tr>
-                              <th colSpan="7">Year: {plan.year}</th>
+                              <th colSpan={7}>Year: {plan.year}</th>
                             </tr>
                             {plan.rotationItems.map((item, itemIndex) => (
                               <RotationItem key={itemIndex} item={item} />

@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { UserProvider } from '@auth0/nextjs-auth0/client';
 import { UserProvider as AppUserProvider } from './providers/UserStore';
 import { GlobalContextProvider as CulturaProvider } from './providers/culturaStore';
+import { GlobalContextProvider as RotationProvider } from './providers/rotationStore';
 import { PostProvider } from './providers/postStore'; 
 import { NextIntlClientProvider } from 'next-intl';
 
@@ -21,15 +22,15 @@ const RootProvider = ({ children, locale, messages }: RootProviderProps) => {
 
   return (
     <UserProvider>
-
-        <CulturaProvider>
+      <CulturaProvider>
+        <RotationProvider>
           <AppUserProvider>
-            <PostProvider> {/* Wrap children with PostProvider */}
+            <PostProvider>
               {wrappedChildren}
             </PostProvider>
           </AppUserProvider>
-        </CulturaProvider>
-
+        </RotationProvider>
+      </CulturaProvider>
     </UserProvider>
   );
 };

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { useGlobalContextCrop } from '../../../providers/culturaStore';
+import { useGlobalContextRotation } from '../../../providers/rotationStore';
 import { useTranslations } from 'next-intl';
 
 const CropRotationForm = ({ filteredCrops }) => {
-
   const t = useTranslations('CropRotationForm');
   const [fieldSize, setFieldSize] = useState('');
   const [numberOfDivisions, setNumberOfDivisions] = useState('');
@@ -11,7 +10,7 @@ const CropRotationForm = ({ filteredCrops }) => {
   const [maxYears, setMaxYears] = useState('');
   const [ResidualNitrogenSupply, setResidualNitrogenSupply] = useState(''); 
 
-  const { generateCropRotation } = useGlobalContextCrop();
+  const { generateCropRotation } = useGlobalContextRotation();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -41,7 +40,7 @@ const CropRotationForm = ({ filteredCrops }) => {
     <form onSubmit={handleSubmit}>
       <div className="form-group">
         <label htmlFor="fieldSize">
-          { t('fieldSize') }*:
+          {t('fieldSize')}*:
         </label>
         <input
           type="number"
@@ -53,7 +52,7 @@ const CropRotationForm = ({ filteredCrops }) => {
       </div>
       <div className="form-group">
         <label htmlFor="numberOfDivisions">
-          { t('numberOfDivisions') }*:
+          {t('numberOfDivisions')}*:
         </label>
         <input
           type="number"
@@ -65,7 +64,7 @@ const CropRotationForm = ({ filteredCrops }) => {
       </div>
       <div className="form-group">
         <label htmlFor="rotationName">
-          { t('rotationName') }*:
+          {t('rotationName')}*:
         </label>
         <input
           type="text"
@@ -77,7 +76,7 @@ const CropRotationForm = ({ filteredCrops }) => {
       </div>
       <div className="form-group">
         <label htmlFor="maxYears">
-          { t('maxYears') }*:
+          {t('maxYears')}*:
         </label>
         <input
           type="number"
@@ -88,10 +87,10 @@ const CropRotationForm = ({ filteredCrops }) => {
         />
       </div>
       <div className="form-group">
-      <label htmlFor="maxYears">
-        { t('ResidualNitrogenSupply') }*:
-      </label>
-      <input
+        <label htmlFor="maxYears">
+          {t('ResidualNitrogenSupply')}*:
+        </label>
+        <input
           type="number"
           className="form-control"
           id="ResidualNitrogenSupply"
@@ -100,11 +99,10 @@ const CropRotationForm = ({ filteredCrops }) => {
         />
       </div>
       <button type="submit" className="btn btn-primary">
-        { t('generateCropRotation') } 
+        {t('generateCropRotation')}
       </button>
     </form>
   );
 };
 
 export default CropRotationForm;
-

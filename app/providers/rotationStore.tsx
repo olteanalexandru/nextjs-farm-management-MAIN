@@ -28,6 +28,20 @@ interface Crop {
   residualNitrogen: number;
 }
 
+interface RotationItem {
+  division: number;
+  cropName: string;
+  plantingDate: string;
+  harvestingDate: string;
+  divisionSize: number;
+  nitrogenBalance: number;
+}
+
+interface RotationPlan {
+  year: number;
+  rotationItems: RotationItem[];
+}
+
 interface CropRotation {
   _id: string;
   fieldSize: number;
@@ -36,6 +50,7 @@ interface CropRotation {
   crops: Crop[];
   maxYears: number;
   ResidualNitrogenSupply: number;
+  rotationPlan: RotationPlan[];
 }
 
 interface RotationContextState {

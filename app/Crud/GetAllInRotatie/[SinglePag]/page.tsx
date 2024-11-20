@@ -106,10 +106,20 @@ console.log('crops', crops);
     }
   };
 
-  const handleUpdate = async (e) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await updateCrop(_id, updatedCrop);
-    setEditMode(false);
+    if (_id) {
+      const cropData = {
+        ...updatedCrop,
+        _id: crops._id,
+        imageUrl: crops.imageUrl,
+        selectare: crops.selectare,
+        user: crops.user,
+        residualNitrogen: crops.residualNitrogen
+      };
+      await updateCrop(_id, cropData);
+      setEditMode(false);
+    }
   };
 
   const handleChange = (e) => {

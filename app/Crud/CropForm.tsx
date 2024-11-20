@@ -1,6 +1,5 @@
 "use client";
 import { useGlobalContextCrop } from '../providers/culturaStore';
-import { useGlobalContext } from '../providers/UserStore';
 import CropRecommendations from './CropRecommandations';
 import React, { useState, useEffect, useCallback } from 'react';
 import { debounce } from 'lodash';
