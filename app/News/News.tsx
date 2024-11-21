@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import Spinner from '../../Crud/Spinner';
-import { usePostContext } from '../../providers/postStore'; // Corrected import
-import Continut from '../../Crud/GetAllPosts/page';
+import Spinner from '../Crud/Spinner';
+import { usePostContext } from '../providers/postStore'; // Corrected import
+import Continut from '../Crud/GetAllPosts/page';
 import Card from 'react-bootstrap/Card';
 import { useTranslations } from 'next-intl';
 

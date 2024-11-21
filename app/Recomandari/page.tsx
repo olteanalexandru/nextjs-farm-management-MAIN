@@ -1,8 +1,8 @@
 "use client"
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useGlobalContextRotation } from "../../providers/rotationStore";
-import { useUserContext } from "../../providers/UserStore";
+import { useGlobalContextRotation } from "../providers/rotationStore";
+import { useUserContext } from "../providers/UserStore";
 import useRecommendations from "./recomandari";
 import { Alert, Container, Card, Table } from "react-bootstrap";
 import React from "react";

@@ -100,7 +100,7 @@ console.log('crops', crops);
     try {
       await deleteCrop(_id);
       console.log('Crop deleted');
-      navigate.push('/pages/Rotatie');
+      navigate.push('/Rotatie');
     } catch (error) {
       console.error('Error deleting crop:', error);
     }

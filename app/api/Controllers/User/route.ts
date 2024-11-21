@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
+import { cookies } from 'next/headers';
 
 type RoleType = 'ADMIN' | 'FARMER';
 
@@ -8,12 +9,14 @@ interface UserData {
     auth0Id: string;
     name: string | null;
     email: string;
+    picture: string | null;
     roleType: RoleType;
 }
 
 // Helper function to handle authentication
 async function authenticateUser() {
     try {
+        const cookieStore = cookies();
         const session = await getSession();
         if (!session?.user) {
             return NextResponse.json(
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
         const session = await authenticateUser();
         if (session instanceof NextResponse) return session;
 
-        const { email, name } = session.user;
+        const { email, name, picture } = session.user;
         const auth0Id = session.user.sub;
 
         if (!email || !isValidEmail(email)) {
@@ -73,20 +76,24 @@ export async function POST(request: NextRequest) {
             update: {
                 name,
                 email,
+                picture,
                 roleType
             },
             create: {
                 auth0Id,
                 name,
                 email,
+                picture,
                 roleType
             }
         });
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             message: 'User created/updated successfully',
             user
         });
+
+        return response;
     } catch (error) {
         console.error('User creation error:', error);
         return NextResponse.json(
@@ -189,6 +196,7 @@ export async function GET(request: NextRequest) {
                     id: true,
                     name: true,
                     email: true,
+                    picture: true,
                     roleType: true,
                     createdAt: true,
                     updatedAt: true
@@ -203,6 +211,7 @@ export async function GET(request: NextRequest) {
                 id: currentUser.id,
                 name: currentUser.name,
                 email: currentUser.email,
+                picture: currentUser.picture,
                 roleType: currentUser.roleType,
                 createdAt: currentUser.createdAt,
                 updatedAt: currentUser.updatedAt

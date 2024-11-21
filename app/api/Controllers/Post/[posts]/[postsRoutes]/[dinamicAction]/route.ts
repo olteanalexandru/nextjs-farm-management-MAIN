@@ -12,16 +12,19 @@ type RouteContext = {
   };
 };
 
-export const GET = async function GET(
+export async function GET(
   request: NextRequest,
-  context: RouteContext
+  { params }: RouteContext
 ) {
-  const { params } = context;
   try {
+    const posts = await params.posts;
+    const postsRoutes = await params.postsRoutes;
+    const dinamicAction = await params.dinamicAction;
+
     // Handle posts pagination
-    if (params.posts === 'posts' && params.postsRoutes === "count") {
+    if (posts === 'posts' && postsRoutes === "count") {
       const limit = 5;
-      const count = Number(params.dinamicAction) || 0;
+      const count = Number(dinamicAction) || 0;
       const skip = count * limit;
 
       const posts = await prisma.post.findMany({
@@ -48,11 +51,11 @@ export const GET = async function GET(
     }
 
     // Handle post search
-    if (params.posts === 'posts' && params.postsRoutes === "search") {
+    if (posts === 'posts' && postsRoutes === "search") {
       const posts = await prisma.post.findMany({
         where: {
           title: {
-            contains: params.dinamicAction.toLowerCase()
+            contains: dinamicAction.toLowerCase()
           }
         },
         include: {
@@ -70,10 +73,10 @@ export const GET = async function GET(
     }
 
     // Handle single post fetch
-    if (params.posts === 'post' && params.postsRoutes === "id") {
+    if (posts === 'post' && postsRoutes === "id") {
       const post = await prisma.post.findUnique({
         where: {
-          id: parseInt(params.dinamicAction)
+          id: parseInt(dinamicAction)
         },
         include: {
           user: {
@@ -97,7 +100,7 @@ export const GET = async function GET(
       return Response.json(response);
     }
 
-    if (params.posts === 'posts' && params.postsRoutes === "retrieve" && params.dinamicAction === "all") {
+    if (posts === 'posts' && postsRoutes === "retrieve" && dinamicAction === "all") {
       const posts = await prisma.post.findMany({
         orderBy: {
           createdAt: 'desc'
@@ -133,9 +136,8 @@ export const GET = async function GET(
 
 export const POST = withApiAuthRequired(async function POST(
   request: NextRequest,
-  context: RouteContext
+  { params }: RouteContext
 ) {
-  const { params } = context;
   try {
     const user = await getCurrentUser(request);
     const postData = await request.json() as PostCreate;
@@ -181,15 +183,15 @@ export const POST = withApiAuthRequired(async function POST(
 
 export const PUT = withApiAuthRequired(async function PUT(
   request: NextRequest,
-  context: RouteContext
+  { params }: RouteContext
 ) {
-  const { params } = context;
   try {
+    const postsRoutes = await params.postsRoutes;
     const updateUser = await getCurrentUser(request);
     const updateData = await request.json() as PostCreate;
 
     const existingPost = await prisma.post.findUnique({
-      where: { id: parseInt(params.postsRoutes) }
+      where: { id: parseInt(postsRoutes) }
     });
 
     if (!existingPost) {
@@ -209,7 +211,7 @@ export const PUT = withApiAuthRequired(async function PUT(
     }
 
     const updatedPost = await prisma.post.update({
-      where: { id: parseInt(params.postsRoutes) },
+      where: { id: parseInt(postsRoutes) },
       data: {
         title: updateData.title,
         brief: updateData.brief,
@@ -240,14 +242,14 @@ export const PUT = withApiAuthRequired(async function PUT(
 
 export const DELETE = withApiAuthRequired(async function DELETE(
   request: NextRequest,
-  context: RouteContext
+  { params }: RouteContext
 ) {
-  const { params } = context;
   try {
+    const postsRoutes = await params.postsRoutes;
     const deleteUser = await getCurrentUser(request);
     
     const postToDelete = await prisma.post.findUnique({
-      where: { id: parseInt(params.postsRoutes) }
+      where: { id: parseInt(postsRoutes) }
     });
 
     if (!postToDelete) {
@@ -267,7 +269,7 @@ export const DELETE = withApiAuthRequired(async function DELETE(
     }
 
     await prisma.post.delete({
-      where: { id: parseInt(params.postsRoutes) }
+      where: { id: parseInt(postsRoutes) }
     });
 
     const response: ApiResponse = { 

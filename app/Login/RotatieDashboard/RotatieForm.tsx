@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGlobalContextRotation } from '../../../providers/rotationStore';
+import { useGlobalContextRotation } from '../../providers/rotationStore';
 import { useTranslations } from 'next-intl';
 
 const CropRotationForm = ({ filteredCrops }) => {

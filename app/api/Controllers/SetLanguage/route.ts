@@ -27,4 +27,4 @@ export async function POST(request: NextRequest, context: any) {
 
 
 
-// pages/api/SetLanguage/route.ts
+// /api/SetLanguage/route.ts

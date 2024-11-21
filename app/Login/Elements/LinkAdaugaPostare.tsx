@@ -6,7 +6,7 @@ function LinkAdaugaPostare(){
   const t = useTranslations('LinkAdaugaPostare');
   return (
   <>
-              <Link href='/pages/Login/Posts'>
+              <Link href='/Login/Posts'>
                 <FaUser /> {t('AdaugaPostare')}
               </Link>
               

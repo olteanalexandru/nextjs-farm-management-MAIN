@@ -1,10 +1,10 @@
 "use client"
 import { useState , useEffect } from 'react';
 import { Container, Card, Row, Col, Table,  Button  } from 'react-bootstrap';
-import { useUserContext } from '../../../providers/UserStore';
-import { useGlobalContextCrop } from '../../../providers/culturaStore';
-import { useGlobalContextRotation } from '../../../providers/rotationStore';
-import Continut from '../../../Crud/GetAllInRotatie/page';
+import { useUserContext } from '../../providers/UserStore';
+import { useGlobalContextCrop } from '../../providers/culturaStore';
+import { useGlobalContextRotation } from '../../providers/rotationStore';
+import Continut from '../../Crud/GetAllInRotatie/page';
 import CropRotationForm from './RotatieForm';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, Label } from 'recharts';
 import {  Typography } from 'antd';

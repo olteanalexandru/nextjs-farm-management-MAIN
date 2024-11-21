@@ -42,7 +42,7 @@ export default function AboutUs() {
           <div className="col-sm-4">
             <h4>{t('contactUs')}</h4>
             <li className="nav-item nav-list">
-              <Link href="/pages/contact" className="nav-link">
+              <Link href="/contact" className="nav-link">
                 {t('contactUsForm')}
               </Link>
             </li>

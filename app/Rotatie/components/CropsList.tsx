@@ -1,5 +1,5 @@
 import GridGenerator from '@/app/components/GridGen';
-import Continut from '../../../Crud/GetAllInRotatie/page';
+import Continut from '../../Crud/GetAllInRotatie/page';
 import styles from '../Rotatie.module.css';
 
 interface Crop {

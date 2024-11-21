@@ -4,7 +4,7 @@ import Link from 'next/link'
 import classNames from 'classnames';
 import Card from 'react-bootstrap/Card';
 import Container from 'react-bootstrap/Container';
-import Noutati from './pages/News/News';
+import Noutati from './News/News';
 import {useTranslations} from 'next-intl';
 
 

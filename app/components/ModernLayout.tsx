@@ -20,10 +20,10 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
 
   const navigationItems = [
     { name: 'Home', href: '/', icon: Home },
-    { name: 'News', href: '/pages/News', icon: Home },
-    { name: 'Crop Rotation', href: '/pages/Rotatie', icon: Repeat },
+    { name: 'News', href: '/News', icon: Home },
+    { name: 'Crop Rotation', href: '/Rotatie', icon: Repeat },
     { name: 'Dashboard', href: '/dashboard', icon: Camera },
-    { name: 'Users', href: '/pages/Login/Register', icon: Users, adminOnly: true },
+    { name: 'Users', href: '/Login/Register', icon: Users, adminOnly: true },
   ];
 
   const isActivePath = (path: string) => pathname === path;

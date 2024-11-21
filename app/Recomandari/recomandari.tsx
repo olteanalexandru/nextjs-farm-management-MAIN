@@ -1,4 +1,4 @@
-import { useGlobalContextCrop } from '../../providers/culturaStore';
+import { useGlobalContextCrop } from '../providers/culturaStore';
 import { useEffect, useState } from 'react';
 
 export default function useRecommendations(nitrogenBalance, cropId) {

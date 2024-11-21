@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["microsoftSqlServer"]
 }
 
 datasource db {
@@ -13,6 +12,7 @@ model User {
   auth0Id        String            @unique
   name           String
   email          String            @unique
+  picture        String?           @db.Text
   roleType       String            @default("FARMER") 
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt

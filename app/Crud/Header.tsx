@@ -17,12 +17,12 @@ function HeaderLog() {
             </Link>
           </Dropdown.Toggle>
           <Dropdown.Menu>
-            <Dropdown.Item as={Link} href="/pages/Rotatie">Crop library</Dropdown.Item>
+            <Dropdown.Item as={Link} href="/Rotatie">Crop library</Dropdown.Item>
             <Dropdown.Item as={Link} href="/Dashboard/">Dashboard</Dropdown.Item>
             {data.roleType.toLowerCase() === 'farmer' && (
               <>
                 <Dropdown.Item as={Link} href="/rotation-dashboard">Crop rotation</Dropdown.Item>
-                {/* <Dropdown.Item as={Link} href="/pages/Recomandari/">Analitics</Dropdown.Item> */}
+                {/* <Dropdown.Item as={Link} href="/Recomandari/">Analitics</Dropdown.Item> */}
               </>
             )}
             <Dropdown.Item onClick={logout}>Logout</Dropdown.Item>

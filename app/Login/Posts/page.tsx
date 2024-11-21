@@ -1,11 +1,11 @@
 "use client";
 import React, { useEffect } from 'react';
-import { usePostContext } from '../../../providers/postStore'; // Corrected import
-import Spinner from '../../../Crud/Spinner';
-import { UserInfos } from '../../../components/UserInfos';
+import { usePostContext } from '../../providers/postStore'; // Corrected import
+import Spinner from '../../Crud/Spinner';
+import { UserInfos } from '../../components/UserInfos';
 import { Container, Card, Button } from 'react-bootstrap';
-import PostForm from '../../../Crud/PostForm';
-import Continut from '../../../Crud/GetAllPosts/page';
+import PostForm from '../../Crud/PostForm';
+import Continut from '../../Crud/GetAllPosts/page';
 import { useTranslations } from 'next-intl';
 
 function Postari() {
