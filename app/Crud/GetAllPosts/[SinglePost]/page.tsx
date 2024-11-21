@@ -9,7 +9,7 @@ export default function SinglePost() {
   const postId = useSearchParams().get("post") as string;
   const { data, loading, getPost, deletePost, updatePost } = usePostContext();
   const { data: user } = useUserContext();
-  const isAdmin = user?.role.toLowerCase() === 'admin';
+  const isAdmin = user?.roleType.toLowerCase() === 'admin';
   const [editMode, setEditMode] = useState(false);
   const [updatedPost, setUpdatedPost] = useState({
     title: '',

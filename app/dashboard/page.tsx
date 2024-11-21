@@ -44,16 +44,16 @@ export default function Dashboard() {
   const { isLoading: isUserLoading } = useUser();
 
   useEffect(() => {
-    if (!isUserLoading && isUserLoggedIn && data?.role) {
+    if (!isUserLoading && isUserLoggedIn && data?.roleType) {
       const apiCalls = async () => {
         await getCrops();
-        if (data.role.toLowerCase() === 'admin') {
+        if (data.roleType.toLowerCase() === 'admin') {
           await fetchFermierUsers();
         }
       };
       apiCalls();
     }
-  }, [isUserLoading, isUserLoggedIn, data?.role]);
+  }, [isUserLoading, isUserLoggedIn, data?.roleType]);
 
   if (isUserLoading || !data) {
     return <Spinner />;
@@ -140,13 +140,13 @@ export default function Dashboard() {
         {data && (
           <div>
             <p>Welcome, {data.name}</p>
-            <p>Role: {data.role}</p>
+            <p>Role: {data.roleType}</p>
           </div>
         )}
       </div>
-      {data?.role?.toLowerCase() === 'admin' 
+      {data?.roleType?.toLowerCase() === 'admin' 
         ? renderAdminContent()
-        : data?.role?.toLowerCase() === 'farmer'
+        : data?.roleType?.toLowerCase() === 'farmer'
         ? renderFarmerContent()
         : <h1>Access Denied</h1>
       }

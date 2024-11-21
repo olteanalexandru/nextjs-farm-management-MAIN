@@ -51,7 +51,7 @@ function SinglePag() {
     soilResidualNitrogen: crops?.soilResidualNitrogen,
   }));
   
-  const canEdit = userData.role.toLocaleLowerCase() === 'admin' ||  crops?.user == userData._id;
+  const canEdit = userData.roleType.toLocaleLowerCase() === 'admin' ||  crops?.user == userData._id;
   const editPressed = () => {
     setEditMode(true);
   }
@@ -135,7 +135,7 @@ console.log('crops', crops);
 
   const onSubmit = async (e, newSelectArea) => {
     e.preventDefault();
-    if (userData && userData.role.toLowerCase() === "farmer") {
+    if (userData && userData.roleType.toLowerCase() === "farmer") {
       await selectare(_id, newSelectArea, numSelections);
       setSelectarea(newSelectArea);
     }

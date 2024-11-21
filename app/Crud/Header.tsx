@@ -19,7 +19,7 @@ function HeaderLog() {
           <Dropdown.Menu>
             <Dropdown.Item as={Link} href="/pages/Rotatie">Crop library</Dropdown.Item>
             <Dropdown.Item as={Link} href="/Dashboard/">Dashboard</Dropdown.Item>
-            {data.role.toLowerCase() === 'farmer' && (
+            {data.roleType.toLowerCase() === 'farmer' && (
               <>
                 <Dropdown.Item as={Link} href="/rotation-dashboard">Crop rotation</Dropdown.Item>
                 {/* <Dropdown.Item as={Link} href="/pages/Recomandari/">Analitics</Dropdown.Item> */}

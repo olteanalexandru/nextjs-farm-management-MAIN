@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import FileBase from 'react-file-base64';
 import { usePostContext } from '../providers/postStore'; 
-import { useUserContext } from '../providers/UserStore';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 
@@ -13,7 +12,7 @@ function PostForm() {
     const [description, setDescription] = useState('');
     const [image, setImage] = useState('');
     const { createPost } = usePostContext();
-    const { data } = useUserContext();
+
 
     const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();

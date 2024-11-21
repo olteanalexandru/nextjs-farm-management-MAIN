@@ -7,8 +7,9 @@ import axios from 'axios';
 interface UserData {
   name: string | null;
   email: string | null;
-  role: string;
+  roleType: string;
   _id?: string;
+  picture?: string | null;
 }
 
 interface UserContextType {
@@ -28,8 +29,9 @@ const API_URL = '/api/Controllers/User/';
 const initialUserData: UserData = {
   name: null,
   email: null,
-  role: '',
+  roleType: '',
   _id: '',
+  picture: null,
 };
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -54,17 +56,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           const userData = response.data.user;
           
           setData({
-            name: user.name,
-            email: user.email,
-            role: userData.roleType,
-            _id: userData.id
+            name: user.name ?? null,
+            email: user.email ?? null,
+            roleType: userData.roleType,
+            _id: userData.id,
+            picture: user.picture ?? null
           });
           setIsUserLoggedIn(true);
         } catch (error) {
           console.error('Error syncing user:', error);
-          // On error, redirect to login
-          window.location.href = '/api/auth/login';
-          return;
+          // Instead of redirecting, just reset the state
+          setData(initialUserData);
+          setIsUserLoggedIn(false);
         }
       } else if (!authLoading) {
         // Only reset if we're not loading and there's no user

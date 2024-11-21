@@ -3,6 +3,7 @@
 import React from 'react';
 import { useUserContext } from '../providers/UserStore';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 
 export const UserInfos = () => {
     const { data, isUserLoggedIn, isLoading } = useUserContext();
@@ -20,11 +21,23 @@ export const UserInfos = () => {
         <div className="flex items-center gap-2">
             {isUserLoggedIn ? (
                 <>
+                    {data.picture && (
+                        <div className="w-8 h-8 rounded-full overflow-hidden relative">
+                            <Image
+                                src={data.picture}
+                                alt="Profile"
+                                width={32}
+                                height={32}
+                                className="object-cover"
+                                unoptimized
+                            />
+                        </div>
+                    )}
                     <span>{t('Welcome')}</span>
                     <strong>{data.name || data.email}</strong>
-                    {data.role && (
+                    {data.roleType && (
                         <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                            {data.role}
+                            {data.roleType}
                         </span>
                     )}
                 </>

@@ -1,6 +1,6 @@
 'use client';
 import { ReactNode } from 'react';
-import { UserProvider } from '@auth0/nextjs-auth0/client';
+
 import { UserProvider as AppUserProvider } from './providers/UserStore';
 import { GlobalContextProvider as CulturaProvider } from './providers/culturaStore';
 import { GlobalContextProvider as RotationProvider } from './providers/rotationStore';
@@ -21,17 +21,19 @@ const RootProvider = ({ children, locale, messages }: RootProviderProps) => {
   );
 
   return (
-    <UserProvider>
-      <CulturaProvider>
-        <RotationProvider>
-          <AppUserProvider>
+
+    <AppUserProvider>
+
+        <CulturaProvider>
+          <RotationProvider>
             <PostProvider>
               {wrappedChildren}
             </PostProvider>
-          </AppUserProvider>
-        </RotationProvider>
-      </CulturaProvider>
-    </UserProvider>
+          </RotationProvider>
+        </CulturaProvider>
+      
+    </AppUserProvider>
+
   );
 };
 

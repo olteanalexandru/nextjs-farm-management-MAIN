@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server';
-import { prisma } from '@/app/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '../../../lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
 
 type RoleType = 'ADMIN' | 'FARMER';
@@ -16,7 +16,7 @@ async function authenticateUser() {
     try {
         const session = await getSession();
         if (!session?.user) {
-            return Response.json(
+            return NextResponse.json(
                 { error: 'Authentication required' },
                 { status: 401 }
             );
@@ -24,7 +24,7 @@ async function authenticateUser() {
         return session;
     } catch (error) {
         console.error('Authentication error:', error);
-        return Response.json(
+        return NextResponse.json(
             { error: 'Authentication failed' },
             { status: 500 }
         );
@@ -37,24 +37,35 @@ function isValidEmail(email: string): boolean {
     return emailRegex.test(email);
 }
 
+// Helper function to determine user role
+function determineUserRole(email: string): RoleType {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) {
+        console.warn('ADMIN_EMAIL environment variable is not set');
+        return 'FARMER';
+    }
+    
+    // Convert both emails to lowercase for case-insensitive comparison
+    return email.toLowerCase() === adminEmail.toLowerCase() ? 'ADMIN' : 'FARMER';
+}
+
 export async function POST(request: NextRequest) {
     try {
         const session = await authenticateUser();
-        if (session instanceof Response) return session;
+        if (session instanceof NextResponse) return session;
 
         const { email, name } = session.user;
         const auth0Id = session.user.sub;
 
         if (!email || !isValidEmail(email)) {
-            return Response.json(
+            return NextResponse.json(
                 { error: 'Invalid email address' },
                 { status: 400 }
             );
         }
 
-        // Check if user should be admin
-        const isAdmin = email.toLowerCase() === process.env.ADMIN_EMAIL;
-        const roleType: RoleType = isAdmin ? 'ADMIN' : 'FARMER';
+        // Determine role based on email
+        const roleType = determineUserRole(email);
 
         // Create or update user in database
         const user = await prisma.user.upsert({
@@ -72,13 +83,13 @@ export async function POST(request: NextRequest) {
             }
         });
 
-        return Response.json({
+        return NextResponse.json({
             message: 'User created/updated successfully',
             user
         });
     } catch (error) {
         console.error('User creation error:', error);
-        return Response.json(
+        return NextResponse.json(
             { error: 'Failed to create/update user' },
             { status: 500 }
         );
@@ -88,20 +99,20 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
     try {
         const session = await authenticateUser();
-        if (session instanceof Response) return session;
+        if (session instanceof NextResponse) return session;
 
         const body = await request.json();
         const { email, roleType } = body as { email: string; roleType: RoleType };
 
         if (!email || !isValidEmail(email)) {
-            return Response.json(
+            return NextResponse.json(
                 { error: 'Invalid email address' },
                 { status: 400 }
             );
         }
 
         if (!roleType || !['ADMIN', 'FARMER'].includes(roleType)) {
-            return Response.json(
+            return NextResponse.json(
                 { error: 'Invalid role type' },
                 { status: 400 }
             );
@@ -113,14 +124,14 @@ export async function PUT(request: NextRequest) {
         });
 
         if (!currentUser) {
-            return Response.json(
+            return NextResponse.json(
                 { error: 'Current user not found' },
                 { status: 404 }
             );
         }
 
         if (currentUser.roleType !== 'ADMIN') {
-            return Response.json(
+            return NextResponse.json(
                 { error: 'Only administrators can modify user roles' },
                 { status: 403 }
             );
@@ -131,7 +142,7 @@ export async function PUT(request: NextRequest) {
         });
 
         if (!targetUser) {
-            return Response.json(
+            return NextResponse.json(
                 { error: 'Target user not found' },
                 { status: 404 }
             );
@@ -142,13 +153,13 @@ export async function PUT(request: NextRequest) {
             data: { roleType }
         });
 
-        return Response.json({
+        return NextResponse.json({
             message: 'User role updated successfully',
             user: updatedUser
         });
     } catch (error) {
         console.error('User update error:', error);
-        return Response.json(
+        return NextResponse.json(
             { error: 'Failed to update user role' },
             { status: 500 }
         );
@@ -158,14 +169,14 @@ export async function PUT(request: NextRequest) {
 export async function GET(request: NextRequest) {
     try {
         const session = await authenticateUser();
-        if (session instanceof Response) return session;
+        if (session instanceof NextResponse) return session;
 
         const currentUser = await prisma.user.findUnique({
             where: { auth0Id: session.user.sub }
         });
 
         if (!currentUser) {
-            return Response.json(
+            return NextResponse.json(
                 { error: 'User not found' },
                 { status: 404 }
             );
@@ -183,11 +194,11 @@ export async function GET(request: NextRequest) {
                     updatedAt: true
                 }
             });
-            return Response.json({ users });
+            return NextResponse.json({ users });
         }
 
         // Non-admin users can only see their own info
-        return Response.json({
+        return NextResponse.json({
             user: {
                 id: currentUser.id,
                 name: currentUser.name,
@@ -199,7 +210,7 @@ export async function GET(request: NextRequest) {
         });
     } catch (error) {
         console.error('User fetch error:', error);
-        return Response.json(
+        return NextResponse.json(
             { error: 'Failed to fetch user data' },
             { status: 500 }
         );

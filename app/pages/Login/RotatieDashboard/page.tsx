@@ -36,7 +36,7 @@ function RotatieDashboard() {
   const [divisionSizeValues, setDivisionSizeValues] = useState([]);
   const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
   const [cropRotationChange, setCropRotationChange] = useState(false);
-  const { user, error, isLoading: isUserLoading } = useUser();
+  const {  isLoading: isUserLoading } = useUser();
   const [visible, setVisible] = useState(6);
 
   useSignals();
@@ -70,7 +70,7 @@ function RotatieDashboard() {
     setVisible(prevVisible => prevVisible + 6);
   };
 
-  if (userData?.role?.toLowerCase() !== 'farmer') {
+  if (userData?.roleType?.toLowerCase() !== 'farmer') {
     return null;
   }
 
