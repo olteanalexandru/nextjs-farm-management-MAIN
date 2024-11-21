@@ -61,10 +61,6 @@ export function PostProvider({ children }: ProviderProps) {
   const handleApiError = (error: unknown) => {
     console.error('API Error:', error);
     if (axios.isAxiosError(error)) {
-      if (error.response?.status === 401) {
-        // window.location.href = '/api/auth/login';
-        return;
-      }
       setError(error.response?.data?.error || error.message);
     } else {
       setError(error instanceof Error ? error.message : 'An unexpected error occurred');
@@ -74,14 +70,14 @@ export function PostProvider({ children }: ProviderProps) {
 
   const createPost = async (data: PostCreate) => {
     if (!user?.sub) {
-      window.location.href = '/api/auth/login';
+      setError('User not authenticated');
       return;
     }
 
     setLoading(true);
     try {
       const response = await axios.post<ApiResponse<Post>>(
-        `${API_URL}/post/new/${user.sub}`,
+        `${API_URL}/posts/create/new`,
         data,
         axiosConfig
       );
@@ -98,16 +94,16 @@ export function PostProvider({ children }: ProviderProps) {
     }
   };
 
-  const updatePost = async (postId: number, data: PostUpdate) => {
+  const updatePost = async (postId: number | string, data: PostUpdate) => {
     if (!user?.sub) {
-      window.location.href = '/api/auth/login';
+      setError('User not authenticated');
       return;
     }
 
     setLoading(true);
     try {
       const response = await axios.put<ApiResponse<Post>>(
-        `${API_URL}/post/${postId}/${user.sub}`,
+        `${API_URL}/posts/${postId}/update`,
         data,
         axiosConfig
       );
@@ -128,16 +124,16 @@ export function PostProvider({ children }: ProviderProps) {
     }
   };
 
-  const deletePost = async (postId: number) => {
+  const deletePost = async (postId: number | string) => {
     if (!user?.sub) {
-      window.location.href = '/api/auth/login';
+      setError('User not authenticated');
       return;
     }
 
     setLoading(true);
     try {
       const response = await axios.delete<ApiResponse<void>>(
-        `${API_URL}/post/${postId}/${user.sub}`,
+        `${API_URL}/posts/${postId}/delete`,
         axiosConfig
       );
 
@@ -153,7 +149,7 @@ export function PostProvider({ children }: ProviderProps) {
     }
   };
 
-  const getPost = async (id: number) => {
+  const getPost = async (id: number | string) => {
     setLoading(true);
     try {
       const response = await axios.get<ApiResponse<Post>>(
@@ -164,7 +160,6 @@ export function PostProvider({ children }: ProviderProps) {
       if (response.data.error) {
         setError(response.data.error);
       } else if (response.data.posts) {
-        // Handle the case where the API returns posts array with a single post
         const post = Array.isArray(response.data.posts) 
           ? response.data.posts[0] 
           : response.data.posts;
@@ -177,22 +172,21 @@ export function PostProvider({ children }: ProviderProps) {
     }
   };
 
-
   const getAllPosts = async (count?: number) => {
     setLoading(true);
     try {
-      const url = count ? `${API_URL}/posts/count/${count}` : `${API_URL}/posts/retrieve/all`;
-      const response = await axios.get<ApiResponse<Post>>(
-        url,
-        axiosConfig
-      );
+      const url = count !== undefined 
+        ? `${API_URL}/posts/count/${count}`
+        : `${API_URL}/posts/retrieve/all`;
+      
+      const response = await axios.get<ApiResponse<Post>>(url, axiosConfig);
 
       if (response.data.error) {
         setError(response.data.error);
       } else if (response.data.message === "No more posts") {
         setError(response.data.message);
       } else if (response.data.posts) {
-        setData(prevData => [...prevData, ...response.data.posts!]);
+        setData(response.data.posts);
       }
     } catch (error) {
       handleApiError(error);
@@ -216,7 +210,6 @@ export function PostProvider({ children }: ProviderProps) {
     getPost,
     getAllPosts,
     clearData,
-
   };
 
   return (

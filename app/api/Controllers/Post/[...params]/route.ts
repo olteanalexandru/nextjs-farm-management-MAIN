@@ -4,25 +4,23 @@ import { prisma } from 'app/lib/prisma';
 import { getCurrentUser } from 'app/lib/auth';
 import { ApiResponse, Post, PostCreate } from 'app/types/api';
 
-type RouteContext = {
+interface RouteContext {
   params: {
-    posts: string;
-    postsRoutes: string;
-    dinamicAction: string;
+    params: string[];
   };
-};
+}
 
 export async function GET(
   request: NextRequest,
-  { params }: RouteContext
+  context: RouteContext
 ) {
   try {
-    const { posts, postsRoutes, dinamicAction } = params;
+    const [action, param1, param2] = context.params.params;
 
     // Handle posts pagination
-    if (posts === 'posts' && postsRoutes === "count") {
+    if (action === 'posts' && param1 === "count") {
       const limit = 5;
-      const count = Number(dinamicAction) || 0;
+      const count = Number(param2) || 0;
       const skip = count * limit;
 
       const posts = await prisma.post.findMany({
@@ -49,11 +47,11 @@ export async function GET(
     }
 
     // Handle post search
-    if (posts === 'posts' && postsRoutes === "search") {
+    if (action === 'posts' && param1 === "search") {
       const posts = await prisma.post.findMany({
         where: {
           title: {
-            contains: dinamicAction.toLowerCase()
+            contains: param2.toLowerCase()
           }
         },
         include: {
@@ -71,10 +69,10 @@ export async function GET(
     }
 
     // Handle single post fetch
-    if (posts === 'post' && postsRoutes === "id") {
+    if (action === 'post' && param1 === "id") {
       const post = await prisma.post.findUnique({
         where: {
-          id: parseInt(dinamicAction)
+          id: parseInt(param2)
         },
         include: {
           user: {
@@ -98,7 +96,7 @@ export async function GET(
       return Response.json(response);
     }
 
-    if (posts === 'posts' && postsRoutes === "retrieve" && dinamicAction === "all") {
+    if (action === 'posts' && param1 === "retrieve" && param2 === "all") {
       const posts = await prisma.post.findMany({
         orderBy: {
           createdAt: 'desc'
@@ -134,7 +132,7 @@ export async function GET(
 
 export const POST = withApiAuthRequired(async function POST(
   request: NextRequest,
-  { params }: RouteContext
+  context: RouteContext
 ) {
   try {
     const user = await getCurrentUser(request);
@@ -181,15 +179,15 @@ export const POST = withApiAuthRequired(async function POST(
 
 export const PUT = withApiAuthRequired(async function PUT(
   request: NextRequest,
-  { params }: RouteContext
+  context: RouteContext
 ) {
   try {
-    const { postsRoutes } = params;
+    const [action, postId] = context.params.params;
     const updateUser = await getCurrentUser(request);
     const updateData = await request.json() as PostCreate;
 
     const existingPost = await prisma.post.findUnique({
-      where: { id: parseInt(postsRoutes) }
+      where: { id: parseInt(postId) }
     });
 
     if (!existingPost) {
@@ -209,7 +207,7 @@ export const PUT = withApiAuthRequired(async function PUT(
     }
 
     const updatedPost = await prisma.post.update({
-      where: { id: parseInt(postsRoutes) },
+      where: { id: parseInt(postId) },
       data: {
         title: updateData.title,
         brief: updateData.brief,
@@ -240,14 +238,14 @@ export const PUT = withApiAuthRequired(async function PUT(
 
 export const DELETE = withApiAuthRequired(async function DELETE(
   request: NextRequest,
-  { params }: RouteContext
+  context: RouteContext
 ) {
   try {
-    const { postsRoutes } = params;
+    const [action, postId] = context.params.params;
     const deleteUser = await getCurrentUser(request);
     
     const postToDelete = await prisma.post.findUnique({
-      where: { id: parseInt(postsRoutes) }
+      where: { id: parseInt(postId) }
     });
 
     if (!postToDelete) {
@@ -267,7 +265,7 @@ export const DELETE = withApiAuthRequired(async function DELETE(
     }
 
     await prisma.post.delete({
-      where: { id: parseInt(postsRoutes) }
+      where: { id: parseInt(postId) }
     });
 
     const response: ApiResponse = { 

@@ -15,15 +15,17 @@ interface RootProviderProps {
 
 const RootProvider = ({ children, locale, messages }: RootProviderProps) => {
   const wrappedChildren = (
-    <NextIntlClientProvider locale={locale} messages={messages}>
+    <NextIntlClientProvider 
+      locale={locale} 
+      messages={messages}
+      timeZone="Europe/Bucharest"
+    >
       {children}
     </NextIntlClientProvider>
   );
 
   return (
-
     <AppUserProvider>
-
         <CulturaProvider>
           <RotationProvider>
             <PostProvider>
@@ -31,9 +33,7 @@ const RootProvider = ({ children, locale, messages }: RootProviderProps) => {
             </PostProvider>
           </RotationProvider>
         </CulturaProvider>
-      
     </AppUserProvider>
-
   );
 };
 

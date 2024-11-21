@@ -12,13 +12,11 @@ import {
   isValidDetailType
 } from 'app/types/api';
 
-type RouteContext = {
+interface RouteContext {
   params: {
-    crops: string;
-    cropRoute: string;
-    dinamicAction: string;
+    params: string[];
   };
-};
+}
 
 function transformCropWithDetails(crop: CropModel): Crop {
   const transformed = transformCropToApiResponse(crop);
@@ -41,13 +39,13 @@ export const GET = withApiAuthRequired(async function GET(
   context: RouteContext
 ) {
   try {
-    const { crops, cropRoute, dinamicAction } = context.params;
+    const [action, param1, param2] = context.params.params;
 
-    if (crops === 'crops' && cropRoute === "search") {
+    if (action === 'crops' && param1 === "search") {
       const crops = await prisma.crop.findMany({
         where: {
           cropName: {
-            contains: dinamicAction
+            contains: param2
           },
           deleted: null
         },
@@ -61,9 +59,9 @@ export const GET = withApiAuthRequired(async function GET(
       return Response.json(response);
     }
 
-    if (crops === 'crop' && cropRoute === "id") {
+    if (action === 'crop' && param1 === "id") {
       const crop = await prisma.crop.findUnique({
-        where: { id: parseInt(dinamicAction) },
+        where: { id: parseInt(param2) },
         include: {
           details: true
         }
@@ -82,11 +80,11 @@ export const GET = withApiAuthRequired(async function GET(
       return Response.json(response);
     }
 
-    if (crops === 'crops' && cropRoute === "recommendations") {
+    if (action === 'crops' && param1 === "recommendations") {
       const crops = await prisma.crop.findMany({
         where: {
           cropName: {
-            contains: dinamicAction
+            contains: param2
           }
         },
         include: {
@@ -99,7 +97,7 @@ export const GET = withApiAuthRequired(async function GET(
       return Response.json(response);
     }
 
-    if (crops === 'crops' && cropRoute === "retrieve" && dinamicAction === "all") {
+    if (action === 'crops' && param1 === "retrieve" && param2 === "all") {
       const user = await getCurrentUser(request);
       const [crops, selections] = await Promise.all([
         prisma.crop.findMany({
@@ -120,7 +118,7 @@ export const GET = withApiAuthRequired(async function GET(
       return Response.json(response);
     }
 
-    if (crops === 'crops' && cropRoute === "user" && dinamicAction === "selectedCrops") {
+    if (action === 'crops' && param1 === "user" && param2 === "selectedCrops") {
       const user = await getCurrentUser(request);
       const selections = await prisma.userCropSelection.findMany({
         where: { userId: user.id },
@@ -161,9 +159,9 @@ export const POST = withApiAuthRequired(async function POST(
   context: RouteContext
 ) {
   try {
-    const { crops, cropRoute } = context.params;
+    const [action, param1] = context.params.params;
 
-    if (crops === 'crop' && cropRoute === 'single') {
+    if (action === 'crop' && param1 === 'single') {
       const user = await getCurrentUser(request);
       const cropData = await request.json() as CropCreate;
 
@@ -230,15 +228,14 @@ export const PUT = withApiAuthRequired(async function PUT(
   context: RouteContext
 ) {
   try {
-    const { crops, cropRoute, dinamicAction } = context.params;
+    const [action, cropId, param1] = context.params.params;
 
-    if (crops === 'crop') {
+    if (action === 'crop') {
       const user = await getCurrentUser(request);
-      const cropId = parseInt(cropRoute);
       const cropData = await request.json() as CropCreate;
 
       const existingCrop = await prisma.crop.findUnique({
-        where: { id: cropId },
+        where: { id: parseInt(cropId) },
         select: { userId: true }
       });
 
@@ -260,11 +257,11 @@ export const PUT = withApiAuthRequired(async function PUT(
 
       const updatedCrop = await prisma.$transaction(async (prisma) => {
         await prisma.cropDetail.deleteMany({
-          where: { cropId }
+          where: { cropId: parseInt(cropId) }
         });
 
         return prisma.crop.update({
-          where: { id: cropId },
+          where: { id: parseInt(cropId) },
           data: {
             cropName: cropData.cropName,
             cropType: cropData.cropType,
@@ -306,16 +303,15 @@ export const PUT = withApiAuthRequired(async function PUT(
       return Response.json(response);
     }
 
-    if (crops === 'crops' && dinamicAction === 'selectare') {
+    if (action === 'crops' && param1 === 'selectare') {
       const user = await getCurrentUser(request);
       const { selectare, numSelections } = await request.json();
-      const cropId = parseInt(cropRoute);
 
       const selection = await prisma.userCropSelection.upsert({
         where: {
           userId_cropId: {
             userId: user.id,
-            cropId: cropId
+            cropId: parseInt(cropId)
           }
         },
         update: {
@@ -325,7 +321,7 @@ export const PUT = withApiAuthRequired(async function PUT(
         },
         create: {
           userId: user.id,
-          cropId: cropId,
+          cropId: parseInt(cropId),
           selectionCount: numSelections
         }
       });
@@ -354,14 +350,13 @@ export const DELETE = withApiAuthRequired(async function DELETE(
   context: RouteContext
 ) {
   try {
-    const { crops, dinamicAction } = context.params;
+    const [action, cropId] = context.params.params;
 
-    if (crops === 'crops') {
+    if (action === 'crops') {
       const user = await getCurrentUser(request);
-      const cropId = parseInt(dinamicAction);
       
       const crop = await prisma.crop.findUnique({
-        where: { id: cropId }
+        where: { id: parseInt(cropId) }
       });
 
       if (!crop) {
@@ -381,7 +376,7 @@ export const DELETE = withApiAuthRequired(async function DELETE(
       }
 
       await prisma.crop.delete({
-        where: { id: cropId }
+        where: { id: parseInt(cropId) }
       });
 
       const response: ApiResponse = { 

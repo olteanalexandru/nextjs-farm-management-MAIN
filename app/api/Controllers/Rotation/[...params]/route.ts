@@ -1,8 +1,15 @@
 import { NextRequest } from 'next/server';
 import { prisma } from 'app/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
-import { CropInput, RotationInput, RouteContext, RotationPlanInput } from '../interfaces';
+import { CropInput, RotationInput, RotationPlanInput } from '../interfaces';
 import { Decimal } from '@prisma/client/runtime/library';
+
+// Updated interface for the new route context
+interface RouteContext {
+  params: {
+    params: string[];
+  };
+}
 
 // Utility functions for rotation generation
 function hasSharedPests(crop1: CropInput, crop2: CropInput): boolean {
@@ -74,9 +81,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
     const user = session.user;
-    const { rotation, rotationRoutes } = context.params;
+    const [action] = context.params.params;
 
-    if (rotation === 'getRotation' && rotationRoutes === 'rotation') {
+    if (action === 'getRotation') {
       const rotations = await prisma.rotation.findMany({
         where: {
           userId: user.sub
@@ -116,9 +123,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
     const user = session.user;
-    const { rotation, rotationRoutes } = context.params;
+    const [action] = context.params.params;
 
-    if (rotation === 'generateRotation' && rotationRoutes === 'rotation') {
+    if (action === 'generateRotation') {
       const input: RotationInput = await request.json();
       const {
         fieldSize,
@@ -259,9 +266,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
     const user = session.user;
-    const { rotation } = context.params;
+    const [action] = context.params.params;
 
-    if (rotation === 'updateNitrogenBalance') {
+    if (action === 'updateNitrogenBalance') {
       const { id, year, division, nitrogenBalance } = await request.json();
 
       const rotationRecord = await prisma.rotation.findUnique({
@@ -307,7 +314,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       });
     }
 
-    if (rotation === 'updateDivisionSizeAndRedistribute') {
+    if (action === 'updateDivisionSizeAndRedistribute') {
       const { id, division, newDivisionSize } = await request.json();
 
       const rotationRecord = await prisma.rotation.findUnique({
@@ -384,10 +391,10 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
     const user = session.user;
-    const { rotation, dinamicAction } = context.params;
+    const [action, id] = context.params.params;
 
-    if (rotation === 'deleteRotation') {
-      const rotationId = parseInt(dinamicAction);
+    if (action === 'deleteRotation') {
+      const rotationId = parseInt(id);
 
       const rotationRecord = await prisma.rotation.findUnique({
         where: { id: rotationId }

@@ -21,14 +21,6 @@ export interface RotationInput {
   ResidualNitrogenSupply?: number;
 }
 
-export interface RouteContext {
-  params: {
-    rotation: string;
-    rotationRoutes: string;
-    dinamicAction: string;
-  };
-}
-
 export interface RotationPlanInput {
   year: number;
   division: number;

@@ -16,7 +16,7 @@ interface UserData {
 // Helper function to handle authentication
 async function authenticateUser() {
     try {
-        const cookieStore = cookies();
+        const cookieStore = await cookies();
         const session = await getSession();
         if (!session?.user) {
             return NextResponse.json(
