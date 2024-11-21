@@ -4,13 +4,6 @@ import { getSession } from '@auth0/nextjs-auth0';
 import { CropInput, RotationInput, RotationPlanInput } from '../interfaces';
 import { Decimal } from '@prisma/client/runtime/library';
 
-// Updated interface for the new route context
-interface RouteContext {
-  params: {
-    params: string[];
-  };
-}
-
 // Utility functions for rotation generation
 function hasSharedPests(crop1: CropInput, crop2: CropInput): boolean {
   return crop1.pests.some(pest => crop2.pests.includes(pest));
@@ -76,12 +69,15 @@ async function authenticateUser() {
   return session;
 }
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { params: string[] } }
+) {
   try {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
     const user = session.user;
-    const [action] = context.params.params;
+    const [action] = params.params;
 
     if (action === 'getRotation') {
       const rotations = await prisma.rotation.findMany({
@@ -118,12 +114,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { params: string[] } }
+) {
   try {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
     const user = session.user;
-    const [action] = context.params.params;
+    const [action] = params.params;
 
     if (action === 'generateRotation') {
       const input: RotationInput = await request.json();
@@ -261,12 +260,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function PUT(request: NextRequest, context: RouteContext) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { params: string[] } }
+) {
   try {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
     const user = session.user;
-    const [action] = context.params.params;
+    const [action] = params.params;
 
     if (action === 'updateNitrogenBalance') {
       const { id, year, division, nitrogenBalance } = await request.json();
@@ -386,12 +388,15 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { params: string[] } }
+) {
   try {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
     const user = session.user;
-    const [action, id] = context.params.params;
+    const [action, id] = params.params;
 
     if (action === 'deleteRotation') {
       const rotationId = parseInt(id);

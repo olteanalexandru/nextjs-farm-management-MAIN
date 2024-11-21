@@ -4,18 +4,12 @@ import { prisma } from 'app/lib/prisma';
 import { getCurrentUser } from 'app/lib/auth';
 import { ApiResponse, Post, PostCreate } from 'app/types/api';
 
-interface RouteContext {
-  params: {
-    params: string[];
-  };
-}
-
 export async function GET(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { params: string[] } }
 ) {
   try {
-    const [action, param1, param2] = context.params.params;
+    const [action, param1, param2] = params.params;
 
     // Handle posts pagination
     if (action === 'posts' && param1 === "count") {
@@ -132,10 +126,10 @@ export async function GET(
 
 export const POST = withApiAuthRequired(async function POST(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { params: string[] } }
 ) {
   try {
-    const user = await getCurrentUser(request);
+    const auth0User = await getCurrentUser(request);
     const postData = await request.json() as PostCreate;
     const { title, brief, description, image } = postData;
 
@@ -147,9 +141,22 @@ export const POST = withApiAuthRequired(async function POST(
       return Response.json(response, { status: 400 });
     }
 
+    // Get the user from our database using Auth0 ID
+    const dbUser = await prisma.user.findUnique({
+      where: { auth0Id: auth0User.id }
+    });
+
+    if (!dbUser) {
+      const response: ApiResponse = { 
+        error: 'User not found in database',
+        status: 404
+      };
+      return Response.json(response, { status: 404 });
+    }
+
     const post = await prisma.post.create({
       data: {
-        userId: user.id,
+        userId: dbUser.id, // Use the database user ID
         title,
         brief,
         description,
@@ -179,12 +186,25 @@ export const POST = withApiAuthRequired(async function POST(
 
 export const PUT = withApiAuthRequired(async function PUT(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { params: string[] } }
 ) {
   try {
-    const [action, postId] = context.params.params;
-    const updateUser = await getCurrentUser(request);
+    const [action, postId] = params.params;
+    const auth0User = await getCurrentUser(request);
     const updateData = await request.json() as PostCreate;
+
+    // Get the user from our database using Auth0 ID
+    const dbUser = await prisma.user.findUnique({
+      where: { auth0Id: auth0User.id }
+    });
+
+    if (!dbUser) {
+      const response: ApiResponse = { 
+        error: 'User not found in database',
+        status: 404
+      };
+      return Response.json(response, { status: 404 });
+    }
 
     const existingPost = await prisma.post.findUnique({
       where: { id: parseInt(postId) }
@@ -198,7 +218,7 @@ export const PUT = withApiAuthRequired(async function PUT(
       return Response.json(response, { status: 404 });
     }
 
-    if (existingPost.userId !== updateUser.id) {
+    if (existingPost.userId !== dbUser.id) {
       const response: ApiResponse = { 
         error: 'Not authorized',
         status: 401
@@ -238,12 +258,25 @@ export const PUT = withApiAuthRequired(async function PUT(
 
 export const DELETE = withApiAuthRequired(async function DELETE(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { params: string[] } }
 ) {
   try {
-    const [action, postId] = context.params.params;
-    const deleteUser = await getCurrentUser(request);
+    const [action, postId] = params.params;
+    const auth0User = await getCurrentUser(request);
     
+    // Get the user from our database using Auth0 ID
+    const dbUser = await prisma.user.findUnique({
+      where: { auth0Id: auth0User.id }
+    });
+
+    if (!dbUser) {
+      const response: ApiResponse = { 
+        error: 'User not found in database',
+        status: 404
+      };
+      return Response.json(response, { status: 404 });
+    }
+
     const postToDelete = await prisma.post.findUnique({
       where: { id: parseInt(postId) }
     });
@@ -256,7 +289,7 @@ export const DELETE = withApiAuthRequired(async function DELETE(
       return Response.json(response, { status: 404 });
     }
 
-    if (postToDelete.userId !== deleteUser.id && !deleteUser.userRoles?.includes('admin')) {
+    if (postToDelete.userId !== dbUser.id && !dbUser.roleType?.includes('ADMIN')) {
       const response: ApiResponse = { 
         error: 'Not authorized',
         status: 401

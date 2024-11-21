@@ -12,12 +12,6 @@ import {
   isValidDetailType
 } from 'app/types/api';
 
-interface RouteContext {
-  params: {
-    params: string[];
-  };
-}
-
 function transformCropWithDetails(crop: CropModel): Crop {
   const transformed = transformCropToApiResponse(crop);
   return {
@@ -36,10 +30,10 @@ function transformCropWithDetails(crop: CropModel): Crop {
 
 export const GET = withApiAuthRequired(async function GET(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { params: string[] } }
 ) {
   try {
-    const [action, param1, param2] = context.params.params;
+    const [action, param1, param2] = params.params;
 
     if (action === 'crops' && param1 === "search") {
       const crops = await prisma.crop.findMany({
@@ -156,10 +150,10 @@ export const GET = withApiAuthRequired(async function GET(
 
 export const POST = withApiAuthRequired(async function POST(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { params: string[] } }
 ) {
   try {
-    const [action, param1] = context.params.params;
+    const [action, param1] = params.params;
 
     if (action === 'crop' && param1 === 'single') {
       const user = await getCurrentUser(request);
@@ -225,10 +219,10 @@ export const POST = withApiAuthRequired(async function POST(
 
 export const PUT = withApiAuthRequired(async function PUT(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { params: string[] } }
 ) {
   try {
-    const [action, cropId, param1] = context.params.params;
+    const [action, cropId, param1] = params.params;
 
     if (action === 'crop') {
       const user = await getCurrentUser(request);
@@ -347,10 +341,10 @@ export const PUT = withApiAuthRequired(async function PUT(
 
 export const DELETE = withApiAuthRequired(async function DELETE(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { params: string[] } }
 ) {
   try {
-    const [action, cropId] = context.params.params;
+    const [action, cropId] = params.params;
 
     if (action === 'crops') {
       const user = await getCurrentUser(request);

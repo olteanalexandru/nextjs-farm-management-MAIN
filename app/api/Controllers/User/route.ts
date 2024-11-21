@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
-import { cookies } from 'next/headers';
 
 type RoleType = 'ADMIN' | 'FARMER';
 
@@ -14,10 +13,10 @@ interface UserData {
 }
 
 // Helper function to handle authentication
-async function authenticateUser() {
+async function authenticateUser(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const session = await getSession();
+        const response = NextResponse.next();
+        const session = await getSession(request, response);
         if (!session?.user) {
             return NextResponse.json(
                 { error: 'Authentication required' },
@@ -54,7 +53,7 @@ function determineUserRole(email: string): RoleType {
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await authenticateUser();
+        const session = await authenticateUser(request);
         if (session instanceof NextResponse) return session;
 
         const { email, name, picture } = session.user;
@@ -88,12 +87,10 @@ export async function POST(request: NextRequest) {
             }
         });
 
-        const response = NextResponse.json({
+        return NextResponse.json({
             message: 'User created/updated successfully',
             user
         });
-
-        return response;
     } catch (error) {
         console.error('User creation error:', error);
         return NextResponse.json(
@@ -105,7 +102,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
     try {
-        const session = await authenticateUser();
+        const session = await authenticateUser(request);
         if (session instanceof NextResponse) return session;
 
         const body = await request.json();
@@ -175,7 +172,7 @@ export async function PUT(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await authenticateUser();
+        const session = await authenticateUser(request);
         if (session instanceof NextResponse) return session;
 
         const currentUser = await prisma.user.findUnique({
