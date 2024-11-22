@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, type ReactNode } from 'react';
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { signal } from "@preact/signals-react";
@@ -64,7 +64,10 @@ interface Props {
 
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
 
-export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
+export function GlobalContextProvider({ children }: { children: React.ReactNode }) {
+  const [crops, setCrops] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const cropsSignal = signal([]);
   const loadingSignal = signal(false);
   const isErrorSignal = signal(false);
@@ -118,29 +121,15 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   };
 
   const getCrops = async () => {
-    console.log("getting crops..");
+    setLoading(true);
     try {
-      loadingSignal.value = true;
-      const response = await axios.get(`${API_URL}crops/retrieve/all`, {});
-
-      if (response.status === 200) {
-        const newCrops = response.data.crops;
-        if (newCrops !== cropsSignal.value) {
-          cropsSignal.value = newCrops;
-          areThereCropsSignal.value = true;
-        }
-      } else {
-        const newCrops = response.data.crops;
-        if (newCrops !== cropsSignal.value) {
-          cropsSignal.value = newCrops;
-          isErrorSignal.value = true;
-          messageSignal.value = 'Error getting crops';
-        }
-      }
-    } catch (err) {
-      console.error(err);
+      const response = await fetch('/api/Controllers/Crop/crops/retrieve/all');
+      const data = await response.json();
+      setCrops(data.crops || []);
+    } catch (error) {
+      console.error('Error fetching crops:', error);
     } finally {
-      loadingSignal.value = false;
+      setLoading(false);
     }
   };
 
@@ -277,14 +266,15 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   return (
     <GlobalContext.Provider
       value={{
-        crops: cropsSignal,
+        crops,
+        loading,
+        getCrops,
         selections: selectionsSignal,
         isLoading: loadingSignal,
         isError: isErrorSignal,
         isSuccess: isSuccessSignal,
         message: messageSignal,
         createCrop,
-        getCrops,
         deleteCrop,
         selectare,
         SinglePage,
@@ -299,7 +289,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
       {children}
     </GlobalContext.Provider>
   );
-};
+}
 
 export const useGlobalContextCrop = () => {
   return useContext(GlobalContext);

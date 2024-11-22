@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { useGlobalContextCrop } from '../providers/culturaStore';
 import RecommendationForm from './RecommendationForm';
+import Pagination from '../components/Pagination';
 
 interface Recommendation {
+  _id?: string;
   id: number;
   cropName: string;
   nitrogenSupply: number;
@@ -15,14 +17,29 @@ interface Recommendation {
 
 export default function RecommendationList({ recommendations }: { recommendations: Recommendation[] }) {
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const { deleteCrop, updateCrop } = useGlobalContextCrop();
+  const itemsPerPage = 3;
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (recommendation: Recommendation) => {
+    // Check if we have either _id or id
+    const cropId = recommendation._id || recommendation.id?.toString();
+    if (!cropId) {
+      console.error('No valid ID found for deletion');
+      return;
+    }
+
     if (confirm('Are you sure you want to delete this recommendation?')) {
-      await deleteCrop(id.toString());
+      await deleteCrop(cropId);
       window.location.reload();
     }
   };
+
+  // Pagination calculation
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = recommendations.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(recommendations.length / itemsPerPage);
 
   const handleUpdate = async (formData: any) => {
     if (!editingId) return;
@@ -49,66 +66,74 @@ export default function RecommendationList({ recommendations }: { recommendation
 
   return (
     <div className="space-y-4">
-      {recommendations.map(recommendation => (
-        <div key={recommendation.id} className="bg-white p-4 rounded-lg shadow">
-          {editingId === recommendation.id ? (
-            <RecommendationForm
-              mode="update"
-              recommendation={recommendation}
-              onSuccess={handleUpdate}
-              onCancel={() => setEditingId(null)}
-            />
-          ) : (
-            <div>
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-semibold">{recommendation.cropName}</h3>
-                  <div className="mt-2 text-sm text-gray-600">
-                    <p>Nitrogen Supply: {recommendation.nitrogenSupply}</p>
-                    <p>Nitrogen Demand: {recommendation.nitrogenDemand}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setEditingId(recommendation.id)}
-                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(recommendation.id)}
-                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-              <div className="mt-4">
-                {recommendation.pests.length > 0 && (
-                  <div className="mb-2">
-                    <h4 className="font-medium">Pests:</h4>
-                    <ul className="list-disc list-inside">
-                      {recommendation.pests.map((pest, index) => (
-                        <li key={index} className="text-sm">{pest}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {recommendation.diseases.length > 0 && (
+      <div className="grid gap-4">
+        {currentItems.map(recommendation => (
+          <div key={recommendation.id} className="bg-white p-4 rounded-lg shadow">
+            {editingId === recommendation.id ? (
+              <RecommendationForm
+                mode="update"
+                recommendation={recommendation}
+                onSuccess={handleUpdate}
+                onCancel={() => setEditingId(null)}
+              />
+            ) : (
+              <div>
+                <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-medium">Diseases:</h4>
-                    <ul className="list-disc list-inside">
-                      {recommendation.diseases.map((disease, index) => (
-                        <li key={index} className="text-sm">{disease}</li>
-                      ))}
-                    </ul>
+                    <h3 className="text-lg font-semibold">{recommendation.cropName}</h3>
+                    <div className="mt-2 text-sm text-gray-600">
+                      <p>Nitrogen Supply: {recommendation.nitrogenSupply}</p>
+                      <p>Nitrogen Demand: {recommendation.nitrogenDemand}</p>
+                    </div>
                   </div>
-                )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingId(recommendation.id)}
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(recommendation)}
+                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  {recommendation.pests.length > 0 && (
+                    <div className="mb-2">
+                      <h4 className="font-medium">Pests:</h4>
+                      <ul className="list-disc list-inside">
+                        {recommendation.pests.map((pest, index) => (
+                          <li key={index} className="text-sm">{pest}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {recommendation.diseases.length > 0 && (
+                    <div>
+                      <h4 className="font-medium">Diseases:</h4>
+                      <ul className="list-disc list-inside">
+                        {recommendation.diseases.map((disease, index) => (
+                          <li key={index} className="text-sm">{disease}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        ))}
+      </div>
+      
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

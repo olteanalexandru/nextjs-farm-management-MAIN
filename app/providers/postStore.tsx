@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { ApiResponse, Post, PostCreate, PostUpdate } from '../types/api';
@@ -198,6 +198,23 @@ export function PostProvider({ children }: ProviderProps) {
   const clearData = () => {
     setState(initialState);
   };
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/Controllers/Post');
+        const data = await response.json();
+        setData(data.posts || []);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
 
   const contextValue: PostContextType = {
     ...state,

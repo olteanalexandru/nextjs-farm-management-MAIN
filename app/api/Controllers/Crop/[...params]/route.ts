@@ -415,13 +415,25 @@ export const DELETE = withApiAuthRequired(async function DELETE(
   { params }: { params: { params: string[] } }
 ) {
   try {
-    const [action, cropId] = params.params;
+    const [action, userId, cropId] = params.params;
 
     if (action === 'crops') {
       const user = await getCurrentUser(request);
       
+      // Ensure cropId is a valid number
+      const numericCropId = parseInt(cropId);
+      if (isNaN(numericCropId)) {
+        const response: ApiResponse = { 
+          error: 'Invalid crop ID',
+          status: 400
+        };
+        return Response.json(response, { status: 400 });
+      }
+
       const crop = await prisma.crop.findUnique({
-        where: { id: parseInt(cropId) }
+        where: { 
+          id: numericCropId
+        }
       });
 
       if (!crop) {
@@ -440,12 +452,28 @@ export const DELETE = withApiAuthRequired(async function DELETE(
         return Response.json(response, { status: 401 });
       }
 
-      await prisma.crop.delete({
-        where: { id: parseInt(cropId) }
-      });
+      // Use a transaction to delete related records first
+      await prisma.$transaction([
+        // Delete related crop details
+        prisma.cropDetail.deleteMany({
+          where: { cropId: numericCropId }
+        }),
+        // Delete related user crop selections
+        prisma.userCropSelection.deleteMany({
+          where: { cropId: numericCropId }
+        }),
+        // Delete related rotation plans
+        prisma.rotationPlan.deleteMany({
+          where: { cropId: numericCropId }
+        }),
+        // Finally delete the crop
+        prisma.crop.delete({
+          where: { id: numericCropId }
+        })
+      ]);
 
       const response: ApiResponse = { 
-        message: 'Crop deleted',
+        message: 'Crop deleted successfully',
         status: 200
       };
       return Response.json(response);
@@ -459,7 +487,7 @@ export const DELETE = withApiAuthRequired(async function DELETE(
   } catch (error) {
     console.error('DELETE request error:', error);
     const response: ApiResponse = { 
-      error: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Internal server error',
       status: 500
     };
     return Response.json(response, { status: 500 });

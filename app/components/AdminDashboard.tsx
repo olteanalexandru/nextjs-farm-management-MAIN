@@ -1,260 +1,238 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { FaUser } from 'react-icons/fa';
+import { FaUser, FaSeedling, FaNewspaper, FaCog } from 'react-icons/fa';
 import { usePostContext } from '../providers/postStore';
 import { useUserContext } from '../providers/UserStore';
 import { useGlobalContextCrop } from '../providers/culturaStore';
-import { Post } from '../types/api';
 import PostForm from '../Crud/PostForm';
 import RecommendationForm from '../Crud/RecommendationForm';
 import RecommendationList from '../Crud/RecommendationList';
-import Pagination from './Pagination';
 
 interface FermierUser {
   _id: string;
+  id: string;
   name: string;
   email: string;
+  roleType: string;
+  picture?: string;
 }
 
-const UserListItem = ({ user, deleteUser }: { user: FermierUser; deleteUser: (id: string) => void }) => (
-  <li key={user._id} className="flex justify-between items-center p-3 bg-white rounded shadow mb-2">
-    <span>{user.name} - {user.email}</span>
-    <button 
-      onClick={() => deleteUser(user._id)}
-      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-    >
-      Delete
-    </button>
-  </li>
-);
+interface Crop {
+  id: number;
+  cropName: string;
+  cropType: string;
+  // Add other crop properties as needed
+}
+
+interface Post {
+  id: number;
+  title: string;
+  brief?: string;
+  image?: string;
+}
+
+type Tab = 'users' | 'recommendations' | 'posts' | 'settings';
 
 export default function AdminDashboard() {
-  const { data: posts, getAllPosts, deletePost } = usePostContext();
-  const { fetchFermierUsers, deleteUser, fermierUsers } = useUserContext();
-  const { crops, getCrops } = useGlobalContextCrop();
-  
-  const [selectedPost, setSelectedPost] = useState<Post | undefined>();
-  const [showForm, setShowForm] = useState(false);
-  const [showRecommendationForm, setShowRecommendationForm] = useState(false);
-  const [postSearchTerm, setPostSearchTerm] = useState('');
-  const [recommendationSearchTerm, setRecommendationSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [recommendationsPage, setRecommendationsPage] = useState(1);
-  const itemsPerPage = 6;
+  const [activeTab, setActiveTab] = useState<Tab>('users');
+  const [users, setUsers] = useState<FermierUser[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { crops = [], loading: cropsLoading } = useGlobalContextCrop();
+  const { posts = [], loading: postsLoading } = usePostContext();
 
   useEffect(() => {
-    Promise.all([
-      getAllPosts(),
-      fetchFermierUsers()
-    ]);
+    fetchUsers();
   }, []);
 
-  // Reset page when search terms change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [postSearchTerm]);
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/Controllers/User');
+      const data = await response.json();
+      setUsers(data.users || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  useEffect(() => {
-    setRecommendationsPage(1);
-  }, [recommendationSearchTerm]);
+  const deleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    
+    try {
+      const response = await fetch(`/api/Controllers/User/${userId}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        setUsers(users.filter(user => user.id !== userId));
+      } else {
+        throw new Error('Failed to delete user');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user');
+    }
+  };
 
-  // Filter and paginate posts
-  const filteredPosts = posts?.filter(post =>
-    post.title.toLowerCase().includes(postSearchTerm.toLowerCase()) ||
-    post.brief?.toLowerCase().includes(postSearchTerm.toLowerCase())
-  ) || [];
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'users':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">User Management</h3>
+            {loading ? (
+              <div className="flex justify-center py-6">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                <ul className="divide-y divide-gray-200">
+                  {users.map((user) => (
+                    <li key={user.id} className="px-6 py-4 hover:bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          {user.picture && (
+                            <img 
+                              src={user.picture} 
+                              alt={user.name}
+                              className="h-10 w-10 rounded-full mr-3"
+                            />
+                          )}
+                          <div>
+                            <p className="font-medium">{user.name}</p>
+                            <p className="text-sm text-gray-500">{user.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <span className={`px-3 py-1 rounded-full text-sm ${
+                            user.roleType === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
+                          }`}>
+                            {user.roleType}
+                          </span>
+                          <button
+                            onClick={() => deleteUser(user.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
 
-  const paginatedPosts = filteredPosts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+      case 'recommendations':
+        return (
+          <div className="space-y-6">
+            <div className="bg-white shadow sm:rounded-lg p-6">
+              <h3 className="text-lg font-medium mb-4">New Recommendation</h3>
+              <RecommendationForm />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium mb-4">Existing Recommendations</h3>
+              {cropsLoading ? (
+                <div className="flex justify-center py-6">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+              ) : (
+                <RecommendationList 
+                  recommendations={
+                    Array.isArray(crops) 
+                      ? crops.filter(crop => crop?.cropType === 'RECOMMENDATION')
+                      : []
+                  }
+                />
+              )}
+            </div>
+          </div>
+        );
 
-  // Filter and paginate recommendations
-  const recommendations = crops.value.filter(crop => crop.cropType === 'RECOMMENDATION');
-  const filteredRecommendations = recommendations.filter(rec =>
-    rec.cropName.toLowerCase().includes(recommendationSearchTerm.toLowerCase())
-  );
+      case 'posts':
+        return (
+          <div className="space-y-6">
+            <div className="bg-white shadow sm:rounded-lg p-6">
+              <h3 className="text-lg font-medium mb-4">Create New Post</h3>
+              <PostForm />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium mb-4">All Posts</h3>
+              {postsLoading ? (
+                <div className="flex justify-center py-6">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {(posts || []).map((post: Post) => (
+                    <div key={post.id} className="bg-white shadow rounded-lg p-4">
+                      <h4 className="font-medium">{post.title}</h4>
+                      {post.brief && (
+                        <p className="text-sm text-gray-500 mt-2">{post.brief}</p>
+                      )}
+                      {post.image && (
+                        <img 
+                          src={post.image} 
+                          alt={post.title}
+                          className="mt-4 w-full h-40 object-cover rounded"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
 
-  const paginatedRecommendations = filteredRecommendations.slice(
-    (recommendationsPage - 1) * itemsPerPage,
-    recommendationsPage * itemsPerPage
-  );
+      case 'settings':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">System Settings</h3>
+            <div className="bg-white shadow sm:rounded-lg p-6">
+              <p>System settings and configuration options will be available here.</p>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-      {/* Post Management Section */}
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900">Post Management</h3>
-            {!showForm && (
-              <button
-                onClick={() => setShowForm(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
-              >
-                Create New Post
-              </button>
-            )}
-          </div>
-
-          {showForm && (
-            <div className="mb-8">
-              <PostForm 
-                post={selectedPost}
-                onSuccess={() => {
-                  setShowForm(false);
-                  setSelectedPost(undefined);
-                  getAllPosts();
-                }}
-                onCancel={() => {
-                  setShowForm(false);
-                  setSelectedPost(undefined);
-                }}
-              />
-            </div>
-          )}
-
-          <div className="mt-6">
-            <div className="mb-4">
-              <input
-                type="text"
-                placeholder="Search posts..."
-                value={postSearchTerm}
-                onChange={(e) => setPostSearchTerm(e.target.value)}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {paginatedPosts.map(post => (
-                <div key={post.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-                  <div className="p-4">
-                    <h5 className="text-lg font-semibold mb-2">{post.title}</h5>
-                    {post.image && (
-                      <img 
-                        src={post.image} 
-                        alt={post.title}
-                        className="w-full h-48 object-cover rounded-md mb-4"
-                      />
-                    )}
-                    <p className="text-gray-600 mb-4 line-clamp-3">{post.brief}</p>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => {
-                          setSelectedPost(post);
-                          setShowForm(true);
-                        }}
-                        className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 text-sm"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => {
-                          if (confirm('Are you sure?')) {
-                            deletePost(post.id);
-                          }
-                        }}
-                        className="px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors duration-200 text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Pagination
-              currentPage={currentPage}
-              totalPages={Math.ceil(filteredPosts.length / itemsPerPage)}
-              onPageChange={setCurrentPage}
-            />
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {[
+            { id: 'users', label: 'Users', icon: FaUser },
+            { id: 'recommendations', label: 'Recommendations', icon: FaSeedling },
+            { id: 'posts', label: 'Posts', icon: FaNewspaper },
+            { id: 'settings', label: 'Settings', icon: FaCog },
+          ].map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id as Tab)}
+              className={`
+                group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm
+                ${activeTab === id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+              `}
+            >
+              <Icon className="mr-2 h-5 w-5" />
+              {label}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {/* Crop Recommendations Section */}
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900">Crop Recommendations</h3>
-            {!showRecommendationForm && (
-              <button
-                onClick={() => setShowRecommendationForm(true)}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200"
-              >
-                Add New Recommendation
-              </button>
-            )}
-          </div>
-
-          {showRecommendationForm && (
-            <div className="mb-8">
-              <RecommendationForm
-                onSuccess={() => {
-                  setShowRecommendationForm(false);
-                  getCrops();
-                }}
-                onCancel={() => setShowRecommendationForm(false)}
-              />
-            </div>
-          )}
-
-          <div className="mt-6">
-            <div className="mb-4">
-              <input
-                type="text"
-                placeholder="Search recommendations..."
-                value={recommendationSearchTerm}
-                onChange={(e) => setRecommendationSearchTerm(e.target.value)}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-
-            <RecommendationList recommendations={paginatedRecommendations} />
-
-            <Pagination
-              currentPage={recommendationsPage}
-              totalPages={Math.ceil(filteredRecommendations.length / itemsPerPage)}
-              onPageChange={setRecommendationsPage}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* User Management Section */}
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="p-6">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6">
-            User Management
-          </h3>
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <a href="/create-post" 
-                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200">
-                Add Post
-              </a>
-              <a href="/register" 
-                 className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors duration-200">
-                <FaUser className="inline mr-2" /> Add users
-              </a>
-            </div>
-            
-            <div className="mt-6">
-              <h4 className="text-xl font-semibold mb-4">Farmers:</h4>
-              <ul className="space-y-2">
-                {fermierUsers?.map((user: FermierUser) => (
-                  <UserListItem
-                    key={user._id}
-                    user={user}
-                    deleteUser={deleteUser}
-                  />
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
+      <div className="mt-6">
+        {renderTabContent()}
       </div>
     </div>
   );
