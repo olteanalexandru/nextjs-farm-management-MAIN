@@ -30,6 +30,7 @@ type DataType = {
 };
 
 type RecommendationType = {
+  id?: number;
   cropName: string;
   nitrogenSupply: number;
   nitrogenDemand: number;
@@ -99,6 +100,9 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const updateCrop = async (cropId: string, data: DataType) => {
     loadingSignal.value = true;
     try {
+      if (!user) {
+        throw new Error('User is not authenticated');
+      }
       const response = await axios.put(`${API_URL}crop/${cropId}/${user.sub}`, data, {});
       if (response.status === 200) {
         isSuccessSignal.value = true;
@@ -143,6 +147,9 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const deleteCrop = async (cropId: string) => {
     loadingSignal.value = true;
     try {
+      if (!user) {
+        throw new Error('User is not authenticated');
+      }
       const response = await axios.delete(`${API_URL}crops/${user.sub}/${cropId}`, {});
       if (response.status === 200) {
         isSuccessSignal.value = true;
@@ -195,15 +202,37 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
   const addTheCropRecommendation = async (data: RecommendationType) => {
     loadingSignal.value = true;
     try {
-      const response = await axios.post(`${API_URL}crops/recommendations/${user.sub}`, data, {});
+      const cleanedData = {
+        ...data,
+        pests: data.pests.filter(pest => pest.trim() !== ''),
+        diseases: data.diseases.filter(disease => disease.trim() !== ''),
+        nitrogenSupply: Number(data.nitrogenSupply),
+        nitrogenDemand: Number(data.nitrogenDemand)
+      };
+
+      const response = await axios.post(
+        `${API_URL}crops/recommendations`,
+        cleanedData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
       if (response.status === 201) {
         isSuccessSignal.value = true;
         messageSignal.value = 'Recommendation added successfully';
+      } else {
+        throw new Error(response.data.message || 'Failed to add recommendation');
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error adding recommendation:', err);
+      isErrorSignal.value = true;
+      messageSignal.value = err instanceof Error ? err.message : 'Failed to add recommendation';
+    } finally {
+      loadingSignal.value = false;
     }
-    loadingSignal.value = false;
   };
 
   const getAllCrops = async () => {

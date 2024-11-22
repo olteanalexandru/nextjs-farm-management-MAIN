@@ -1,71 +1,107 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import FileBase from 'react-file-base64';
 import { usePostContext } from '../providers/postStore'; 
-import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
+import { Form, Button } from 'react-bootstrap';
+import { Post } from '../types/api';
 
-function PostForm() {
-    const [title, setTitle] = useState('');
-    const [brief, setBrief] = useState('');
-    const [description, setDescription] = useState('');
-    const [image, setImage] = useState('');
-    const { createPost } = usePostContext();
+interface PostFormProps {
+    post?: Post;
+    onCancel?: () => void;
+    onSuccess?: () => void;
+}
 
+function PostForm({ post, onCancel, onSuccess }: PostFormProps) {
+    const [formData, setFormData] = useState({
+        title: '',
+        brief: '',
+        description: '',
+        image: ''
+    });
+    const { createPost, updatePost } = usePostContext();
 
-    const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    useEffect(() => {
+        if (post) {
+            setFormData({
+                title: post.title,
+                brief: post.brief || '',
+                description: post.description || '',
+                image: post.image || ''
+            });
+        }
+    }, [post]);
+
+    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!title || !brief || !description) {
-            alert('Ceva lipseste');
+        if (!formData.title) {
+            alert('Title is required');
             return;
         }
-        createPost({ title, brief, description, image});
-        setTitle('');
-        setBrief('');
-        setDescription('');
-        setImage('');
+
+        try {
+            if (post) {
+                await updatePost(post.id, formData);
+            } else {
+                await createPost(formData);
+            }
+            setFormData({ title: '', brief: '', description: '', image: '' });
+            onSuccess?.();
+        } catch (error) {
+            console.error('Error saving post:', error);
+        }
     };
 
     return (
-        <section className='form'>
-            <Form onSubmit={onSubmit}>
-                <Form.Group>
-                    <Form.Label htmlFor='title'>Titlu:</Form.Label>
-                    <Form.Control
-                        type='title'
-                        name='title'
-                        id='title'
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                    />
-                    <Form.Label htmlFor='text'>Descriere pe scurt:</Form.Label>
-                    <Form.Control
-                        type='text'
-                        name='text'
-                        id='text'
-                        value={brief}
-                        onChange={(e) => setBrief(e.target.value)}
-                    />
-                    <Form.Label htmlFor='description'>Continut:</Form.Label>
-                    <Form.Control
-                        type='description'
-                        name='description'
-                        id='description'
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                    />
-                    <Form.Label htmlFor='image'>Imagine:</Form.Label>
+        <Form onSubmit={onSubmit}>
+            <Form.Group className="mb-3">
+                <Form.Label>Title</Form.Label>
+                <Form.Control
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    required
+                />
+            </Form.Group>
+            <Form.Group className="mb-3">
+                <Form.Label>Brief</Form.Label>
+                <Form.Control
+                    as="textarea"
+                    rows={2}
+                    value={formData.brief}
+                    onChange={(e) => setFormData({...formData, brief: e.target.value})}
+                />
+            </Form.Group>
+            <Form.Group className="mb-3">
+                <Form.Label>Description</Form.Label>
+                <Form.Control
+                    as="textarea"
+                    rows={4}
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                />
+            </Form.Group>
+            <Form.Group className="mb-3">
+                <Form.Label>Image</Form.Label>
+                <div>
                     <FileBase
                         multiple={false}
-                        onDone={({ base64 }: { base64: string }) => setImage(base64)}
+                        onDone={({ base64 }: { base64: string }) => 
+                            setFormData({...formData, image: base64})}
                     />
-                    <Button type='submit' variant='primary' className='btn-block'>
-                        Adauga
+                </div>
+            </Form.Group>
+            <div className="d-flex gap-2">
+                <Button type="submit">
+                    {post ? 'Update' : 'Create'} Post
+                </Button>
+                {onCancel && (
+                    <Button variant="secondary" onClick={onCancel}>
+                        Cancel
                     </Button>
-                </Form.Group>
-            </Form>
-        </section>
+                )}
+            </div>
+        </Form>
     );
 }
 

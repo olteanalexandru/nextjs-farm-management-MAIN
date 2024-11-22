@@ -23,12 +23,19 @@ export default function Noutati() {
   }, []);
 
   useEffect(() => {
-    const debouncedHandleScroll = debounce(handleScroll, 100);
+    const debouncedHandleScroll = debounce(() => {
+      handleScroll(
+        () => loadMorePosts(setLoadingMore, error, getAllPosts, page, setPage, setHasMore),
+        loadingMore,
+        hasMore
+      );
+    }, 100);
+    
     window.addEventListener('scroll', debouncedHandleScroll);
     return () => {
       window.removeEventListener('scroll', debouncedHandleScroll);
     };
-  }, [page, loadingMore, hasMore]);
+  }, [page, loadingMore, hasMore, error]);
 
   if (loading) {
     return <Spinner />;

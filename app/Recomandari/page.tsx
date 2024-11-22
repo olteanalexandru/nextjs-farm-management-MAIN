@@ -51,7 +51,7 @@ function RecommendationDashboard() {
     return <Alert variant="danger">{message}</Alert>;
   }
 
-  if (data?.role === "Fermier") {
+  if (data?.roleType === "Fermier") {
     return (
       <Container className="mt-4 mb-4">
         <Card className="p-4">

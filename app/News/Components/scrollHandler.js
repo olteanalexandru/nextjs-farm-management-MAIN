@@ -1,6 +1,6 @@
 import debounce from './debounce';
 
-export const handleScroll = (loadMorePosts) => {
+export const handleScroll = (loadMorePosts, loadingMore, hasMore) => {
   if (window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight || loadingMore || !hasMore) return;
   loadMorePosts();
 };
@@ -9,7 +9,7 @@ export const loadMorePosts = async (setLoadingMore, error, getAllPosts, page, se
   setLoadingMore(true);
 
   if (error === "No more posts") {
-    console.log("eroare no ore posts " + error)
+    console.log(" no more posts " + error)
     setHasMore(false);
   } else {
     await getAllPosts(page);
