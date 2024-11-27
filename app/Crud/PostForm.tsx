@@ -9,15 +9,15 @@ import { Post } from '../types/api';
 interface PostFormProps {
     post?: Post;
     onCancel?: () => void;
-    onSuccess?: () => void;
+    onSuccess?: (formData: any) => Promise<void> | void;
 }
 
-function PostForm({ post, onCancel, onSuccess }: PostFormProps) {
+export default function PostForm({ post, onCancel, onSuccess }: PostFormProps) {
     const [formData, setFormData] = useState({
-        title: '',
-        brief: '',
-        description: '',
-        image: ''
+        title: post?.title || '',
+        brief: post?.brief || '',
+        description: post?.description || '',
+        image: post?.image || ''
     });
     const { createPost, updatePost } = usePostContext();
 
@@ -46,9 +46,15 @@ function PostForm({ post, onCancel, onSuccess }: PostFormProps) {
                 await createPost(formData);
             }
             setFormData({ title: '', brief: '', description: '', image: '' });
-            onSuccess?.();
+            if (onSuccess) {
+                await onSuccess(formData); // Pass formData to onSuccess
+            }
+            if (onCancel) {
+                onCancel();
+            }
         } catch (error) {
             console.error('Error saving post:', error);
+            alert('Failed to save post');
         }
     };
 
@@ -104,5 +110,3 @@ function PostForm({ post, onCancel, onSuccess }: PostFormProps) {
         </Form>
     );
 }
-
-export default PostForm;

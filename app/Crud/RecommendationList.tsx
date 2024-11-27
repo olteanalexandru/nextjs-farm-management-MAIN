@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useGlobalContextCrop } from '../providers/culturaStore';
 import RecommendationForm from './RecommendationForm';
 import Pagination from '../components/Pagination';
+import SearchAndFilter from './SearchAndFilter';
 
 interface Recommendation {
   _id?: string;
@@ -15,14 +16,58 @@ interface Recommendation {
   diseases: string[];
 }
 
-export default function RecommendationList({ recommendations }: { recommendations: Recommendation[] }) {
+interface RecommendationListProps {
+  recommendations: Recommendation[];
+  onDelete?: (id: number) => Promise<void>;
+  onEdit?: (recommendation: Recommendation) => void;
+}
+
+export default function RecommendationList({
+  recommendations,
+  onDelete,
+  onEdit
+}: RecommendationListProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const { deleteCrop, updateCrop } = useGlobalContextCrop();
   const itemsPerPage = 3;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState('');
+
+  const filterOptions = [
+    { value: 'high_nitrogen', label: 'High Nitrogen Demand' },
+    { value: 'low_nitrogen', label: 'Low Nitrogen Demand' },
+    { value: 'has_pests', label: 'Has Pests' },
+    { value: 'has_diseases', label: 'Has Diseases' }
+  ];
+
+  const filteredRecommendations = useMemo(() => {
+    return recommendations
+      .filter(rec => {
+        // Search filter
+        const matchesSearch = rec.cropName
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+
+        // Category filter
+        if (!filter) return matchesSearch;
+
+        switch (filter) {
+          case 'high_nitrogen':
+            return matchesSearch && rec.nitrogenDemand > 50;
+          case 'low_nitrogen':
+            return matchesSearch && rec.nitrogenDemand <= 50;
+          case 'has_pests':
+            return matchesSearch && rec.pests.length > 0;
+          case 'has_diseases':
+            return matchesSearch && rec.diseases.length > 0;
+          default:
+            return matchesSearch;
+        }
+      });
+  }, [recommendations, searchQuery, filter]);
 
   const handleDelete = async (recommendation: Recommendation) => {
-    // Check if we have either _id or id
     const cropId = recommendation._id || recommendation.id?.toString();
     if (!cropId) {
       console.error('No valid ID found for deletion');
@@ -31,15 +76,19 @@ export default function RecommendationList({ recommendations }: { recommendation
 
     if (confirm('Are you sure you want to delete this recommendation?')) {
       await deleteCrop(cropId);
-      window.location.reload();
+      if (onDelete) {
+        await onDelete(recommendation.id);  // Call the onDelete callback if provided
+      } else {
+        window.location.reload();
+      }
     }
   };
 
   // Pagination calculation
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = recommendations.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(recommendations.length / itemsPerPage);
+  const currentItems = filteredRecommendations.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredRecommendations.length / itemsPerPage);
 
   const handleUpdate = async (formData: any) => {
     if (!editingId) return;
@@ -66,6 +115,13 @@ export default function RecommendationList({ recommendations }: { recommendation
 
   return (
     <div className="space-y-4">
+      <SearchAndFilter
+        onSearch={setSearchQuery}
+        onFilter={setFilter}
+        filterOptions={filterOptions}
+        placeholder="Search recommendations..."
+      />
+      
       <div className="grid gap-4">
         {currentItems.map(recommendation => (
           <div key={recommendation.id} className="bg-white p-4 rounded-lg shadow">

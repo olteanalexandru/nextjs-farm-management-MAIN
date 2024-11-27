@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, type ReactNode, useCallback } from 'react';
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { signal } from "@preact/signals-react";
@@ -38,8 +38,19 @@ type RecommendationType = {
   diseases: string[];
 };
 
+interface RecommendationResponse {
+  id: number;
+  cropName: string;
+  nitrogenSupply: number;
+  nitrogenDemand: number;
+  pests: string[];
+  diseases: string[];
+  _id?: string;
+  cropType: string;
+}
+
 interface ContextProps {
-  crops: any;
+  crops: RecommendationResponse[];
   selections: any;
   isLoading: any;
   isError: any;
@@ -53,7 +64,7 @@ interface ContextProps {
   getAllCrops: () => Promise<void>;
   updateCrop: (cropId: string, data: DataType) => Promise<void>;
   areThereCrops: any;
-  getCropRecommendations: (cropName: string) => Promise<any>;
+  getCropRecommendations: (cropName?: string) => Promise<any>; // Update the type definition
   singleCrop: any;
   addTheCropRecommendation: (data: RecommendationType) => Promise<void>;
 }
@@ -65,10 +76,10 @@ interface Props {
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
 
 export function GlobalContextProvider({ children }: { children: React.ReactNode }) {
-  const [crops, setCrops] = useState([]);
+  const [crops, setCrops] = useState<RecommendationResponse[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const cropsSignal = signal([]);
+  const cropsSignal = signal<RecommendationResponse[]>([]);
   const loadingSignal = signal(false);
   const isErrorSignal = signal(false);
   const isSuccessSignal = signal(false);
@@ -224,18 +235,18 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     }
   };
 
-  const getAllCrops = async () => {
+  const getAllCrops = useCallback(async () => {
     try {
       loadingSignal.value = true;
       const response = await axios.get(`${API_URL}crops/retrieve/all`, {});
       if (response.status === 200) {
         console.log("getting all crops..");
         const data = await response.data;
+        setCrops(data.crops || []); // Update the crops state
         cropsSignal.value = data.crops;
         areThereCropsSignal.value = true;
         selectionsSignal.value = data.selections;
       } else {
-        cropsSignal.value = response.data.crops;
         isErrorSignal.value = true;
         messageSignal.value = 'Error getting crops';
       }
@@ -245,29 +256,62 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  };
+  }, []);
 
-  const getCropRecommendations = async (cropName: string) => {
-    let recommendations = [];
-    if (cropName !== '') {
-      try {
-        const response = await axios.get(`${API_URL}crops/recommendations/${cropName}`, {});
-        if (response.status === 200) {
-          recommendations = response.data.crops;
-        }
-      } catch (error) {
-        console.error(error);
+  const getCropRecommendations = useCallback(async (cropName?: string) => {
+    try {
+      loadingSignal.value = true; // Set loading state
+      const url = cropName 
+        ? `${API_URL}crops/recommendations/${cropName}`
+        : `${API_URL}crops/recommendations`;
+        
+      console.log('Fetching recommendations from:', url);
+      const response = await axios.get(url);
+      
+      // Reset loading state before processing data
+      loadingSignal.value = false;
+      
+      if (response.status === 200) {
+        console.log('Raw response:', response.data);
+        
+        const recommendations = response.data.crops || [];
+        console.log(`Processing ${recommendations.length} recommendations`);
+        
+        // Transform and filter the recommendations
+        const transformedRecommendations = recommendations
+          .filter(rec => rec && rec.cropType === 'RECOMMENDATION')
+          .map(rec => ({
+            id: rec.id,
+            cropName: rec.cropName,
+            nitrogenSupply: rec.nitrogenSupply,
+            nitrogenDemand: rec.nitrogenDemand,
+            pests: rec.pests || [],
+            diseases: rec.diseases || [],
+            _id: rec.id.toString(),
+            cropType: rec.cropType
+          }));
+
+        console.log('Transformed recommendations:', transformedRecommendations);
+        
+        setCrops(transformedRecommendations);
+        cropsSignal.value = transformedRecommendations;
+        areThereCropsSignal.value = transformedRecommendations.length > 0;
       }
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      isErrorSignal.value = true;
+      messageSignal.value = 'Error fetching recommendations';
+      setCrops([]); // Reset crops on error
+      cropsSignal.value = [];
+    } finally {
+      loadingSignal.value = false; // Ensure loading state is reset
     }
-    console.log("recommendations: ", recommendations);
-    return recommendations;
-  };
+  }, []);
 
   return (
     <GlobalContext.Provider
       value={{
         crops,
-        loading,
         getCrops,
         selections: selectionsSignal,
         isLoading: loadingSignal,

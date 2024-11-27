@@ -195,10 +195,11 @@ export const PUT = withApiAuthRequired(async function PUT(
 
     // Get the user from our database using Auth0 ID
     const dbUser = await prisma.user.findUnique({
-      where: { auth0Id: auth0User.id }
+      where: { auth0Id: auth0User.auth0Id } // Change this line - use auth0Id instead of sub
     });
 
     if (!dbUser) {
+      console.log('Auth0 User:', auth0User); // Add logging for debugging
       const response: ApiResponse = { 
         error: 'User not found in database',
         status: 404

@@ -35,6 +35,50 @@ export const GET = withApiAuthRequired(async function GET(
   try {
     const [action, param1, param2] = params.params;
 
+    // Unified recommendations handler
+    if (action === 'crops' && param1 === 'recommendations') {
+      const whereClause = {
+        cropType: {
+          equals: 'RECOMMENDATION'
+        },
+        deleted: null,
+        ...(param2 ? {
+          cropName: {
+            contains: param2,
+            mode: 'insensitive'
+          }
+        } : {})
+      };
+
+      console.log('Fetching recommendations with where clause:', whereClause);
+
+      const recommendations = await prisma.crop.findMany({
+        where: whereClause,
+        include: {
+          details: true,
+          user: {
+            select: {
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      console.log(`Found ${recommendations.length} recommendations`);
+
+      const transformedRecommendations = recommendations.map(transformCropWithDetails);
+      
+      const response: ApiResponse<Crop> = { 
+        crops: transformedRecommendations,
+        status: 200
+      };
+      return Response.json(response);
+    }
+
     if (action === 'crops' && param1 === "search") {
       const crops = await prisma.crop.findMany({
         where: {
@@ -71,23 +115,6 @@ export const GET = withApiAuthRequired(async function GET(
 
       const transformedCrop = transformCropWithDetails(crop);
       const response: ApiResponse<Crop> = { crops: [transformedCrop] };
-      return Response.json(response);
-    }
-
-    if (action === 'crops' && param1 === "recommendations") {
-      const crops = await prisma.crop.findMany({
-        where: {
-          cropName: {
-            contains: param2
-          }
-        },
-        include: {
-          details: true
-        }
-      }) as unknown as CropModel[];
-
-      const transformedCrops = crops.map(transformCropWithDetails);
-      const response: ApiResponse<Crop> = { crops: transformedCrops };
       return Response.json(response);
     }
 

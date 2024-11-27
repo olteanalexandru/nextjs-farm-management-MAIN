@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FaUser, FaSeedling, FaNewspaper, FaCog } from 'react-icons/fa';
 import { usePostContext } from '../providers/postStore';
 import { useUserContext } from '../providers/UserStore';
@@ -8,6 +8,7 @@ import { useGlobalContextCrop } from '../providers/culturaStore';
 import PostForm from '../Crud/PostForm';
 import RecommendationForm from '../Crud/RecommendationForm';
 import RecommendationList from '../Crud/RecommendationList';
+import PostList from '../Crud/PostList';
 
 interface FermierUser {
   _id: string;
@@ -26,10 +27,10 @@ interface Crop {
 }
 
 interface Post {
-  id: number;
+  id: string | number;
   title: string;
-  brief?: string;
-  image?: string;
+  brief: string | null;
+  image?: string | null;
 }
 
 type Tab = 'users' | 'recommendations' | 'posts' | 'settings';
@@ -38,14 +39,14 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('users');
   const [users, setUsers] = useState<FermierUser[]>([]);
   const [loading, setLoading] = useState(false);
-  const { crops = [], loading: cropsLoading } = useGlobalContextCrop();
-  const { posts = [], loading: postsLoading } = usePostContext();
+  const { 
+    crops = [], 
+    isLoading: cropsLoading, 
+    getCropRecommendations 
+  } = useGlobalContextCrop();
+  const { data: posts, loading: postsLoading, getAllPosts } = usePostContext();
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/Controllers/User');
@@ -56,7 +57,40 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Only fetch data when the tab changes
+  useEffect(() => {
+    let mounted = true;
+
+    const loadTabData = async () => {
+      if (!mounted) return;
+
+      try {
+        switch (activeTab) {
+          case 'users':
+            await fetchUsers();
+            break;
+          case 'posts':
+            await getAllPosts();
+            break;
+          case 'recommendations':
+            console.log('Loading recommendations...');
+            await getCropRecommendations();
+            console.log('Recommendations loaded');
+            break;
+        }
+      } catch (error) {
+        console.error(`Error loading ${activeTab} data:`, error);
+      }
+    };
+
+    loadTabData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [activeTab, fetchUsers, getAllPosts, getCropRecommendations]);
 
   const deleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
@@ -132,21 +166,25 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             <div className="bg-white shadow sm:rounded-lg p-6">
               <h3 className="text-lg font-medium mb-4">New Recommendation</h3>
-              <RecommendationForm />
+              <RecommendationForm onSuccess={getCropRecommendations} />
             </div>
             <div>
-              <h3 className="text-lg font-medium mb-4">Existing Recommendations</h3>
-              {cropsLoading ? (
+              <h3 className="text-lg font-medium mb-4">
+                Existing Recommendations
+                {cropsLoading.value && <span className="ml-2">(Loading...)</span>}
+              </h3>
+              {cropsLoading.value ? (
                 <div className="flex justify-center py-6">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                 </div>
+              ) : crops.length === 0 ? (
+                <p className="text-gray-500">No recommendations found</p>
               ) : (
                 <RecommendationList 
-                  recommendations={
-                    Array.isArray(crops) 
-                      ? crops.filter(crop => crop?.cropType === 'RECOMMENDATION')
-                      : []
-                  }
+                  recommendations={crops}
+                  onDelete={async (id: number) => {
+                    await getCropRecommendations();
+                  }}
                 />
               )}
             </div>
@@ -158,7 +196,7 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             <div className="bg-white shadow sm:rounded-lg p-6">
               <h3 className="text-lg font-medium mb-4">Create New Post</h3>
-              <PostForm />
+              <PostForm onSuccess={getAllPosts} />
             </div>
             <div>
               <h3 className="text-lg font-medium mb-4">All Posts</h3>
@@ -167,23 +205,10 @@ export default function AdminDashboard() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                 </div>
               ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {(posts || []).map((post: Post) => (
-                    <div key={post.id} className="bg-white shadow rounded-lg p-4">
-                      <h4 className="font-medium">{post.title}</h4>
-                      {post.brief && (
-                        <p className="text-sm text-gray-500 mt-2">{post.brief}</p>
-                      )}
-                      {post.image && (
-                        <img 
-                          src={post.image} 
-                          alt={post.title}
-                          className="mt-4 w-full h-40 object-cover rounded"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <PostList 
+                  posts={posts || []}
+                  onDelete={getAllPosts}
+                />
               )}
             </div>
           </div>
