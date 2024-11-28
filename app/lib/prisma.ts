@@ -13,7 +13,7 @@ const prismaClientSingleton = () => {
 const prisma = globalThis.prisma ?? prismaClientSingleton()
 
 // Warmup function to establish initial connection
-async function warmupDatabase() {
+export const warmupDatabase = async () => {
   try {
     await prisma.$connect()
     console.log('Database connection established successfully')
@@ -49,4 +49,4 @@ if (process.env.NODE_ENV !== 'production') {
   globalThis.prisma = prisma
 }
 
-export { prisma, warmupDatabase }
+export { prisma }
