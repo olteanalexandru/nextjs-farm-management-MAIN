@@ -1,20 +1,52 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client'
 
-const globalForPrisma = global as unknown as {
-  prisma: PrismaClient | undefined;
-};
+declare global {
+  var prisma: PrismaClient | undefined
+}
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+const prismaClientSingleton = () => {
+  return new PrismaClient({
     log: ['error', 'warn'],
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL,
-      },
-    },
-  });
+  })
+}
+
+const prisma = globalThis.prisma ?? prismaClientSingleton()
+
+// Warmup function to establish initial connection
+async function warmupDatabase() {
+  try {
+    await prisma.$connect()
+    console.log('Database connection established successfully')
+    
+    // Perform a simple query to test the connection
+    await prisma.$queryRaw`SELECT 1`
+    
+  } catch (error) {
+    console.error('Initial database connection failed:', error)
+    let retries = 5
+    
+    while (retries > 0) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 5000))
+        await prisma.$connect()
+        await prisma.$queryRaw`SELECT 1`
+        console.log('Database connection established after retry')
+        break
+      } catch (retryError) {
+        retries--
+        console.error(`Connection retry failed, ${retries} attempts remaining`)
+        
+        if (retries === 0) {
+          console.error('Failed to connect to database after all retries')
+          throw retryError
+        }
+      }
+    }
+  }
+}
 
 if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
+  globalThis.prisma = prisma
 }
+
+export { prisma, warmupDatabase }
