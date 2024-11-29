@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from 'app/lib/prisma';
-import { getSession } from '@auth0/nextjs-auth0/edge';
+import { getSession } from '@auth0/nextjs-auth0';
 
 type RoleType = 'ADMIN' | 'FARMER';
 
@@ -14,8 +14,7 @@ interface UserData {
 // Helper function to handle authentication
 async function authenticateUser(request: NextRequest) {
     try {
-        const response = NextResponse.next();
-        const session = await getSession(request, response);
+        const session = await getSession();
         if (!session?.user) {
             return NextResponse.json(
                 { error: 'Authentication required' },

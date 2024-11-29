@@ -18,7 +18,7 @@ export default function Home() {
               Smart Agricultural Management Platform
             </h1>
             <h2 className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl">
-              Optimize your farm's productivity with intelligent crop rotation planning, personalized recommendations, and real-time agricultural insights
+              Optimize your farm&apos;s productivity with intelligent crop rotation planning, personalized recommendations, and real-time agricultural insights
             </h2>
             <div className="flex gap-4">
               <Link 
@@ -68,7 +68,7 @@ export default function Home() {
                 Personalized Recommendations
               </h4>
               <p className="text-gray-600">
-                Get tailored advice for soil preparation, plant nutrition, and pest control based on your farm's data
+                Get tailored advice for soil preparation, plant nutrition, and pest control based on your farm&apos;s data
               </p>
             </div>
           </div>
@@ -88,7 +88,7 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Optimize Your Farm?</h2>
           <p className="mb-8 max-w-2xl mx-auto">
-            Join thousands of farmers who are already using our platform to improve their agricultural practices
+            Join the farmers who are already using our platform to improve their agricultural practices
           </p>
           <Link 
             href="/Login"

@@ -54,7 +54,7 @@ export function Hero() {
               </Link>
             </h4>
             <p className="text-gray-600">
-              Track and analyze your farm's performance with detailed insights
+              Track and analyze your farm&apos;s performance with detailed insights
             </p>
           </div>
 

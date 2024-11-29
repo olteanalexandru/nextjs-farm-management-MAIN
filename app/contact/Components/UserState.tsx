@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useUserContext } from '../../../providers/UserStore';
+import { useUserContext } from '../../../app/providers/UserStore';
 
 export default function useUserState() {
   const { data } = useUserContext();
@@ -8,8 +8,8 @@ export default function useUserState() {
 
   useEffect(() => {
     if (data) {
-      setUser(data.name);
-      setEmail(data.email);
+      setUser(data.name || '');
+      setEmail(data.email || '');
     }
   }, [data]);
 

@@ -2,29 +2,62 @@ import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { prisma } from 'app/lib/prisma';
 import { getCurrentUser } from 'app/lib/auth';
-import { 
-  ApiResponse, 
-  Crop, 
-  CropCreate, 
-  CropModel,
-  DetailType,
-  transformCropToApiResponse,
-  isValidDetailType
-} from 'app/types/api';
+import { ApiResponse, CropModel, DetailType, Crop } from 'app/types/api';
 
-function transformCropWithDetails(crop: CropModel): Crop {
-  const transformed = transformCropToApiResponse(crop);
+ 
+type CropCreate = {
+  cropName: string;
+  cropType: string;
+  cropVariety: string;
+  soilType: string;
+  nitrogenSupply: number;
+  nitrogenDemand: number;
+  soilResidualNitrogen: number;
+  ItShouldNotBeRepeatedForXYears: number;
+  plantingDate: string;
+  harvestingDate: string;
+  
+  fertilizers: string[];
+  pests: string[];
+  diseases: string[];
+  climate: string;
+  description: string;
+  imageUrl: string;
+  
+};
+
+function toDecimal(value: number | null | undefined): number {
+  if (value === null || value === undefined || isNaN(value)) {
+    return 0;
+  }
+  return Number(value);
+}
+
+function transformCropWithDetails(crop: any): Crop {
   return {
-    ...transformed,
+    _id: crop.id,
+    cropName: crop.cropName,
+    cropType: crop.cropType || '',
+    cropVariety: crop.cropVariety || '',
+    plantingDate: crop.plantingDate?.toISOString(),
+    harvestingDate: crop.harvestingDate?.toISOString(),
+    description: crop.description || undefined,
+    imageUrl: crop.imageUrl || undefined,
+    soilType: crop.soilType || '',
+    climate: crop.climate || '',
+    ItShouldNotBeRepeatedForXYears: crop.ItShouldNotBeRepeatedForXYears || 0,
+    nitrogenSupply: toDecimal(crop.nitrogenSupply),
+    nitrogenDemand: toDecimal(crop.nitrogenDemand),
+    soilResidualNitrogen: toDecimal(crop.soilResidualNitrogen),
     fertilizers: crop.details
-      .filter(d => isValidDetailType(d.detailType) && d.detailType === 'FERTILIZER')
-      .map(d => d.value),
+      ?.filter((d: any) => d.detailType === 'FERTILIZER')
+      .map((d: any) => d.value) || [],
     pests: crop.details
-      .filter(d => isValidDetailType(d.detailType) && d.detailType === 'PEST')
-      .map(d => d.value),
+      ?.filter((d: any) => d.detailType === 'PEST')
+      .map((d: any) => d.value) || [],
     diseases: crop.details
-      .filter(d => isValidDetailType(d.detailType) && d.detailType === 'DISEASE')
-      .map(d => d.value)
+      ?.filter((d: any) => d.detailType === 'DISEASE')
+      .map((d: any) => d.value) || []
   };
 }
 
@@ -45,12 +78,9 @@ export const GET = withApiAuthRequired(async function GET(
         ...(param2 ? {
           cropName: {
             contains: param2,
-            mode: 'insensitive'
           }
         } : {})
       };
-
-      console.log('Fetching recommendations with where clause:', whereClause);
 
       const recommendations = await prisma.crop.findMany({
         where: whereClause,
@@ -67,8 +97,6 @@ export const GET = withApiAuthRequired(async function GET(
           createdAt: 'desc'
         }
       });
-
-      console.log(`Found ${recommendations.length} recommendations`);
 
       const transformedRecommendations = recommendations.map(transformCropWithDetails);
       
@@ -90,7 +118,7 @@ export const GET = withApiAuthRequired(async function GET(
         include: {
           details: true
         }
-      }) as unknown as CropModel[];
+      });
 
       const transformedCrops = crops.map(transformCropWithDetails);
       const response: ApiResponse<Crop> = { crops: transformedCrops };
@@ -98,12 +126,21 @@ export const GET = withApiAuthRequired(async function GET(
     }
 
     if (action === 'crop' && param1 === "id") {
+      const cropId = parseInt(param2);
+      if (isNaN(cropId)) {
+        const response: ApiResponse = { 
+          error: 'Invalid crop ID',
+          status: 400
+        };
+        return Response.json(response, { status: 400 });
+      }
+
       const crop = await prisma.crop.findUnique({
-        where: { id: parseInt(param2) },
+        where: { id: cropId },
         include: {
           details: true
         }
-      }) as unknown as CropModel | null;
+      });
 
       if (!crop) {
         const response: ApiResponse = { 
@@ -122,9 +159,6 @@ export const GET = withApiAuthRequired(async function GET(
       const user = await getCurrentUser(request);
       const [crops, selections] = await Promise.all([
         prisma.crop.findMany({
-          include: {
-            details: true
-          }
         }) as unknown as Promise<CropModel[]>,
         prisma.userCropSelection.findMany({
           where: { userId: user.id }
@@ -520,7 +554,3 @@ export const DELETE = withApiAuthRequired(async function DELETE(
     return Response.json(response, { status: 500 });
   }
 });
-
-function toDecimal(value: number | null | undefined): number {
-  return value ?? 0;
-}

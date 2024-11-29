@@ -1,398 +1,216 @@
 "use client";
+
+import { useState } from 'react';
 import { useGlobalContextCrop } from '../providers/culturaStore';
 import CropRecommendations from './CropRecommandations';
-import React, { useState, useEffect, useCallback } from 'react';
-import { debounce } from 'lodash';
+import { CropCreate } from '../types/api';
 
+interface CropFormProps {
+  onSuccess?: () => void;
+}
 
-
-
-// Add this function at the top of your component
-const convertToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const fileReader = new FileReader();
-    fileReader.readAsDataURL(file);
-    fileReader.onload = () => {
-      resolve(fileReader.result as string);
-    };
-    fileReader.onerror = (error) => {
-      reject(error);
-    };
+export default function CropForm({ onSuccess }: CropFormProps) {
+  const { createCrop, isLoading, isError, message } = useGlobalContextCrop();
+  const [formData, setFormData] = useState<CropCreate>({
+    cropName: '',
+    cropType: '',
+    cropVariety: '',
+    soilType: '',
+    nitrogenSupply: 0,
+    nitrogenDemand: 0,
+    soilResidualNitrogen: 0,
+    ItShouldNotBeRepeatedForXYears: 0,
+    fertilizers: [''],
+    pests: [''],
+    diseases: [''],
+    climate: '',
+    description: '',
+    imageUrl: '',
   });
-};
 
-
-
-
-
-
-const CropForm = () => {
-  const { createCrop } = useGlobalContextCrop();
-
-  const [cropName, setCropName] = useState(sessionStorage.getItem('cropName') || '');
-  const [cropType, setCropType] = useState('');
-  const [cropVariety, setCropVariety] = useState('');
-  const [plantingDate, setPlantingDate] = useState('');
-  const [harvestingDate, setHarvestingDate] = useState('');
-  const [description, setDescription] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [soilType, setSoilType] = useState('');
-  const [fertilizers, setFertilizers] = useState([]);
-  const [pests, setPests] = useState([]);
-  const [diseases, setDiseases] = useState([]);
-  const [ItShouldNotBeRepeatedForXYears, setItShouldNotBeRepeatedForXYears] = useState('');
-  const [climate, setClimate] = useState('');
-  const [nitrogenSupply, setNitrogenSupply] = useState('');
-  const [nitrogenDemand, setNitrogenDemand] = useState('');
-  const [showAdditional, setShowAdditional] = useState(false);
-
-  const onSubmit = (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const newCrop = {
-        _id: '', // Add a default or generated ID
-        user: '', // Add the user information
-        cropName,
-        cropType,
-        cropVariety,
-        plantingDate,
-        harvestingDate,
-        description,
-        imageUrl,
-        soilType,
-        climate,
-        fertilizers,
-        pests,
-        diseases,
-        ItShouldNotBeRepeatedForXYears: !isNaN(parseInt(ItShouldNotBeRepeatedForXYears))
-          ? parseInt(ItShouldNotBeRepeatedForXYears)
-          : null,
-        nitrogenSupply: !isNaN(parseFloat(nitrogenSupply)) ? parseFloat(nitrogenSupply) : 0,
-        nitrogenDemand: !isNaN(parseFloat(nitrogenDemand)) ? parseFloat(nitrogenDemand) : 0,
-        selectare: false,
-        residualNitrogen: 0,
-      };
-
-    createCrop(newCrop);
+    await createCrop(formData);
+    if (!isError.value) {
+      setFormData({
+        cropName: '',
+        cropType: '',
+        cropVariety: '',
+        soilType: '',
+        nitrogenSupply: 0,
+        nitrogenDemand: 0,
+        soilResidualNitrogen: 0,
+        ItShouldNotBeRepeatedForXYears: 0,
+        fertilizers: [''],
+        pests: [''],
+        diseases: [''],
+        climate: '',
+        description: '',
+        imageUrl: '',
+      });
+      onSuccess?.();
+    }
   };
 
-  const debouncedSetCropName = useCallback(
-    debounce((value) => sessionStorage.setItem('cropName', value), 1000),
-    []
-  );
+  const handleArrayChange = (
+    field: 'fertilizers' | 'pests' | 'diseases',
+    index: number,
+    value: string
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].map((item: string, i: number) => 
+        i === index ? value : item
+      )
+    }));
+  };
 
-  useEffect(() => {
-    if (cropName) {
-      debouncedSetCropName(cropName);
-    }
-  }, [cropName, debouncedSetCropName]);
+  const addArrayField = (field: 'fertilizers' | 'pests' | 'diseases') => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: [...prev[field], '']
+    }));
+  };
 
+  const removeArrayField = (field: 'fertilizers' | 'pests' | 'diseases', index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].filter((_: string, i: number) => i !== index)
+    }));
+  };
 
-  const toggleAdditionalFields = () => setShowAdditional(!showAdditional);
+  const arrayFields = ['fertilizers', 'pests', 'diseases'] as const;
+
   return (
-    <div className="container">
-      <section className="form my-5">
-        <form onSubmit={onSubmit}>
-          <div className="row">
-            <div className="col-md-3 form-group">
-              <label htmlFor="cropName">Crop Name:</label>
-              <input
-                type="text"
-                name="cropName"
-                id="cropName"
-                value={cropName}
-                onChange={(e) => {
-                  setCropName(e.target.value);
-                }}
-                className="form-control"
-                required
-              />
-            </div>
-           
-            <div className="col-md-3 form-group">
-              <label htmlFor="cropVariety">Crop Variety:</label>
-              <input
-                type="text"
-                name="cropVariety"
-                id="cropVariety"
-                value={cropVariety}
-                onChange={(e) => setCropVariety(e.target.value)}
-                className="form-control"
-              />
-            </div>
-            
-            <br />
-            <strong>Rotation Requirements:</strong>
-            <br />
-            <div className="row">
-              <div className="col-md-3 form-group">
-                <label htmlFor="pests">Pests:</label>
-                <select
-                  name="pests"
-                  id="pests"
-                  multiple
-                  value={pests}
-                  onChange={(e) =>
-                    setPests(Array.from(e.target.selectedOptions, (option) => option.value))
-                  }
-                  required
-                  className="form-control"
-                >
-                  <option value="">Select a pest</option>
-                  <option value="aphids">Aphids</option>
-                  <option value="beetles">Beetles</option>
-                  <option value="flies">Flies</option>
-                  <option value="spiders">Spiders</option>
-                </select>
-              </div>
-              <div className="col-md-3 form-group">
-                <label htmlFor="diseases">Diseases:</label>
-                <select
-                  name="diseases"
-                  id="diseases"
-                  multiple
-                  value={diseases}
-                  onChange={(e) =>
-                    setDiseases(Array.from(e.target.selectedOptions, (option) => option.value))
-                  }
-                  className="form-control"
-                  required
-                >
-                  <option value="">Select a disease</option>
-                  <option value="bee">Bee</option>
-                  <option value="fusarium">Fusarium</option>
-                  <option value="mildew">Mildew</option>
-                  <option value="mold">Mold</option>
-                  <option value="powderyMildew">Powdery Mildew</option>
-                  <option value="pest">Pest</option>
-                  <option value="rust">Rust</option>
-                  <option value="disorder">Disorder</option>
-                  <option value="virus">Virus</option>
-                </select>
-              </div>
-            </div>
-            <div className="col-md-3 form-group">
-              <label htmlFor="nitrogenSupply">Nitrogen Supply:</label>
-              <input
-                type="number"
-                name="nitrogenSupply"
-                id="nitrogenSupply"
-                value={nitrogenSupply}
-                onChange={(e) => setNitrogenSupply(e.target.value)}
-                className="form-control"
-                required
-              />
-            </div>
-            <div className="col-md-3 form-group">
-              <label htmlFor="nitrogenDemand">Nitrogen Demand:</label>
-              <input
-                type="number"
-                name="nitrogenDemand"
-                id="nitrogenDemand"
-                value={nitrogenDemand}
-                onChange={(e) => setNitrogenDemand(e.target.value)}
-                className="form-control"
-                required
-              />
-            </div>
-            <div className="col-md-3 form-group">
-              <label htmlFor="ItShouldNotBeRepeatedForXYears">Do Not Repeat for X Years:</label>
-              <input
-                type="number"
-                name="ItShouldNotBeRepeatedForXYears"
-                id="ItShouldNotBeRepeatedForXYears"
-                value={ItShouldNotBeRepeatedForXYears}
-                onChange={(e) => setItShouldNotBeRepeatedForXYears(e.target.value)}
-                className="form-control"
-                required
-              />
-            </div>
-          </div>
-          <button type="button" onClick={toggleAdditionalFields} className="btn btn-block mt-2 mb-2">
-            {showAdditional ? 'Hide Additional Fields' : 'Show Additional Fields'}
-          </button>
+    <div className="space-y-6">
+      {/* Recommendations Section - Show at the top */}
+      {formData.cropName.length >= 3 && (
+        <div className="mb-8">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Similar Crops & Recommendations</h3>
+          <CropRecommendations cropName={formData.cropName} token="" />
+        </div>
+      )}
 
-          {showAdditional && (
-            <>
-              <div className="row">
-                <div className="col-md-3 form-group">
-                  <label htmlFor="fertilizers">Used Fertilizers:</label>
-                  <select
-                    name="fertilizers"
-                    id="fertilizers"
-                    multiple
-                    value={fertilizers}
-                    onChange={(e) =>
-                      setFertilizers(Array.from(e.target.selectedOptions, (option) => option.value))
-                    }
-                    className="form-control"
-                  >
-                    <option value="nitrogen">Nitrogen</option>
-                    <option value="phosphorus">Phosphorus</option>
-                    <option value="potassium">Potassium</option>
-                    <option value="organic">Organic</option>
-                  </select>
-                </div>
-                <div className="col-md-3 form-group">
-                  <label htmlFor="climate">Climate:</label>
-                  <input
-                    type="text"
-                    name="climate"
-                    id="climate"
-                    value={climate}
-                    onChange={(e) => setClimate(e.target.value)}
-                    className="form-control"
-                  />
-                </div>
-              </div>
-              <div className="row">
-                <div className="col-md-3 form-group">
-                  <label htmlFor="cropType">Crop Type:</label>
-                  <select
-                    name="cropType"
-                    id="cropType"
-                    value={cropType}
-                    onChange={(e) => setCropType(e.target.value)}
-                    className="form-control"
-                  >
-                    <option value="">Select a type</option>
-                    <option value="vegetables">Vegetables</option>
-                    <option value="fruits">Fruits</option>
-                    <option value="cereals">Cereals</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <div className="col-md-3 form-group">
-                  <label htmlFor="soilType">Soil Type:</label>
-                  <select
-                    name="soilType"
-                    id="soilType"
-                    value={soilType}
-                    onChange={(e) => setSoilType(e.target.value)}
-                    className="form-control"
-                  >
-                    <option value="">Select a soil type</option>
-                    <option value="clay">Clay</option>
-                    <option value="sandy">Sandy</option>
-                    <option value="silty">Silty</option>
-                    <option value="loamy">Loamy</option>
-                  </select>
-                </div>
-              </div>
-              <div className="row">
-                <div className="col-md-3 form-group">
-                  <label htmlFor="plantingDate">Planting Date:</label>
-                  <input
-                    type="date"
-                    name="plantingDate"
-                    id="plantingDate"
-                    value={plantingDate}
-                    onChange={(e) => setPlantingDate(e.target.value)}
-                    className="form-control"
-                  />
-                  <label htmlFor="harvestingDate">Harvesting Date:</label>
-                  <input
-                    type="date"
-                    name="harvestingDate"
-                    id="harvestingDate"
-                    value={harvestingDate}
-                    onChange={(e) => setHarvestingDate(e.target.value)}
-                    className="form-control"
-                  />
-                </div>
-                <div className="col-md-3 form-group">
-                  <label htmlFor="description">Description:</label>
-                  <textarea
-                    name="description"
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="form-control"
-                  />
-                </div>
-              </div>
-              <div className="row">
-                <div className="col-md-3 form-group">
-                  <h3 className="text-center mb-4">Add Image</h3>
-                  <div className="col-md-3 form-group">
-  <h3 className="text-center mb-4">Add Image</h3>
-  <input
-    type="file"
-    accept="image/*"
-    onChange={async (e) => {
-      if (e.target.files && e.target.files[0]) {
-        const base64 = await convertToBase64(e.target.files[0]);
-        setImageUrl(base64);
-      }
-    }}
-    className="form-control"
-  />
-  {imageUrl && (
-    <img 
-      src={imageUrl} 
-      alt="Preview" 
-      style={{ 
-        marginTop: '10px',
-        maxWidth: '100%',
-        height: 'auto' 
-      }} 
-    />
-  )}
-</div>
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="row">
-            <div className="col-md-3 form-group">
-              <h3 className="text-center mb-4">Add Image</h3>
-              <div className="col-md-3 form-group">
-  <h3 className="text-center mb-4">Add Image</h3>
-  <input
-    type="file"
-    accept="image/*"
-    onChange={async (e) => {
-      if (e.target.files && e.target.files[0]) {
-        const base64 = await convertToBase64(e.target.files[0]);
-        setImageUrl(base64);
-      }
-    }}
-    className="form-control"
-  />
-  {imageUrl && (
-    <img 
-      src={imageUrl} 
-      alt="Preview" 
-      style={{ 
-        marginTop: '10px',
-        maxWidth: '100%',
-        height: 'auto' 
-      }} 
-    />
-  )}
-</div>
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Crop Name</label>
+            <input
+              type="text"
+              required
+              value={formData.cropName}
+              onChange={(e) => setFormData(prev => ({ ...prev, cropName: e.target.value }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
           </div>
-          <br />
-          <div className="form-group">
-            <button className="btn btn-primary btn-block" type="submit">
-              Add Crop
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Crop Type</label>
+            <input
+              type="text"
+              required
+              value={formData.cropType}
+              onChange={(e) => setFormData(prev => ({ ...prev, cropType: e.target.value }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Variety</label>
+            <input
+              type="text"
+              value={formData.cropVariety}
+              onChange={(e) => setFormData(prev => ({ ...prev, cropVariety: e.target.value }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Soil Type</label>
+            <input
+              type="text"
+              value={formData.soilType}
+              onChange={(e) => setFormData(prev => ({ ...prev, soilType: e.target.value }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nitrogen Supply</label>
+            <input
+              type="number"
+              value={formData.nitrogenSupply}
+              onChange={(e) => setFormData(prev => ({ ...prev, nitrogenSupply: Number(e.target.value) }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nitrogen Demand</label>
+            <input
+              type="number"
+              value={formData.nitrogenDemand}
+              onChange={(e) => setFormData(prev => ({ ...prev, nitrogenDemand: Number(e.target.value) }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Rotation Period (Years)</label>
+            <input
+              type="number"
+              value={formData.ItShouldNotBeRepeatedForXYears}
+              onChange={(e) => setFormData(prev => ({ ...prev, ItShouldNotBeRepeatedForXYears: Number(e.target.value) }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Dynamic Arrays */}
+        {arrayFields.map((field) => (
+          <div key={field} className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 capitalize">{field}</label>
+            {formData[field].map((value: string, index: number) => (
+              <div key={index} className="flex gap-2">
+                <input
+                  type="text"
+                  value={value}
+                  onChange={(e) => handleArrayChange(field, index, e.target.value)}
+                  className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeArrayField(field, index)}
+                  className="px-2 py-1 text-red-600 hover:text-red-800"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => addArrayField(field)}
+              className="text-blue-600 hover:text-blue-800"
+            >
+              Add {field.slice(0, -1)}
             </button>
           </div>
-        </form>
-      </section>
+        ))}
 
-      {cropName && (
-        <>
-          <h2 className="text-center mb-4">Similar Crops</h2>
-          <CropRecommendations cropName={cropName} token={''}  />
-        </>
-      )}
+        {isError.value && (
+          <div className="text-red-600 text-sm">{message.value}</div>
+        )}
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={isLoading.value}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          >
+            {isLoading.value ? 'Saving...' : 'Save Crop'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
-
-export default CropForm;
-
-
