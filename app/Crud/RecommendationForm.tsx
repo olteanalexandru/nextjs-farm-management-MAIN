@@ -3,16 +3,21 @@
 import { useState, useEffect } from 'react';
 import { useGlobalContextCrop } from '../providers/culturaStore';
 
+interface RecommendationResponse {
+  id: number;
+  _id: string;
+  cropName: string;
+  cropType: string;
+  nitrogenSupply: number;
+  nitrogenDemand: number;
+  pests: string[];
+  diseases: string[];
+}
+
 interface RecommendationFormProps {
-  recommendation?: {
-    cropName: string;
-    nitrogenSupply: number;
-    nitrogenDemand: number;
-    pests: string[];
-    diseases: string[];
-  };
+  recommendation?: RecommendationResponse;
   onCancel?: () => void;
-  onSuccess?: (data: any) => void;
+  onSuccess?: (data: RecommendationResponse) => void;
   mode?: 'create' | 'update';
 }
 
@@ -25,6 +30,7 @@ export default function RecommendationForm({
   const { addTheCropRecommendation } = useGlobalContextCrop();
   const [formData, setFormData] = useState({
     cropName: '',
+    cropType: '',
     nitrogenSupply: 0,
     nitrogenDemand: 0,
     pests: [''],
@@ -35,6 +41,7 @@ export default function RecommendationForm({
     if (recommendation) {
       setFormData({
         cropName: recommendation.cropName || '',
+        cropType: recommendation.cropType || '',
         nitrogenSupply: recommendation.nitrogenSupply || 0,
         nitrogenDemand: recommendation.nitrogenDemand || 0,
         pests: recommendation.pests?.length ? recommendation.pests : [''],
@@ -52,26 +59,29 @@ export default function RecommendationForm({
     }
 
     try {
-      const cleanedData = {
+      const cleanedData: Partial<RecommendationResponse> = {
         ...formData,
         pests: formData.pests.filter(pest => pest.trim() !== ''),
         diseases: formData.diseases.filter(disease => disease.trim() !== ''),
         nitrogenSupply: Number(formData.nitrogenSupply),
-        nitrogenDemand: Number(formData.nitrogenDemand)
+        nitrogenDemand: Number(formData.nitrogenDemand),
+        id: recommendation?.id ?? undefined,
+        _id: recommendation?._id || '',
       };
 
       if (mode === 'update') {
-        onSuccess?.(cleanedData);
+        onSuccess?.(cleanedData as RecommendationResponse);
       } else {
-        await addTheCropRecommendation(cleanedData);
+        await addTheCropRecommendation(cleanedData as RecommendationResponse);
         setFormData({
           cropName: '',
+          cropType: '',
           nitrogenSupply: 0,
           nitrogenDemand: 0,
           pests: [''],
           diseases: ['']
         });
-        onSuccess?.(cleanedData);
+        onSuccess?.(cleanedData as RecommendationResponse);
       }
     } catch (error) {
       console.error('Error saving recommendation:', error);
@@ -111,6 +121,20 @@ export default function RecommendationForm({
           type="text"
           value={formData.cropName}
           onChange={(e) => setFormData({...formData, cropName: e.target.value})}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm 
+                   focus:border-blue-500 focus:ring-blue-500"
+          required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Crop Type
+        </label>
+        <input
+          type="text"
+          value={formData.cropType}
+          onChange={(e) => setFormData({...formData, cropType: e.target.value})}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm 
                    focus:border-blue-500 focus:ring-blue-500"
           required

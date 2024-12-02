@@ -2,6 +2,35 @@ import { Decimal } from '@prisma/client/runtime/library';
 
 export type DetailType = 'FERTILIZER' | 'PEST' | 'DISEASE';
 
+export interface Post {
+  id: number;
+  userId: string;
+  title: string;
+  brief: string | null;
+  description: string | null;
+  image: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: {
+    name: string;
+    email: string;
+  };
+}
+
+export interface PostCreate {
+  title: string;
+  brief: string;
+  description: string;
+  image?: string;
+}
+
+export interface PostUpdate {
+  title?: string;
+  brief?: string;
+  description?: string;
+  image?: string;
+}
+
 export interface CropDetail {
   id: number;
   cropId: number;
@@ -102,6 +131,7 @@ export interface RecommendationResponse {
 export interface ApiResponse<T = any> {
   data?: T;
   crops?: T[];
+  posts?: T[];
   selections?: any[];
   error?: string;
   status?: number;

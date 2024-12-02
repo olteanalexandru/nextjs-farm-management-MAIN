@@ -18,45 +18,56 @@ export default function SinglePost() {
   });
 
   useEffect(() => {
-    getPost(postId);
-  }, [ postId]);
+    if (postId) {
+      getPost(postId);
+    }
+  }, [postId]);
 
   useEffect(() => {
     if (data.length > 0) {
       const post = data[0];
       setUpdatedPost({
-        title: post.title,
-        brief: post.brief,
-        description: post.description,
+        title: post.title || '',
+        brief: post.brief || '',
+        description: post.description || '',
       });
     }
   }, [data]);
 
   const handleDelete = async () => {
-    await deletePost(data[0]?.id);
+    if (data[0]?.id) {
+      await deletePost(data[0].id);
+    }
   };
 
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await updatePost(data[0]?.id, {
-      title: updatedPost.title,
-      brief: updatedPost.brief,
-      description: updatedPost.description,
-    });
-    setEditMode(false);
+    if (data[0]?.id) {
+      await updatePost(data[0].id, {
+        title: updatedPost.title,
+        brief: updatedPost.brief,
+        description: updatedPost.description,
+      });
+      setEditMode(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setUpdatedPost({ ...updatedPost, [name]: value });
+    setUpdatedPost(prev => ({ ...prev, [name]: value }));
   };
 
   if (loading) {
     return <h1>Loading...</h1>;
   }
 
-  if (data.length === 0) {
+  if (!data || data.length === 0) {
     return <h1>Nothing to show</h1>;
+  }
+
+  const post = data[0];
+  if (!post) {
+    return <h1>Post not found</h1>;
   }
 
   return (
@@ -101,9 +112,9 @@ export default function SinglePost() {
         </Form>
       ) : (
         <>
-          <h1>{data[0].title}</h1>
-          <p>{data[0].brief}</p>
-          <p>{data[0].description}</p>
+          <h1>{post.title || ''}</h1>
+          <p>{post.brief || ''}</p>
+          <p>{post.description || ''}</p>
           {isAdmin && (
             <>
               <Button variant="danger" onClick={handleDelete}>
@@ -118,9 +129,4 @@ export default function SinglePost() {
       )}
     </Container>
   );
-};
-
-
-
-
-
+}

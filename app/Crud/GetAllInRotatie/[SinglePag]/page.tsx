@@ -10,6 +10,7 @@ import CropCardComponent from './components/CropCardComponent';
 import SelectAreaComponent from './components/SelectAreaComponent';
 import { useSignals  } from "@preact/signals-react/runtime";
 import { useUser } from '@auth0/nextjs-auth0/client';
+import { CropCreate } from '../../../types/api';
 
 function SinglePag() {
   useSignals();
@@ -35,68 +36,70 @@ function SinglePag() {
   const [numSelections, setNumSelections] = useState(1);
   const [editMode, setEditMode] = useState(false);
   const [updatedCrop, setUpdatedCrop] = useState(() => ({
-    cropName: crops?.cropName,
-    ItShouldNotBeRepeatedForXYears: crops?.ItShouldNotBeRepeatedForXYears,
-    description: crops?.description,
-    cropType: crops?.cropType,
-    cropVariety: crops?.cropVariety,
-    diseases: crops?.diseases,
-    fertilizers: crops?.fertilizers,
-    pests: crops?.pests,
-    soilType: crops?.soilType,
-    nitrogenDemand: crops?.nitrogenDemand,
-    nitrogenSupply: crops?.nitrogenSupply,
+    cropName: crops?.cropName || '',
+    ItShouldNotBeRepeatedForXYears: crops?.ItShouldNotBeRepeatedForXYears || 0,
+    description: crops?.description || '',
+    cropType: crops?.cropType || '',
+    cropVariety: crops?.cropVariety || '',
+    diseases: crops?.diseases || [],
+    fertilizers: crops?.fertilizers || [],
+    pests: crops?.pests || [],
+    soilType: crops?.soilType || '',
+    nitrogenDemand: crops?.nitrogenDemand || 0,
+    nitrogenSupply: crops?.nitrogenSupply || 0,
     plantingDate: crops?.plantingDate,
     harvestingDate: crops?.harvestingDate,
-    soilResidualNitrogen: crops?.soilResidualNitrogen,
+    soilResidualNitrogen: crops?.soilResidualNitrogen || 0,
+    climate: crops?.climate || '',
   }));
   
   const canEdit = userData.roleType.toLocaleLowerCase() === 'admin' ||  crops?.user == userData._id;
-  const editPressed = () => {
-    setEditMode(true);
-  }
   
   useEffect(() => {
-    if (!isUserLoading) {
+    if (!isUserLoading && _id) {
       SinglePage(_id);
       console.log('SinglePage call');
+    } else if (!_id) {
+      navigate.push('/Rotatie');
     }
-  }, [isUserLoading]);
+  }, [isUserLoading, _id]);
 
   if (isError.message) {
     console.log("Eroare  " + message);
   }
-  useEffect(() => {
-    setUpdatedCrop({
-      cropName: crops?.cropName,
-      ItShouldNotBeRepeatedForXYears: crops?.ItShouldNotBeRepeatedForXYears,
-      description: crops?.description,
-      cropType: crops?.cropType,
-      cropVariety: crops?.cropVariety,
-      diseases: crops?.diseases,
-      fertilizers: crops?.fertilizers,
-      pests: crops?.pests,
-      soilType: crops?.soilType,
-      nitrogenDemand: crops?.nitrogenDemand,
-      nitrogenSupply: crops?.nitrogenSupply,
-      plantingDate: crops?.plantingDate,
-      harvestingDate: crops?.harvestingDate,
-      soilResidualNitrogen: crops?.soilResidualNitrogen,
-    });
-  }, [crops]); // Only re-run the effect if crops changes
-  
-console.log('crops', crops);
 
- // Don't render the components until the necessary data is available
- if (isLoading.value || !crops) {
-  return (
-    <div>
-      <p>Loading crop ...</p>
-    </div>
-  );
-}
+  useEffect(() => {
+    if (crops) {
+      setUpdatedCrop({
+        cropName: crops.cropName || '',
+        ItShouldNotBeRepeatedForXYears: crops.ItShouldNotBeRepeatedForXYears || 0,
+        description: crops.description || '',
+        cropType: crops.cropType || '',
+        cropVariety: crops.cropVariety || '',
+        diseases: crops.diseases || [],
+        fertilizers: crops.fertilizers || [],
+        pests: crops.pests || [],
+        soilType: crops.soilType || '',
+        nitrogenDemand: crops.nitrogenDemand || 0,
+        nitrogenSupply: crops.nitrogenSupply || 0,
+        plantingDate: crops.plantingDate,
+        harvestingDate: crops.harvestingDate,
+        soilResidualNitrogen: crops.soilResidualNitrogen || 0,
+        climate: crops.climate || '',
+      });
+    }
+  }, [crops]);
+  
+  if (isLoading.value || !crops) {
+    return (
+      <div>
+        <p>Loading crop ...</p>
+      </div>
+    );
+  }
 
   const handleDelete = async () => {
+    if (!_id) return;
     try {
       await deleteCrop(_id);
       console.log('Crop deleted');
@@ -108,39 +111,49 @@ console.log('crops', crops);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (_id) {
-      const cropData = {
+    if (_id && crops) {
+      const cropData: CropCreate = {
         ...updatedCrop,
-        _id: crops._id,
-        imageUrl: crops.imageUrl,
-        selectare: crops.selectare,
-        user: crops.user,
-        residualNitrogen: crops.residualNitrogen
+        imageUrl: crops.imageUrl || '',
+        cropName: updatedCrop.cropName,
+        cropType: updatedCrop.cropType,
+        cropVariety: updatedCrop.cropVariety,
+        soilType: updatedCrop.soilType,
+        nitrogenSupply: Number(updatedCrop.nitrogenSupply),
+        nitrogenDemand: Number(updatedCrop.nitrogenDemand),
+        soilResidualNitrogen: Number(updatedCrop.soilResidualNitrogen),
+        ItShouldNotBeRepeatedForXYears: Number(updatedCrop.ItShouldNotBeRepeatedForXYears),
+        fertilizers: updatedCrop.fertilizers,
+        pests: updatedCrop.pests,
+        diseases: updatedCrop.diseases,
+        climate: updatedCrop.climate,
+        description: updatedCrop.description,
+        plantingDate: updatedCrop.plantingDate,
+        harvestingDate: updatedCrop.harvestingDate,
       };
       await updateCrop(_id, cropData);
       setEditMode(false);
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setUpdatedCrop({ ...updatedCrop, [name]: value });
+    setUpdatedCrop(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleArrayChange = (e, index, field) => {
-    const newArr = [...updatedCrop[field]];
+  const handleArrayChange = (e: React.ChangeEvent<HTMLInputElement>, index: number, field: string) => {
+    const newArr = [...(updatedCrop[field] || [])];
     newArr[index] = e.target.value;
-    setUpdatedCrop({ ...updatedCrop, [field]: newArr });
+    setUpdatedCrop(prev => ({ ...prev, [field]: newArr }));
   };
 
-  const onSubmit = async (e, newSelectArea) => {
+  const onSubmit = async (e: React.FormEvent, newSelectArea: boolean) => {
     e.preventDefault();
-    if (userData && userData.roleType.toLowerCase() === "farmer") {
+    if (_id && userData && userData.roleType.toLowerCase() === "farmer") {
       await selectare(_id, newSelectArea, numSelections);
       setSelectarea(newSelectArea);
     }
   };
-  console.log(updatedCrop)
 
   return (
     <div>
@@ -170,8 +183,3 @@ console.log('crops', crops);
 }
 
 export default SinglePag;
-
-
-
-
-

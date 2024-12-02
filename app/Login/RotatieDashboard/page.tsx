@@ -33,8 +33,8 @@ function RotatieDashboard() {
   } = useGlobalContextRotation();
 
   const { data: userData } = useUserContext();
-  const [divisionSizeValues, setDivisionSizeValues] = useState([]);
-  const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState([]);
+  const [divisionSizeValues, setDivisionSizeValues] = useState<string[]>([]);
+  const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState<string[]>([]);
   const [cropRotationChange, setCropRotationChange] = useState(false);
   const {  isLoading: isUserLoading } = useUser();
   const [visible, setVisible] = useState(6);
@@ -65,7 +65,7 @@ function RotatieDashboard() {
     setCropRotationChange(false);
   }
 
-  const filteredCrops = getCropsRepeatedBySelection(crops.value, selections.value);
+  const filteredCrops = getCropsRepeatedBySelection(crops, selections);
   const showMore = () => {
     setVisible(prevVisible => prevVisible + 6);
   };
@@ -82,7 +82,7 @@ function RotatieDashboard() {
             <h1>Salut {userData && userData.name}</h1>
           </section>
           <section className="content">
-            {crops?.value?.length > 0 ? (
+            {crops?.length > 0 ? (
               <div className="crops">
                 <CropRotationForm filteredCrops={filteredCrops} />
                 
@@ -95,7 +95,7 @@ function RotatieDashboard() {
                     <Row>
                       {filteredCrops.slice(0, visible).map((crop, index) => (
                         <Col key={crop.id || index} xs={12} sm={6} md={4}>
-                          <Continut crop={crop} />
+                          <Continut />
                         </Col>
                       ))}
                     </Row>

@@ -59,7 +59,7 @@ function RotatieItem({ crops }) {
 }
 
 function Pagination({ itemsPerPage, totalItems, paginate, currentPage }) {
-  const pageNumbers = [];
+  const pageNumbers: number[] = [];
 
   for (let i = 1; i <= Math.ceil(totalItems / itemsPerPage); i++) {
     pageNumbers.push(i);

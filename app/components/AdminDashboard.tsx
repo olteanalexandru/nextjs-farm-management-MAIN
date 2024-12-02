@@ -9,6 +9,7 @@ import PostForm from '../Crud/PostForm';
 import RecommendationForm from '../Crud/RecommendationForm';
 import RecommendationList from '../Crud/RecommendationList';
 import PostList from '../Crud/PostList';
+import { RecommendationResponse } from 'app/types/api';
 
 interface FermierUser {
   _id: string;
@@ -166,7 +167,7 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             <div className="bg-white shadow sm:rounded-lg p-6">
               <h3 className="text-lg font-medium mb-4">New Recommendation</h3>
-              <RecommendationForm onSuccess={getCropRecommendations} />
+              <RecommendationForm onSuccess={async (data: RecommendationResponse) => { await getCropRecommendations(); }} />
             </div>
             <div>
               <h3 className="text-lg font-medium mb-4">

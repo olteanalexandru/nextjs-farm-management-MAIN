@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import Spinner from '../Crud/Spinner';
 import { usePostContext } from '../providers/postStore';
-import Continut from '../Crud/GetAllPosts/page';
+import { PostContent } from '../components/PostContent';
 import Card from 'react-bootstrap/Card';
 import { useTranslations } from 'next-intl';
 import { Post } from '../types/api';
@@ -47,7 +47,7 @@ export default function Noutati() {
           displayPosts.map((post: Post) => (
             <Card key={post.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
               <Card.Body>
-                <Continut data={post} />
+                <PostContent data={post} />
               </Card.Body>
             </Card>
           ))

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Spinner from '../Crud/Spinner';
 import { usePostContext } from '../providers/postStore';
-import Continut from '../Crud/GetAllPosts/page';
+import { PostContent } from '../components/PostContent';
 import { handleScroll, loadMorePosts } from './Components/scrollHandler';
 import debounce from './Components/debounce';
 import { useTranslations } from 'next-intl';
@@ -63,7 +63,7 @@ export default function Noutati() {
                        transform hover:-translate-y-1"
             >
               <div className="p-6 h-full flex flex-col">
-                <Continut data={data} />
+                <PostContent data={data} />
               </div>
             </div>
           ))}

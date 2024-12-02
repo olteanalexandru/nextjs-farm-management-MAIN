@@ -1,4 +1,9 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+enum Role {
+  ADMIN = 'ADMIN',
+  USER = 'FARMER',
+}
 const prisma = new PrismaClient();
 
 async function main() {
@@ -8,9 +13,10 @@ async function main() {
     update: {},
     create: {
       id: 'auth0|admin',
+      auth0Id: 'auth0|admin',
       email: 'admin@example.com',
       name: 'Admin User',
-      role: Role.ADMIN,
+      roleType: Role.ADMIN,
     }
   });
 

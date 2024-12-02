@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 export default function useRecommendations(nitrogenBalance, cropId) {
   const { SinglePage, singleCrop } = useGlobalContextCrop();
-  const [recommendations, setRecommendations] = useState([]);
+  const [recommendations, setRecommendations] = useState<string[]>([]);
   
   useEffect(() => {
     SinglePage(cropId);
@@ -11,7 +11,7 @@ export default function useRecommendations(nitrogenBalance, cropId) {
 
   useEffect(() => {
     if (singleCrop) {
-      const newRecommendations = [];
+      const newRecommendations: string[] = [];
 
       // Handle nitrogen balance
       newRecommendations.push(

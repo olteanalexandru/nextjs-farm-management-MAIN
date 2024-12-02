@@ -60,7 +60,7 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
               <span className="text-xs text-gray-500">{user.email}</span>
             </div>
             <img 
-              src={user.picture} 
+              src={user.picture || '/default-profile.png'} 
               alt="Profile" 
               className="h-10 w-10 rounded-full border-2 border-gray-200 object-cover"
             />

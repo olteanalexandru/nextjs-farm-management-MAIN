@@ -7,7 +7,7 @@ interface PaginationProps {
 }
 
 function Pagination({ totalPages, currentPage, onPageChange }: PaginationProps) {
-  const pages = [];
+  const pages: number[] = [];
   for (let i = 1; i <= totalPages; i++) {
     pages.push(i);
   }

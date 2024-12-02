@@ -4,8 +4,8 @@ import HeaderLog from './Crud/Header';
 import Image from 'next/image';
 import styles from '../styles/Header.module.css';
 import logo from '../public/Logo.png'
-import { LanguageSwitch } from '@/app/components/LanguageSwitch';
-import AuthButton from '@/app/components/LoginButton';
+import { LanguageSwitch } from '../app/components/LanguageSwitch';
+import AuthButton from '../app/components/LoginButton';
 
 
 

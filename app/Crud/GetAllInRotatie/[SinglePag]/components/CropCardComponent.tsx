@@ -2,8 +2,6 @@ import React from 'react';
 import { Card, ListGroup, Button } from 'react-bootstrap';
 import { useSignals  } from "@preact/signals-react/runtime";
 
-
-
 function CropCardComponent({ 
   crops, 
   handleDelete, 
@@ -42,7 +40,7 @@ function CropCardComponent({
         <ListGroup.Item>Harvesting Date: {crops?.harvestingDate}</ListGroup.Item>
         <ListGroup.Item>Soil Residual Nitrogen: {crops?.soilResidualNitrogen}</ListGroup.Item>
       </ListGroup>
-      {canEdit && (
+      {canEdit && setEditMode && handleDelete && (
         <Card.Body>
           <Button variant="danger" onClick={handleDelete}>
             Delete

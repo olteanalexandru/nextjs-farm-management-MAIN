@@ -7,9 +7,10 @@ import Pagination from '../components/Pagination';
 import SearchAndFilter from './SearchAndFilter';
 
 interface Recommendation {
-  _id?: string;
+  _id: string;  // Changed from optional to required
   id: number;
   cropName: string;
+  cropType: string;
   nitrogenSupply: number;
   nitrogenDemand: number;
   pests: string[];
