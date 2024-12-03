@@ -16,15 +16,17 @@ interface Crop {
   nitrogenDemand: number;
   pests?: string[];
   diseases?: string[];
+  isOwnCrop?: boolean;
 }
 
 interface CropCardProps {
   crop: Crop;
-  onSelect: (crop: Crop) => void;
   isSelected: boolean;
+  readOnly?: boolean;
+  onSelect?: (crop: Crop) => void;
 }
 
-const CropCard = ({ crop, onSelect, isSelected }: CropCardProps) => {
+const CropCard = ({ crop, isSelected, readOnly = false, onSelect }: CropCardProps) => {
   const router = useRouter();
 
   const handleDetailsClick = (e: React.MouseEvent) => {
@@ -41,6 +43,15 @@ const CropCard = ({ crop, onSelect, isSelected }: CropCardProps) => {
       relative bg-white rounded-xl shadow-sm border transition-all duration-200
       ${isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}
     `}>
+      {/* Add owner badge */}
+      {crop.isOwnCrop && (
+        <div className="absolute top-2 right-2 z-10">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            Your Crop
+          </span>
+        </div>
+      )}
+      
       {crop.imageUrl && (
         <div className="aspect-w-16 aspect-h-9 rounded-t-xl overflow-hidden">
           <img
@@ -114,7 +125,7 @@ const CropCard = ({ crop, onSelect, isSelected }: CropCardProps) => {
 
         <div className="mt-4 flex justify-between gap-2">
           <button
-            onClick={() => onSelect(crop)}
+            onClick={() => onSelect && onSelect(crop)}
             className={`
               flex-1 px-4 py-2 text-sm font-medium rounded-lg
               ${isSelected 

@@ -10,43 +10,34 @@ import CropDetails from './CropDetails';
 import { RecommendationResponse } from '../types/api';
 
 export default function FarmerDashboard() {
-  const { crops, isLoading, getAllCrops, SinglePage, selectare } = useGlobalContextCrop();
+  const { crops, isLoading, getAllCrops, selectare } = useGlobalContextCrop();
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
   const [showAddCrop, setShowAddCrop] = useState(false);
-  const [selectedCrops, setSelectedCrops] = useState<Set<string>>(new Set());
   const itemsPerPage = 4;
 
   useEffect(() => {
     getAllCrops();
-  }, []);
+  }, [getAllCrops]); // Add proper dependency
 
-  const totalPages = crops ? Math.ceil(crops.length / itemsPerPage) : 0;
+  useEffect(() => {
+    if (crops && crops.length > 0) {
+      console.log('Current crops:', crops); // Debug log for crops data
+    }
+  }, [crops]);
+
+  // Filter out any undefined or null values
+  const validCrops = crops?.filter(crop => crop && crop.cropName) || [];
+  const totalPages = Math.ceil(validCrops.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentCrops = crops ? crops.slice(indexOfFirstItem, indexOfLastItem) : [];
+  const currentCrops = validCrops.slice(indexOfFirstItem, indexOfLastItem);
 
   const handleCropSelect = async (crop: RecommendationResponse) => {
     const cropId = crop.id?.toString() || crop._id || '';
-    if (!cropId) {
-      console.error('Invalid crop ID');
-      return;
-    }
-    
-    const isCurrentlySelected = selectedCrops.has(cropId);
+    if (!cropId) return;
     
     try {
-      await selectare(cropId, !isCurrentlySelected, 1);
-      
-      setSelectedCrops(prev => {
-        const newSelected = new Set(prev);
-        if (isCurrentlySelected) {
-          newSelected.delete(cropId);
-        } else {
-          newSelected.add(cropId);
-        }
-        return newSelected;
-      });
+      await selectare(cropId, !crop.isSelected);
     } catch (error) {
       console.error('Error selecting crop:', error);
     }
@@ -109,17 +100,14 @@ export default function FarmerDashboard() {
         ) : crops && crops.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {currentCrops.map((crop: RecommendationResponse) => {
-                const cropId = crop.id?.toString() || crop._id || '';
-                return (
-                  <CropCard
-                    key={cropId}
-                    crop={crop}
-                    onSelect={handleCropSelect}
-                    isSelected={selectedCrops.has(cropId)}
-                  />
-                );
-              })}
+              {currentCrops.map((crop: RecommendationResponse) => (
+                <CropCard
+                  key={crop.id?.toString() || crop._id}
+                  crop={crop}
+                  onSelect={handleCropSelect}
+                  isSelected={Boolean(crop.isSelected)}
+                />
+              ))}
             </div>
             <div className="mt-4">
               <Pagination

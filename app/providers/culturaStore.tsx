@@ -18,7 +18,7 @@ interface ContextProps {
   createCrop: (data: CropCreate) => Promise<void>;
   getCrops: () => Promise<void>;
   deleteCrop: (cropId: string) => Promise<void>;
-  selectare: (cropId: string | number, selectare: boolean, numSelections: number) => Promise<void>;
+  selectare: (cropId: string | number, selectare: boolean) => Promise<void>;
   SinglePage: (id: string) => Promise<void>;
   getAllCrops: () => Promise<void>;
   updateCrop: (cropId: string, data: CropCreate) => Promise<void>;
@@ -52,15 +52,25 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     }
   }, [refreshTrigger.value, isUserLoading]);
 
-  const transformCropForRotation = (crop: any): RecommendationResponse => {
+  const transformCropForRotation = useCallback((crop: any, selections: any[] = []): RecommendationResponse => {
     const id = crop.id || parseInt(crop._id);
+    const selection = selections.find(s => s.cropId === id);
+    
     return {
       id: id,
       _id: id?.toString() || '',
       cropName: crop.cropName,
       cropType: crop.cropType || '',
+      cropVariety: crop.cropVariety || '',
+      plantingDate: crop.plantingDate?.toISOString(),
+      harvestingDate: crop.harvestingDate?.toISOString(),
+      description: crop.description || '',
+      imageUrl: crop.imageUrl || '',
+      soilType: crop.soilType || '',
+      climate: crop.climate || '',
       nitrogenSupply: Number(crop.nitrogenSupply) || 0,
       nitrogenDemand: Number(crop.nitrogenDemand) || 0,
+      isSelected: Boolean(selection?.selectionCount > 0),
       pests: Array.isArray(crop.pests) ? crop.pests : 
              (Array.isArray(crop.details) ? crop.details
                .filter((d: any) => d.detailType === 'PEST')
@@ -70,7 +80,7 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
                  .filter((d: any) => d.detailType === 'DISEASE')
                  .map((d: any) => d.value) : [])
     };
-  };
+  }, []);
 
   const createCrop = useCallback(async (data: CropCreate) => {
     try {
@@ -163,19 +173,19 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     }
   }, [user]);
 
-  const selectare = useCallback(async (cropId: number, selectare: boolean, numSelections: number) => {
+  const selectare = useCallback(async (cropId: string | number, selectare: boolean) => {
     try {
       loadingSignal.value = true;
-      const response = await axios.put(`${API_URL}crops/${cropId}/selectare`, { selectare, numSelections });
+      const response = await axios.put(`${API_URL}crops/${cropId}/selectare`, { selectare });
       if (response.status === 200) {
         isSuccessSignal.value = true;
-        messageSignal.value = 'Crop selected successfully';
-        refreshTrigger.value += 1;
+        messageSignal.value = 'Crop selection updated successfully';
+        await getAllCrops(); // Refresh to get updated selection status
       }
     } catch (err) {
       console.error(err);
       isErrorSignal.value = true;
-      messageSignal.value = 'Error selecting crop';
+      messageSignal.value = 'Error updating crop selection';
     } finally {
       loadingSignal.value = false;
     }
@@ -207,21 +217,35 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
   const getAllCrops = useCallback(async () => {
     try {
       loadingSignal.value = true;
-      const response = await axios.get(`${API_URL}crops/retrieve/all`);
+      console.log('Fetching all crops...');
       
-      if (response.status === 200) {
-        const transformedCrops = (response.data.crops || [])
-          .filter((crop: any) => crop.cropType !== 'RECOMMENDATION')
-          .map(transformCropForRotation);
+      const response = await axios.get(`${API_URL}crops/retrieve/all`);
+      console.log('API Response:', response.data);
+      
+      if (response.data && response.data.crops) {
+        const selections = response.data.selections || [];
+        const allCrops = response.data.crops || [];
+        
+        console.log('Raw crops:', allCrops.length);
+        
+        const transformedCrops = allCrops
+          .filter((crop: any) => crop && crop.cropName) // Only valid crops
+          .map((crop: any) => ({
+            ...crop, // Keep all fields from the API
+            isSelected: Boolean(selections.find((s: any) => s.cropId === crop.id)?.selectionCount > 0)
+          }));
+        
+        console.log('Setting crops:', transformedCrops.length);
         setCrops(transformedCrops);
         areThereCropsSignal.value = transformedCrops.length > 0;
-        selectionsSignal.value = response.data.selections;
+        selectionsSignal.value = selections;
       } else {
+        console.error('Invalid response format:', response);
         isErrorSignal.value = true;
         messageSignal.value = 'Error getting crops';
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error in getAllCrops:', err);
       isErrorSignal.value = true;
       messageSignal.value = 'Error getting crops';
       areThereCropsSignal.value = false;

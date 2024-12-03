@@ -157,21 +157,60 @@ export const GET = withApiAuthRequired(async function GET(
 
     if (action === 'crops' && param1 === "retrieve" && param2 === "all") {
       const user = await getCurrentUser(request);
+      console.log('Current user:', user.id); // Debug log
+      
       const [crops, selections] = await Promise.all([
         prisma.crop.findMany({
-        }) as unknown as Promise<CropModel[]>,
+          where: {
+            // Don't filter by userId here as we want all crops
+            cropType: {
+              not: 'RECOMMENDATION'
+            },
+            deleted: null
+          },
+          include: {
+            details: true,
+            user: true // Include user info to check ownership
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }),
         prisma.userCropSelection.findMany({
           where: { userId: user.id }
         })
       ]);
-
-      const transformedCrops = crops.map(transformCropWithDetails);
-      const response: ApiResponse<Crop> = { 
+    
+      console.log('Found crops:', crops.length); // Debug log
+      console.log('Found selections:', selections.length); // Debug log
+    
+      const transformedCrops = crops.map(crop => ({
+        ...transformCropWithDetails(crop),
+        id: crop.id,
+        _id: crop.id.toString(),
+        cropName: crop.cropName,
+        cropType: crop.cropType || '',
+        cropVariety: crop.cropVariety || '',
+        plantingDate: crop.plantingDate?.toISOString(),
+        harvestingDate: crop.harvestingDate?.toISOString(),
+        description: crop.description || '',
+        imageUrl: crop.imageUrl || '',
+        soilType: crop.soilType || '',
+        climate: crop.climate || '',
+        nitrogenSupply: Number(crop.nitrogenSupply) || 0,
+        nitrogenDemand: Number(crop.nitrogenDemand) || 0,
+        isSelected: Boolean(selections.find(s => s.cropId === crop.id && s.selectionCount > 0)),
+        isOwnCrop: crop.userId === user.id
+      }));
+    
+      console.log('Transformed crops:', transformedCrops.length); // Debug log
+    
+      return Response.json({ 
         crops: transformedCrops,
-        selections 
-      };
-      return Response.json(response);
+        selections
+      });
     }
+    
 
     if (action === 'crops' && param1 === "user" && param2 === "selectedCrops") {
       const user = await getCurrentUser(request);
@@ -431,7 +470,7 @@ export const PUT = withApiAuthRequired(async function PUT(
 
     if (action === 'crops' && param1 === 'selectare') {
       const user = await getCurrentUser(request);
-      const { selectare, numSelections } = await request.json();
+      const { selectare } = await request.json();
 
       const selection = await prisma.userCropSelection.upsert({
         where: {
@@ -441,14 +480,12 @@ export const PUT = withApiAuthRequired(async function PUT(
           }
         },
         update: {
-          selectionCount: {
-            increment: selectare ? numSelections : -numSelections
-          }
+          selectionCount: selectare ? 1 : 0  // Use 1/0 for boolean state while keeping selectionCount
         },
         create: {
           userId: user.id,
           cropId: parseInt(cropId),
-          selectionCount: numSelections
+          selectionCount: selectare ? 1 : 0
         }
       });
 

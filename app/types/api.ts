@@ -117,6 +117,8 @@ export interface RecommendationResponse {
   nitrogenDemand: number;
   pests: string[];
   diseases: string[];
+  isSelected?: boolean;
+  isOwnCrop?: boolean;  // Add this field
   soilType?: string;
   fertilizers?: string[];
   plantingDate?: string;
