@@ -26,6 +26,7 @@ interface ContextProps {
   getCropRecommendations: (cropName?: string) => Promise<RecommendationResponse[]>;
   singleCrop: any;
   addTheCropRecommendation: (data: RecommendationResponse) => Promise<void>;
+  updateSelectionCount: (cropId: string | number, count: number) => Promise<void>;
 }
 
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
@@ -329,6 +330,25 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     }
   }, []);
 
+  const updateSelectionCount = useCallback(async (cropId: string | number, count: number) => {
+    try {
+      loadingSignal.value = true;
+      const response = await axios.put(`${API_URL}crops/${cropId}/selectare`, { 
+        selectare: true,
+        numSelections: count 
+      });
+      if (response.status === 200) {
+        await getAllCrops();
+      }
+    } catch (err) {
+      console.error(err);
+      isErrorSignal.value = true;
+      messageSignal.value = 'Error updating selection count';
+    } finally {
+      loadingSignal.value = false;
+    }
+  }, []);
+
   return (
     <GlobalContext.Provider
       value={{
@@ -348,7 +368,8 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
         areThereCrops: areThereCropsSignal,
         getCropRecommendations,
         singleCrop: singleCropSignal,
-        addTheCropRecommendation
+        addTheCropRecommendation,
+        updateSelectionCount
       }}
     >
       {children}
