@@ -1,4 +1,4 @@
-import { Row, Col, Card } from 'react-bootstrap';
+import { Row, Col, Card, Spinner, Alert } from 'react-bootstrap';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { RecommendationResponse } from '../../types/api';
@@ -17,11 +17,15 @@ const CropList = ({ selectedCrops, onSelectionCount, selectedCounts }: CropListP
     setVisible(prevVisible => prevVisible + 6);
   };
 
+  if (!selectedCrops) {
+    return <Spinner animation="border" />;
+  }
+
   return (
     <>
       <h3>{t('Culturi selectate')}</h3>
       {selectedCrops.length === 0 ? (
-        <p>{t('Nicio cultura selectata')}</p>
+        <Alert variant="info">{t('Nicio cultura selectata')}</Alert>
       ) : (
         <Row>
           {selectedCrops.slice(0, visible).map((crop) => (
@@ -30,12 +34,12 @@ const CropList = ({ selectedCrops, onSelectionCount, selectedCounts }: CropListP
                 <Card.Body>
                   <Card.Title>{crop.cropName}</Card.Title>
                   <Card.Text>
-                    <div>Soil Type: {crop.soilType}</div>
-                    <div>Nitrogen Supply: {crop.nitrogenSupply}</div>
-                    <div>Nitrogen Demand: {crop.nitrogenDemand}</div>
+                    <div>{t('Soil Type')}: {crop.soilType}</div>
+                    <div>{t('Nitrogen Supply')}: {crop.nitrogenSupply}</div>
+                    <div>{t('Nitrogen Demand')}: {crop.nitrogenDemand}</div>
                   </Card.Text>
                   <div className="mt-3">
-                    <label className="d-block mb-2">Times in Rotation:</label>
+                    <label className="d-block mb-2">{t('Times in Rotation')}:</label>
                     <input
                       type="number"
                       min="0"

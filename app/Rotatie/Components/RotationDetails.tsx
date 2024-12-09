@@ -1,4 +1,4 @@
-import { Table } from 'react-bootstrap';
+import { Table, Spinner, Alert } from 'react-bootstrap';
 import { useTranslations } from 'next-intl';
 
 interface RotationDetailsProps {
@@ -39,8 +39,12 @@ const RotationDetails = ({
 }: RotationDetailsProps) => {
   const t = useTranslations('RotatieDashboard');
 
-  if (!rotation || !rotation.rotationPlans || rotation.rotationPlans.length === 0) {
-    return <div>No rotation details available</div>;
+  if (!rotation) {
+    return <Alert variant="warning">{t('No rotation details available')}</Alert>;
+  }
+
+  if (!rotation.rotationPlans || rotation.rotationPlans.length === 0) {
+    return <Alert variant="info">{t('No rotation plans available')}</Alert>;
   }
 
   // Group rotation plans by year
@@ -58,10 +62,10 @@ const RotationDetails = ({
         <h2 className="text-xl font-semibold mb-2">{rotation.rotationName}</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="font-medium">Field Size:</span> {rotation.fieldSize} ha
+            <span className="font-medium">{t('Field Size')}:</span> {rotation.fieldSize} ha
           </div>
           <div>
-            <span className="font-medium">Number of Divisions:</span> {rotation.numberOfDivisions}
+            <span className="font-medium">{t('Number of Divisions')}:</span> {rotation.numberOfDivisions}
           </div>
         </div>
       </div>

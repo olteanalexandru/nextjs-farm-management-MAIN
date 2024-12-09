@@ -1,5 +1,5 @@
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, Label } from 'recharts';
-import { Typography } from 'antd';
+import { Typography, Spin, Alert } from 'antd';
 import { useTranslations } from 'next-intl';
 
 const { Title } = Typography;
@@ -21,6 +21,10 @@ const RotationChart: React.FC<RotationChartProps> = ({ chartData }) => {
   const t = useTranslations('RotatieDashboard');
   console.log('Chart receiving data:', chartData); // Debug log
 
+  if (!chartData || chartData.length === 0) {
+    return <Alert message={t('No chart data available')} type="warning" />;
+  }
+
   return (
     <>
       <Title level={3}>{t('anual evolution')}</Title>
@@ -38,9 +42,9 @@ const RotationChart: React.FC<RotationChartProps> = ({ chartData }) => {
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="year" padding={{ left: 30, right: 30 }}>
-            <Label value="Year" offset={-5} position="insideBottom" />
+            <Label value={t('Year')} offset={-5} position="insideBottom" />
           </XAxis>
-          <YAxis label={{ value: 'Nitrogen balance', angle: -90, position: 'insideLeft' }} />
+          <YAxis label={{ value: t('Nitrogen balance'), angle: -90, position: 'insideLeft' }} />
           <Tooltip />
           <Legend />
           {chartData[0] && Object.keys(chartData[0]).map((key, i) => {

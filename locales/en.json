@@ -63,11 +63,9 @@
     "fieldSize": "Field Size",
     "divisionCount": "Number of Divisions",
     "year": "year",
-    "division": "Division",
     "cropName": "Crop Name",
     "plantingDate": "Planting Date",
     "harvestDate": "Harvest Date",
-    "divisionSize": "Division Size",
     "nitrogenBalance": "Nitrogen Balance",
     "additionalNitrogen": "Additional Nitrogen",
     "deleteRotation": "Delete Rotation",
@@ -89,14 +87,20 @@
     "Data recoltarii": "Harvest Date",
     "divisionSize": "Division Size",
     "Dimensiune diviziune": "Division Size",
-    "nitrogenBalance": "Nitrogen Balance",
     "Bilant azot": "Nitrogen Balance",
     "Azot suplimentar": "Additional Nitrogen",
     "Sterge rotatie": "Delete Rotation",
     "Not a number": "Not a Number",
     "anual evolution": "Annual Evolution",
     "actions": "Actions",
-    "delete": "Delete"
+    "delete": "Delete",
+    "No rotation details available": "No rotation details available",
+    "No rotation plans available": "No rotation plans available",
+    "No chart data available": "No chart data available",
+    "Soil Type": "Soil Type",
+    "Nitrogen Supply": "Nitrogen Supply",
+    "Nitrogen Demand": "Nitrogen Demand",
+    "Times in Rotation": "Times in Rotation"
   },
   "CropRotationForm": {
     "fieldSize": "Field Size",
@@ -104,8 +108,7 @@
     "rotationName": "Rotation Name",
     "maxYears": "Max Years",
     "ResidualNitrogenSupply": "Residual Nitrogen Supply",
-    "generateCropRotation": "Generate Crop Rotation",
-    "maxYears": "Maximum Years"
+    "generateCropRotation": "Generate Crop Rotation"
   },
   "NoCrops": {
     "noCrops": "No crops found",

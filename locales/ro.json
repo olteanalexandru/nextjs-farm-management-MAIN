@@ -15,7 +15,7 @@
     "robustAnalytics": "Analize Robuste",
     "robustAnalyticsDescription": "Set de instrumente analitice adaptate pentru optimizarea proceselor agricole",
     "efficiencyProfitability": "Eficiență și Profitabilitate",
-    "efficiencyProfitabilityDescription": "Proiectat pentru a îmbunătăți eficiența și a crește profitabilitatea",
+    "efficiencyProfitabilityDescription": "Proiectat pentru a îmbunătăți eficiența, a reduce risipa și a crește profitabilitatea fermierilor",
     "contactUs": "Nu ezitați să ne contactați",
     "contactUsForm": "Formular de contact"
   },
@@ -31,6 +31,7 @@
   },
   "News": {
     "Latest in our newsfeed:": "Ultimele noutăți:",
+    "latestNewsfeed": "Ultimele noutăți",
     "title": "titlu",
     "subtitle": "subtitlu",
     "vision": "viziune",
@@ -90,7 +91,18 @@
     "Not a number": "Nu este un număr",
     "anual evolution": "Evoluție anuală",
     "actions": "Acțiuni",
-    "delete": "Șterge"
+    "delete": "Șterge",
+    "No rotation details available": "Nu sunt disponibile detalii despre rotație",
+    "No rotation plans available": "Nu sunt disponibile planuri de rotație",
+    "No chart data available": "Nu sunt disponibile date pentru grafic",
+    "Soil Type": "Tip de sol",
+    "Nitrogen Supply": "Aprovizionare cu azot",
+    "Nitrogen Demand": "Cerere de azot",
+    "Times in Rotation": "Număr de rotații",
+    "Year": "An",
+    "Nitrogen balance": "Bilanț azot",
+    "Field Size": "Dimensiune câmp",
+    "Number of Divisions": "Număr de diviziuni"
   },
   "CropRotationForm": {
     "fieldSize": "Dimensiune câmp",
