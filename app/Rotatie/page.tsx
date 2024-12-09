@@ -32,6 +32,10 @@ interface RotationData {
   rotationPlans: RotationPlan[];
 }
 
+interface NitrogenBalanceMap {
+  [key: string]: string; // key format: "year-division"
+}
+
 export default function RotationPage() {
   const { getAllCrops, crops, isLoading } = useGlobalContextCrop();
   const [selectedCrops, setSelectedCrops] = useState<Map<string, number>>(new Map());
@@ -44,6 +48,8 @@ export default function RotationPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [divisionSizeValues, setDivisionSizeValues] = useState<string[]>([]);
   const [nitrogenBalanceValues, setNitrogenBalanceValues] = useState<string[]>([]);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [nitrogenBalanceMap, setNitrogenBalanceMap] = useState<NitrogenBalanceMap>({});
 
   useEffect(() => {
     getAllCrops();
@@ -132,13 +138,26 @@ export default function RotationPage() {
   // Add handlers for viewing and deleting rotations
   const handleViewRotation = (rotation: RotationData) => {
     setRotationData(rotation);
-    setChartData(rotation.rotationPlans.map(rp => ({
+    const transformedChartData = rotation.rotationPlans.map(rp => ({
       year: rp.year,
       division: rp.division,
       cropName: rp.crop.cropName,
       divisionSize: parseFloat(rp.divisionSize.toString()),
       nitrogenBalance: parseFloat(rp.nitrogenBalance.toString())
-    })));
+    }));
+    setChartData(transformedChartData);
+    
+    // Initialize division size and nitrogen balance values
+    setDivisionSizeValues(rotation.rotationPlans.map(rp => rp.divisionSize.toString()));
+    
+    // Initialize nitrogen balance map
+    const initialNitrogenMap: NitrogenBalanceMap = {};
+    rotation.rotationPlans.forEach(rp => {
+      initialNitrogenMap[`${rp.year}-${rp.division}`] = rp.nitrogenBalance.toString();
+    });
+    setNitrogenBalanceMap(initialNitrogenMap);
+    
+    setShowRotationForm(false);
   };
 
   const handleDeleteRotation = async (id: number) => {
@@ -172,14 +191,16 @@ export default function RotationPage() {
     setDivisionSizeValues(newValues);
   };
 
-  const handleNitrogenBalanceChange = (index: number, value: string) => {
-    const newValues = [...nitrogenBalanceValues];
-    newValues[index] = value;
-    setNitrogenBalanceValues(newValues);
+  const handleNitrogenBalanceChange = (year: number, division: number, value: string) => {
+    setNitrogenBalanceMap(prev => ({
+      ...prev,
+      [`${year}-${division}`]: value
+    }));
   };
 
   const handleDivisionSizeSubmit = async (value: number, division: string) => {
     if (!rotationData) return;
+    setIsUpdating(true);
     try {
       const response = await fetch('/api/Controllers/Rotation/updateDivisionSizeAndRedistribute', {
         method: 'PUT',
@@ -195,17 +216,34 @@ export default function RotationPage() {
 
       if (!response.ok) throw new Error('Failed to update division size');
       
-      const updatedRotation = await response.json();
-      setRotationData(updatedRotation);
+      const updatedData = await response.json();
+      // Update both rotation data and chart data
+      setRotationData(updatedData);
+      setChartData(updatedData.rotationPlans.map((rp: RotationPlan) => ({
+        year: rp.year,
+        division: rp.division,
+        cropName: rp.crop.cropName,
+        divisionSize: parseFloat(rp.divisionSize.toString()),
+        nitrogenBalance: parseFloat(rp.nitrogenBalance.toString())
+      })));
+
+      // Update division size values
+      setDivisionSizeValues(updatedData.rotationPlans.map((rp: RotationPlan) => 
+        rp.divisionSize.toString()
+      ));
     } catch (error) {
       console.error('Error updating division size:', error);
+      alert('Failed to update division size');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleNitrogenBalanceSubmit = async (value: number, year: number, division: string) => {
     if (!rotationData) return;
+    setIsUpdating(true);
     try {
-      const response = await fetch('/api/Controllers/Rotation/updateNitrogenBalance', {
+      const response = await fetch('/api/Controllers/Rotation/updateNitrogenAndRecalculate', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -214,16 +252,37 @@ export default function RotationPage() {
           id: rotationData.id,
           year,
           division: parseInt(division),
-          nitrogenBalance: value
+          nitrogenBalance: value,
+          startYear: year // Add this to indicate from which year to recalculate
         })
       });
 
       if (!response.ok) throw new Error('Failed to update nitrogen balance');
       
-      const updatedRotation = await response.json();
-      setRotationData(updatedRotation.data);
+      const { data: updatedData } = await response.json();
+      
+      // Update rotation data and chart data with recalculated values
+      setRotationData(updatedData);
+      setChartData(updatedData.rotationPlans.map((rp: RotationPlan) => ({
+        year: rp.year,
+        division: rp.division,
+        cropName: rp.crop.cropName,
+        divisionSize: parseFloat(rp.divisionSize.toString()),
+        nitrogenBalance: parseFloat(rp.nitrogenBalance.toString())
+      })));
+
+      // Update nitrogen balance map with new values
+      const newNitrogenMap: NitrogenBalanceMap = {};
+      updatedData.rotationPlans.forEach((rp: RotationPlan) => {
+        newNitrogenMap[`${rp.year}-${rp.division}`] = rp.nitrogenBalance.toString();
+      });
+      setNitrogenBalanceMap(newNitrogenMap);
+
     } catch (error) {
       console.error('Error updating nitrogen balance:', error);
+      alert('Failed to update nitrogen balance and recalculate rotation');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -282,90 +341,119 @@ export default function RotationPage() {
         <p className="text-gray-600 mb-8">No existing rotations found.</p>
       )}
 
-      {isLoading.value ? (
-        <div className="text-center py-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading selected crops...</p>
+      {/* Show rotation data if available, otherwise show crop selection */}
+      {rotationData ? (
+        <div className="space-y-8">
+          <RotationChart chartData={chartData} />
+          <RotationDetails
+            rotation={rotationData}
+            planIndex={0}
+            divisionSizeValues={divisionSizeValues}
+            nitrogenBalanceMap={nitrogenBalanceMap}
+            onDivisionSizeChange={handleDivisionSizeChange}
+            onNitrogenBalanceChange={handleNitrogenBalanceChange}
+            onDivisionSizeSubmit={handleDivisionSizeSubmit}
+            onNitrogenBalanceSubmit={handleNitrogenBalanceSubmit}
+            onDelete={() => handleDeleteRotation(rotationData.id)}
+            isUpdating={isUpdating}
+          />
+          <button
+            onClick={() => {
+              setRotationData(null);
+              setShowRotationForm(false);
+            }}
+            className="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Back to Crop Selection
+          </button>
         </div>
       ) : (
-        <>
-          {!showRotationForm ? (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {selectedCropsData.map(crop => (
-                  <div key={crop.id?.toString() || crop._id} className="relative">
-                    <CropCard
-                      crop={crop}
-                      isSelected={true}
-                      readOnly={true}
-                    />
-                    <div className="absolute bottom-4 left-4 right-4 bg-white p-2 rounded-lg shadow border">
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-gray-700">Times in Rotation:</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="10"
-                          value={selectedCrops.get(crop.id?.toString() || crop._id) || 0}
-                          onChange={(e) => handleSelectionCount(crop, parseInt(e.target.value))}
-                          className="w-20 px-2 py-1 border rounded-md"
-                        />
+        // Show crop selection interface only if no rotation is being viewed
+        isLoading.value ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading selected crops...</p>
+          </div>
+        ) : (
+          <>
+            {!showRotationForm ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {selectedCropsData.map(crop => (
+                    <div key={crop.id?.toString() || crop._id} className="relative">
+                      <CropCard
+                        crop={crop}
+                        isSelected={true}
+                        readOnly={true}
+                      />
+                      <div className="absolute bottom-4 left-4 right-4 bg-white p-2 rounded-lg shadow border">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-gray-700">Times in Rotation:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="10"
+                            value={selectedCrops.get(crop.id?.toString() || crop._id) || 0}
+                            onChange={(e) => handleSelectionCount(crop, parseInt(e.target.value))}
+                            className="w-20 px-2 py-1 border rounded-md"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              {selectedCropsData.length > 0 && (
-                <div className="fixed bottom-6 right-6">
-                  <button
-                    onClick={handleGenerateRotation}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Generate Rotation Plan
-                  </button>
+                  ))}
                 </div>
-              )}
-            </>
-          ) : (
-            <div className="space-y-8">
-              <RotatieForm
-                filteredCrops={getCropsRepeatedBySelection(
-                  selectedCropsData,
-                  Array.from(selectedCrops.entries()).map(([cropId, count]) => ({
-                    cropId,
-                    selectionCount: count
-                  }))
+
+                {selectedCropsData.length > 0 && (
+                  <div className="fixed bottom-6 right-6">
+                    <button
+                      onClick={handleGenerateRotation}
+                      className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Generate Rotation Plan
+                    </button>
+                  </div>
                 )}
-                onRotationGenerated={handleRotationGenerated}
-              />
+              </>
+            ) : (
+              <div className="space-y-8">
+                <RotatieForm
+                  filteredCrops={getCropsRepeatedBySelection(
+                    selectedCropsData,
+                    Array.from(selectedCrops.entries()).map(([cropId, count]) => ({
+                      cropId,
+                      selectionCount: count
+                    }))
+                  )}
+                  onRotationGenerated={handleRotationGenerated}
+                />
 
-              {/* Add debug display */}
-              <div className="text-sm text-gray-500">
-                {rotationData ? 'Rotation data available' : 'No rotation data'}
+                {/* Add debug display */}
+                <div className="text-sm text-gray-500">
+                  {rotationData ? 'Rotation data available' : 'No rotation data'}
+                </div>
+
+                {rotationData && (
+                  <>
+                    <RotationChart 
+                      chartData={chartData} 
+                    />
+                    <RotationDetails
+                      rotation={rotationData}
+                      planIndex={0}
+                      divisionSizeValues={rotationData.rotationPlans?.map(rp => rp.divisionSize.toString()) || []}
+                      nitrogenBalanceMap={nitrogenBalanceMap}
+                      onDivisionSizeChange={handleDivisionSizeChange}
+                      onNitrogenBalanceChange={handleNitrogenBalanceChange}
+                      onDivisionSizeSubmit={handleDivisionSizeSubmit}
+                      onNitrogenBalanceSubmit={handleNitrogenBalanceSubmit}
+                      onDelete={() => handleDeleteRotation(rotationData.id)}
+                    />
+                  </>
+                )}
               </div>
-
-              {rotationData && (
-                <>
-                  <RotationChart 
-                    chartData={chartData} 
-                  />
-                  <RotationDetails
-                    rotation={rotationData}
-                    planIndex={0}
-                    divisionSizeValues={rotationData.rotationPlans?.map(rp => rp.divisionSize.toString()) || []}
-                    nitrogenBalanceValues={rotationData.rotationPlans?.map(rp => rp.nitrogenBalance.toString()) || []}
-                    onDivisionSizeChange={handleDivisionSizeChange}
-                    onNitrogenBalanceChange={handleNitrogenBalanceChange}
-                    onDivisionSizeSubmit={handleDivisionSizeSubmit}
-                    onNitrogenBalanceSubmit={handleNitrogenBalanceSubmit}
-                    onDelete={() => handleDeleteRotation(rotationData.id)}
-                  />
-                </>
-              )}
-            </div>
-          )}
-        </>
+            )}
+          </>
+        )
       )}
     </div>
   );
