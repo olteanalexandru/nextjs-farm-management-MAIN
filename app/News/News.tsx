@@ -53,7 +53,7 @@ export default function Noutati() {
           ))
         ) : (
           <div className="col-span-2 text-center py-8 text-gray-600">
-            {t('No news available at the moment.')}
+            {t('No news available at the moment')}
           </div>
         )}
       </div>

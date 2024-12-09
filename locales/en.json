@@ -33,7 +33,8 @@
     "latestNewsfeed": "Latest in our newsfeed",
     "title": "title",
     "subtitle": "subtitle",
-    "vision": "vision"
+    "vision": "vision",
+    "No news available at the moment": "No news available at the moment"
   },
   "LinkAdaugaPostare": {
     "addPost": "Add Post"
@@ -71,7 +72,31 @@
     "additionalNitrogen": "Additional Nitrogen",
     "deleteRotation": "Delete Rotation",
     "notANumber": "Not a Number",
-    "annualEvolution": "annual evolution"
+    "annualEvolution": "annual evolution",
+    "Culturi selectate": "Selected Crops",
+    "Nicio cultura selectata": "No Crop Selected",
+    "Vezi mai mult": "See More",
+    "Nu exista culturi": "No Crops Available",
+    "Rotatii": "Rotations",
+    "Dimensiune camp": "Field Size",
+    "Numar de diviziuni": "Number of Divisions",
+    "anul": "Year",
+    "Diviziune": "Division",
+    "division": "Division",
+    "crop": "Crop",
+    "Nume cultura": "Crop Name",
+    "Data plantarii": "Planting Date",
+    "Data recoltarii": "Harvest Date",
+    "divisionSize": "Division Size",
+    "Dimensiune diviziune": "Division Size",
+    "nitrogenBalance": "Nitrogen Balance",
+    "Bilant azot": "Nitrogen Balance",
+    "Azot suplimentar": "Additional Nitrogen",
+    "Sterge rotatie": "Delete Rotation",
+    "Not a number": "Not a Number",
+    "anual evolution": "Annual Evolution",
+    "actions": "Actions",
+    "delete": "Delete"
   },
   "CropRotationForm": {
     "fieldSize": "Field Size",
@@ -79,7 +104,8 @@
     "rotationName": "Rotation Name",
     "maxYears": "Max Years",
     "ResidualNitrogenSupply": "Residual Nitrogen Supply",
-    "generateCropRotation": "Generate Crop Rotation"
+    "generateCropRotation": "Generate Crop Rotation",
+    "maxYears": "Maximum Years"
   },
   "NoCrops": {
     "noCrops": "No crops found",

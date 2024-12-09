@@ -45,7 +45,8 @@
     "efficiencyProfitability": "eficiență și profitabilitate",
     "efficiencyProfitabilityDescription": "descrierea eficienței și profitabilității",
     "contactUs": "contactați-ne",
-    "contactUsForm": "formular de contact"
+    "contactUsForm": "formular de contact",
+      "No news available at the moment": "Nu există noutăți disponibile în acest moment."
   },
   "LinkAdaugaPostare": {
     "AdaugaPostare": "Adaugă Postare"
@@ -65,7 +66,7 @@
     "Sterge": "Șterge"
   },
   "RotatieDashboard": {
-    "Loading": "Încărcare",
+    "Loading": "Se încarcă",
     "Culturi selectate": "Culturi selectate",
     "Nicio cultura selectata": "Nicio cultură selectată",
     "Vezi mai mult": "Vezi mai mult",
@@ -73,23 +74,29 @@
     "Rotatii": "Rotații",
     "Dimensiune camp": "Dimensiune câmp",
     "Numar de diviziuni": "Număr de diviziuni",
-    "anul": "anul",
+    "anul": "Anul",
     "Diviziune": "Diviziune",
+    "division": "Diviziune",
+    "crop": "Cultură",
     "Nume cultura": "Nume cultură",
     "Data plantarii": "Data plantării",
     "Data recoltarii": "Data recoltării",
+    "divisionSize": "Dimensiune diviziune",
     "Dimensiune diviziune": "Dimensiune diviziune",
+    "nitrogenBalance": "Bilanț azot",
     "Bilant azot": "Bilanț azot",
     "Azot suplimentar": "Azot suplimentar",
     "Sterge rotatie": "Șterge rotație",
     "Not a number": "Nu este un număr",
-    "anual evolution": "evoluție anuală"
+    "anual evolution": "Evoluție anuală",
+    "actions": "Acțiuni",
+    "delete": "Șterge"
   },
   "CropRotationForm": {
     "fieldSize": "Dimensiune câmp",
     "numberOfDivisions": "Număr de diviziuni",
     "rotationName": "Nume rotație",
-    "maxYears": "Ani maximi",
+    "maxYears": "Număr maxim de ani",
     "ResidualNitrogenSupply": "Aprovizionare cu azot rezidual",
     "generateCropRotation": "Generează rotația culturilor"
   },

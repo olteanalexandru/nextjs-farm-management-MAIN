@@ -5,11 +5,14 @@ import axios from 'axios';
 
 // Types
 interface UserData {
-  name: string | null;
-  email: string | null;
-  roleType: string;
-  _id?: string;
+  id: string;
+  auth0Id: string;
+  name: string;
+  email: string;
   picture?: string | null;
+  roleType: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface UserContextType {
@@ -24,13 +27,16 @@ interface UserContextType {
   logout: () => void;
 }
 
-const API_URL = '/api/Controllers/User/';
+const API_URL = '/api/Controllers/User';
 
 const initialUserData: UserData = {
-  name: null,
-  email: null,
+  id: '',
+  auth0Id: '',
+  name: '',
+  email: '',
   roleType: '',
-  _id: '',
+  createdAt: '',
+  updatedAt: '',
   picture: null,
 };
 
@@ -46,35 +52,42 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const syncUser = async () => {
       if (authLoading) {
+        setIsLoading(true);
         return;
       }
 
-      if (user) {
-        try {
-          // Create/update user in our database
-          const response = await axios.post(API_URL);
+      try {
+        if (user) {
+          const response = await axios.post(`${API_URL}/create`);
           const userData = response.data.user;
           
           setData({
-            name: user.name ?? null,
-            email: user.email ?? null,
+            id: userData.id,
+            auth0Id: userData.auth0Id,
+            name: user.name ?? '',
+            email: user.email ?? '',
             roleType: userData.roleType,
-            _id: userData.id,
+            createdAt: userData.createdAt,
+            updatedAt: userData.updatedAt,
             picture: user.picture ?? null
           });
           setIsUserLoggedIn(true);
-        } catch (error) {
-          console.error('Error syncing user:', error);
-          // Instead of redirecting, just reset the state
+          
+          if (userData.roleType === 'ADMIN') {
+            await fetchFermierUsers();
+          }
+        } else {
           setData(initialUserData);
           setIsUserLoggedIn(false);
+          setFermierUsers([]);
         }
-      } else if (!authLoading) {
-        // Only reset if we're not loading and there's no user
+      } catch (error) {
+        console.error('Error syncing user:', error);
         setData(initialUserData);
         setIsUserLoggedIn(false);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     syncUser();
@@ -82,10 +95,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const updateRole = async (email: string, roleType: string) => {
     try {
-      const response = await axios.put(API_URL, { email, roleType });
+      const response = await axios.put(`${API_URL}/role`, { email, roleType });
       if (response.status === 200) {
         if (email === data.email) {
-          setData(prev => ({ ...prev, role: roleType }));
+          setData(prev => ({ ...prev, roleType }));
         }
         await fetchFermierUsers();
       }
@@ -97,7 +110,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const fetchFermierUsers = async () => {
     try {
-      const response = await axios.get(API_URL);
+      const response = await axios.get(`${API_URL}/all`);
       if (response.status === 200) {
         const farmers = response.data.users.filter(user => user.roleType === 'FARMER');
         setFermierUsers(farmers);

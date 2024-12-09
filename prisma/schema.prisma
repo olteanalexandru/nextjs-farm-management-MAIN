@@ -86,7 +86,7 @@ model Rotation {
 model RotationPlan {
   id              Int       @id @default(autoincrement())
   rotationId      Int
-  rotation        Rotation  @relation("RotationPlans", fields: [rotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rotation        Rotation  @relation("RotationPlans", fields: [rotationId], references: [id], onDelete: Cascade)
   year            Int
   division        Int
   cropId          Int

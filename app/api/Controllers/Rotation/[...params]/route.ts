@@ -76,13 +76,26 @@ export async function GET(
   try {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
-    const user = session.user;
+    const auth0User = session.user;
+
+    // First, get the database user using the Auth0 ID
+    const dbUser = await prisma.user.findUnique({
+      where: { auth0Id: auth0User.sub }
+    });
+
+    if (!dbUser) {
+      console.error('Database user not found for Auth0 ID:', auth0User.sub);
+      return Response.json({ error: 'User not found' }, { status: 404 });
+    }
+
     const [action] = params.params;
 
     if (action === 'getRotation') {
+      console.log('Fetching rotations for user ID:', dbUser.id); // Debug log
+
       const rotations = await prisma.rotation.findMany({
         where: {
-          userId: user.sub
+          userId: dbUser.id // Use the database user ID instead of Auth0 ID
         },
         include: {
           rotationPlans: {
@@ -104,13 +117,16 @@ export async function GET(
         }
       });
 
+      console.log('Found rotations:', rotations.length); // Debug log
       return Response.json({ data: rotations }, { status: 200 });
     }
 
     return Response.json({ error: 'Invalid route' }, { status: 400 });
   } catch (error) {
     console.error('GET request error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json({ 
+      error: error instanceof Error ? error.message : 'Internal server error'
+    }, { status: 500 });
   }
 }
 
@@ -121,10 +137,23 @@ export async function POST(
   try {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
-    const user = session.user;
+    const auth0User = session.user;
+
     const [action] = params.params;
 
     if (action === 'generateRotation') {
+      // First, get the database user using the Auth0 ID
+      const dbUser = await prisma.user.findUnique({
+        where: { auth0Id: auth0User.sub }
+      });
+
+      if (!dbUser) {
+        return Response.json(
+          { error: 'User not found in database' },
+          { status: 404 }
+        );
+      }
+
       const input: RotationInput = await request.json();
       const {
         fieldSize,
@@ -138,6 +167,21 @@ export async function POST(
       if (!crops?.length) {
         return Response.json(
           { error: 'No crops provided' },
+          { status: 400 }
+        );
+      }
+
+      // Add validation for required fields
+      if (!fieldSize || !numberOfDivisions || !rotationName) {
+        return Response.json(
+          { error: 'Missing required fields' },
+          { status: 400 }
+        );
+      }
+
+      if (fieldSize <= 0 || numberOfDivisions <= 0) {
+        return Response.json(
+          { error: 'Field size and number of divisions must be positive numbers' },
           { status: 400 }
         );
       }
@@ -178,7 +222,7 @@ export async function POST(
                 year,
                 lastUsedYear,
                 division,
-                user.sub
+                dbUser.id  // Use dbUser.id instead of user.sub
               );
 
               if (
@@ -209,7 +253,7 @@ export async function POST(
             const cropIndex = (division + year - 2) % crops.length;
             const crop = crops[cropIndex];
             
-            if (await cropIsAvailable(crop, year, lastUsedYear, division, user.sub)) {
+            if (await cropIsAvailable(crop, year, lastUsedYear, division, dbUser.id)) { // Use dbUser.id here too
               lastUsedYear.get(division)?.set(crop.cropName, year);
               usedCropsInYear.get(year)?.add(crop.id);
 
@@ -233,7 +277,7 @@ export async function POST(
 
       const rotationData = await prisma.rotation.create({
         data: {
-          userId: user.sub,
+          userId: dbUser.id, // Use the database user ID instead of Auth0 ID
           rotationName,
           fieldSize: new Decimal(fieldSize),
           numberOfDivisions,
@@ -250,13 +294,19 @@ export async function POST(
         }
       });
 
-      return Response.json(rotationData);
+      return Response.json({
+        message: 'Rotation generated successfully',
+        data: rotationData
+      });
     }
 
     return Response.json({ error: 'Invalid route' }, { status: 400 });
   } catch (error) {
     console.error('POST request error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -267,54 +317,18 @@ export async function PUT(
   try {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
-    const user = session.user;
-    const [action] = params.params;
+    const auth0User = session.user;
 
-    if (action === 'updateNitrogenBalance') {
-      const { id, year, division, nitrogenBalance } = await request.json();
+    // Get database user
+    const dbUser = await prisma.user.findUnique({
+      where: { auth0Id: auth0User.sub }
+    });
 
-      const rotationRecord = await prisma.rotation.findUnique({
-        where: { id: parseInt(id) },
-        include: { rotationPlans: true }
-      });
-
-      if (!rotationRecord || rotationRecord.userId !== user.sub) {
-        return Response.json(
-          { error: 'Not authorized' },
-          { status: 401 }
-        );
-      }
-
-      const updatedRotation = await prisma.$transaction(async (prisma) => {
-        await prisma.rotationPlan.updateMany({
-          where: {
-            rotationId: parseInt(id),
-            year: parseInt(year),
-            division: parseInt(division)
-          },
-          data: {
-            nitrogenBalance: new Decimal(nitrogenBalance),
-            directlyUpdated: true
-          }
-        });
-
-        return prisma.rotation.findUnique({
-          where: { id: parseInt(id) },
-          include: {
-            rotationPlans: {
-              include: {
-                crop: true
-              }
-            }
-          }
-        });
-      });
-
-      return Response.json({
-        message: 'Nitrogen balance updated successfully',
-        data: updatedRotation
-      });
+    if (!dbUser) {
+      return Response.json({ error: 'User not found' }, { status: 404 });
     }
+
+    const [action] = params.params;
 
     if (action === 'updateDivisionSizeAndRedistribute') {
       const { id, division, newDivisionSize } = await request.json();
@@ -323,19 +337,13 @@ export async function PUT(
         where: { id: parseInt(id) }
       });
 
-      if (!rotationRecord || rotationRecord.userId !== user.sub) {
-        return Response.json(
-          { error: 'Not authorized' },
-          { status: 401 }
-        );
+      if (!rotationRecord || rotationRecord.userId !== dbUser.id) {
+        return Response.json({ error: 'Not authorized' }, { status: 401 });
       }
 
       const newDivisionSizeDecimal = new Decimal(newDivisionSize);
       if (newDivisionSizeDecimal.greaterThan(rotationRecord.fieldSize) || newDivisionSizeDecimal.lessThan(0)) {
-        return Response.json(
-          { error: 'Invalid division size' },
-          { status: 400 }
-        );
+        return Response.json({ error: 'Invalid division size' }, { status: 400 });
       }
 
       const remainingSize = rotationRecord.fieldSize.sub(newDivisionSizeDecimal);
@@ -378,13 +386,61 @@ export async function PUT(
         }
       });
 
-      return Response.json(updatedRotation);
+      return Response.json({
+        message: 'Division size updated successfully',
+        data: updatedRotation
+      });
+    }
+
+    if (action === 'updateNitrogenBalance') {
+      const { id, year, division, nitrogenBalance } = await request.json();
+
+      const rotationRecord = await prisma.rotation.findUnique({
+        where: { id: parseInt(id) },
+        include: { rotationPlans: true }
+      });
+
+      if (!rotationRecord || rotationRecord.userId !== dbUser.id) {
+        return Response.json({ error: 'Not authorized' }, { status: 401 });
+      }
+
+      const updatedRotation = await prisma.$transaction(async (tx) => {
+        await tx.rotationPlan.updateMany({
+          where: {
+            rotationId: parseInt(id),
+            year: parseInt(year),
+            division: parseInt(division)
+          },
+          data: {
+            nitrogenBalance: new Decimal(nitrogenBalance),
+            directlyUpdated: true
+          }
+        });
+
+        return tx.rotation.findUnique({
+          where: { id: parseInt(id) },
+          include: {
+            rotationPlans: {
+              include: {
+                crop: true
+              }
+            }
+          }
+        });
+      });
+
+      return Response.json({
+        message: 'Nitrogen balance updated successfully',
+        data: updatedRotation
+      });
     }
 
     return Response.json({ error: 'Invalid route' }, { status: 400 });
   } catch (error) {
     console.error('PUT request error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json({ 
+      error: error instanceof Error ? error.message : 'Internal server error' 
+    }, { status: 500 });
   }
 }
 
@@ -395,36 +451,61 @@ export async function DELETE(
   try {
     const session = await authenticateUser();
     if (session instanceof Response) return session;
-    const user = session.user;
+    const auth0User = session.user;
+
+    // Get database user
+    const dbUser = await prisma.user.findUnique({
+      where: { auth0Id: auth0User.sub }
+    });
+
+    if (!dbUser) {
+      return Response.json({ error: 'User not found' }, { status: 404 });
+    }
+
     const [action, id] = params.params;
 
     if (action === 'deleteRotation') {
       const rotationId = parseInt(id);
 
       const rotationRecord = await prisma.rotation.findUnique({
-        where: { id: rotationId }
+        where: { id: rotationId },
+        include: {
+          rotationPlans: true
+        }
       });
 
-      if (!rotationRecord || rotationRecord.userId !== user.sub) {
-        return Response.json(
-          { error: 'Not authorized' },
-          { status: 401 }
-        );
+      if (!rotationRecord || rotationRecord.userId !== dbUser.id) {
+        return Response.json({ error: 'Not authorized' }, { status: 401 });
       }
 
-      await prisma.rotation.delete({
-        where: { id: rotationId }
+      // Use a transaction to delete rotation plans first, then the rotation
+      const deletedRotation = await prisma.$transaction(async (tx) => {
+        // First delete all rotation plans
+        await tx.rotationPlan.deleteMany({
+          where: {
+            rotationId: rotationId
+          }
+        });
+
+        // Then delete the rotation
+        return tx.rotation.delete({
+          where: {
+            id: rotationId
+          }
+        });
       });
 
       return Response.json({
-        message: 'Rotation deleted successfully',
-        data: rotationRecord
+        message: 'Rotation and associated plans deleted successfully',
+        data: deletedRotation
       });
     }
 
     return Response.json({ error: 'Invalid route' }, { status: 400 });
   } catch (error) {
     console.error('DELETE request error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json({ 
+      error: error instanceof Error ? error.message : 'Internal server error'
+    }, { status: 500 });
   }
 }

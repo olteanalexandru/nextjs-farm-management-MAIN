@@ -1,5 +1,6 @@
 import { getSession } from '@auth0/nextjs-auth0';
 import { prisma } from './prisma';
+import { v4 as uuidv4 } from 'uuid';
 import { NextRequest } from 'next/server';
 
 export async function getCurrentUser(request: NextRequest) {
@@ -20,6 +21,7 @@ export async function getCurrentUser(request: NextRequest) {
         picture: session.user.picture || null
       },
       create: {
+        id: uuidv4(),
         auth0Id: session.user.sub,
         name: session.user.name || '',
         email: session.user.email || '',

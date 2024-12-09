@@ -1,8 +1,24 @@
 import React, { useState } from 'react';
-import { useGlobalContextRotation } from '../../providers/rotationStore';
+import { useGlobalContextRotation } from '../providers/rotationStore';
 import { useTranslations } from 'next-intl';
 
-const CropRotationForm = ({ filteredCrops }) => {
+interface Crop {
+  _id: string;
+  cropName: string;
+  nitrogenSupply: number;
+  nitrogenDemand: number;
+  soilType: string;
+  pests: string[];
+  diseases: string[];
+  ItShouldNotBeRepeatedForXYears: number;
+}
+
+interface CropRotationFormProps {
+  filteredCrops: Crop[];
+  onRotationGenerated: (data: any) => void; // Add this line
+}
+
+const CropRotationForm: React.FC<CropRotationFormProps> = ({ filteredCrops, onRotationGenerated }) => {
   const t = useTranslations('CropRotationForm');
   const [fieldSize, setFieldSize] = useState('');
   const [numberOfDivisions, setNumberOfDivisions] = useState('');
@@ -12,27 +28,40 @@ const CropRotationForm = ({ filteredCrops }) => {
 
   const { generateCropRotation } = useGlobalContextRotation();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      parseInt(fieldSize) > 0 &&
-      parseInt(numberOfDivisions) > 0 &&
-      rotationName &&
-      parseInt(maxYears) > 0
-    ) {
-      generateCropRotation({
-        fieldSize: parseInt(fieldSize),
-        numberOfDivisions: parseInt(numberOfDivisions),
+    
+    try {
+      const formData = {
+        fieldSize: parseFloat(fieldSize),
+        numberOfDivisions: parseInt(numberOfDivisions, 10), // Ensure it's an integer
         rotationName,
         crops: filteredCrops,
-        maxYears: parseInt(maxYears),
-        ResidualNitrogenSupply: parseInt(ResidualNitrogenSupply)
+        maxYears: parseInt(maxYears, 10), // Also convert maxYears to integer
+        ResidualNitrogenSupply: parseFloat(ResidualNitrogenSupply) || 500
+      };
+
+      console.log('Sending data:', formData); // Debug log
+
+      const response = await fetch('/api/Controllers/Rotation/generateRotation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
       });
-      setFieldSize('');
-      setNumberOfDivisions('');
-      setRotationName('');
-      setMaxYears('');
-      setResidualNitrogenSupply('');
+  
+      const data = await response.json();
+      console.log('API Response:', data);
+  
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate rotation');
+      }
+  
+      onRotationGenerated(data);
+    } catch (error) {
+      console.error('Error generating rotation:', error);
+      // Add error handling UI feedback here
     }
   };
 

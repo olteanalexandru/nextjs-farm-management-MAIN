@@ -53,7 +53,7 @@ function SinglePag() {
     climate: crops?.climate || '',
   }));
   
-  const canEdit = userData.roleType.toLocaleLowerCase() === 'admin' ||  crops?.user == userData._id;
+  const canEdit = userData.roleType.toLocaleLowerCase() === 'admin' ||  crops?.user == userData.auth0Id;
   
   useEffect(() => {
     if (!isUserLoading && _id) {
@@ -150,7 +150,7 @@ function SinglePag() {
   const onSubmit = async (e: React.FormEvent, newSelectArea: boolean) => {
     e.preventDefault();
     if (_id && userData && userData.roleType.toLowerCase() === "farmer") {
-      await selectare(_id, newSelectArea, numSelections);
+      await selectare(_id, newSelectArea);
       setSelectarea(newSelectArea);
     }
   };
