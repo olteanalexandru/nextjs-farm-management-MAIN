@@ -43,7 +43,6 @@ model Crop {
   nitrogenSupply                 Decimal          @db.Decimal(10,2)
   nitrogenDemand                 Decimal          @db.Decimal(10,2)
   soilResidualNitrogen          Decimal?         @db.Decimal(10,2)
-  fertilizers                    String[]           @default([])
   createdAt                     DateTime          @default(now())
   updatedAt                     DateTime          @updatedAt
   deleted                       DateTime?
