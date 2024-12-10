@@ -43,6 +43,7 @@ model Crop {
   nitrogenSupply                 Decimal          @db.Decimal(10,2)
   nitrogenDemand                 Decimal          @db.Decimal(10,2)
   soilResidualNitrogen          Decimal?         @db.Decimal(10,2)
+  fertilizers                    String[]           @default([])
   createdAt                     DateTime          @default(now())
   updatedAt                     DateTime          @updatedAt
   deleted                       DateTime?
@@ -124,8 +125,8 @@ model UserCropSelection {
   crop          Crop     @relation("CropSelections", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   selectionCount Int     @default(0)
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
+  updatedAt     DateTime @default(now())
+  
   @@unique([userId, cropId])
   @@map("user_crop_selections")
 }

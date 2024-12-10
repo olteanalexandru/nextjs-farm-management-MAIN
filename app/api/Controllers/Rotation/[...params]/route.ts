@@ -1,73 +1,17 @@
 import { NextRequest } from 'next/server';
 import { prisma } from 'app/lib/prisma';
-import { getSession } from '@auth0/nextjs-auth0';
-import { CropInput, RotationInput, RotationPlanInput } from '../interfaces';
+import {  RotationInput, RotationPlanInput } from '../interfaces';
 import { Decimal } from '@prisma/client/runtime/library';
+import  authenticateUser  from './authenticatedUser';
+import {
+  hasSharedPests,
+  hasSharedDiseases,
+  calculateNitrogenBalance,
+  sortCropsByNitrogenBalance,
+  cropIsAvailable
+} from './helperFunctions';
 
-// Utility functions for rotation generation
-function hasSharedPests(crop1: CropInput, crop2: CropInput): boolean {
-  return crop1.pests.some(pest => crop2.pests.includes(pest));
-}
 
-function hasSharedDiseases(crop1: CropInput, crop2: CropInput): boolean {
-  return crop1.diseases.some(disease => crop2.diseases.includes(disease));
-}
-
-function calculateNitrogenBalance(
-  crop: CropInput,
-  nitrogenPerDivision: number,
-  soilResidualNitrogen: number
-): number {
-  const nitrogenBalance = nitrogenPerDivision - crop.nitrogenDemand + soilResidualNitrogen;
-  return parseFloat(Math.max(0, nitrogenBalance).toFixed(2));
-}
-
-function sortCropsByNitrogenBalance(
-  crops: CropInput[],
-  nitrogenPerDivision: number,
-  soilResidualNitrogen: number
-): CropInput[] {
-  return [...crops].sort((a, b) => {
-    const balanceA = calculateNitrogenBalance(a, nitrogenPerDivision, soilResidualNitrogen);
-    const balanceB = calculateNitrogenBalance(b, nitrogenPerDivision, soilResidualNitrogen);
-    return balanceA - balanceB;
-  });
-}
-
-async function cropIsAvailable(
-  crop: CropInput,
-  year: number,
-  lastUsedYear: Map<number, Map<string, number>>,
-  division: number,
-  userId: string
-): Promise<boolean> {
-  const divisionLastUsedYear = lastUsedYear.get(division) || new Map<string, number>();
-  const lastUsed = divisionLastUsedYear.get(crop.cropName) || 0;
-
-  if (year - lastUsed <= crop.ItShouldNotBeRepeatedForXYears) {
-    return false;
-  }
-
-  const selection = await prisma.userCropSelection.findUnique({
-    where: {
-      userId_cropId: {
-        userId: userId,
-        cropId: crop.id
-      }
-    }
-  });
-
-  return selection ? selection.selectionCount > 0 : false;
-}
-
-// Helper function to handle authentication
-async function authenticateUser() {
-  const session = await getSession();
-  if (!session?.user) {
-    return Response.json({ error: 'Not authenticated' }, { status: 401 });
-  }
-  return session;
-}
 
 export async function GET(
   request: NextRequest,

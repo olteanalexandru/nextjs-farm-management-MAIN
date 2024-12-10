@@ -110,6 +110,8 @@ export interface CropCreate {
 export interface RecommendationResponse {
   id: number;
   _id: string;
+  userId?: string;  // Add userId
+  auth0Id?: string; // Add auth0Id
   cropName: string;
   cropType: string;
   cropVariety?: string;
@@ -171,3 +173,5 @@ export function transformCropToApiResponse(crop: CropModel): Crop {
       .map(d => d.value) || []
   };
 }
+
+

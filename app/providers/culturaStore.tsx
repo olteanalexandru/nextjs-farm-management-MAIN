@@ -24,7 +24,6 @@ interface ContextProps {
   updateCrop: (cropId: string, data: CropCreate) => Promise<void>;
   areThereCrops: any;
   getCropRecommendations: (cropName?: string) => Promise<RecommendationResponse[]>;
-  singleCrop: any;
   addTheCropRecommendation: (data: RecommendationResponse) => Promise<void>;
   updateSelectionCount: (cropId: string | number, count: number) => Promise<void>;
 }
@@ -37,7 +36,6 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
   const isErrorSignal = signal(false);
   const isSuccessSignal = signal(false);
   const messageSignal = signal('');
-  const singleCropSignal = signal<RecommendationResponse | null>(null);
   const areThereCropsSignal = signal(false);
   const selectionsSignal = signal([]);
   const userStatus = signal(false);
@@ -60,6 +58,8 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     return {
       id: id,
       _id: id?.toString() || '',
+      userId: crop.userId,
+      auth0Id: crop.user?.auth0Id,
       cropName: crop.cropName,
       cropType: crop.cropType || '',
       cropVariety: crop.cropVariety || '',
@@ -198,18 +198,22 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
       const response = await axios.get(`${API_URL}crop/id/${id}`);
       if (response.status === 200 && response.data.crops && response.data.crops[0]) {
         isSuccessSignal.value = true;
-        const transformedCrop = transformCropForRotation(response.data.crops[0]);
-        singleCropSignal.value = transformedCrop;
+        const cropData = response.data.crops[0];
+        const transformedCrop = {
+          ...transformCropForRotation(cropData),
+          userId: cropData.userId,
+          auth0Id: cropData.user?.auth0Id,
+          user: cropData.user
+        };
+        setCrops([transformedCrop]);
       } else {
         isErrorSignal.value = true;
         messageSignal.value = 'Error loading crop details';
-        singleCropSignal.value = null;
       }
     } catch (err) {
       console.error(err);
       isErrorSignal.value = true;
       messageSignal.value = 'Error loading crop details';
-      singleCropSignal.value = null;
     } finally {
       loadingSignal.value = false;
     }
@@ -367,7 +371,6 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
         updateCrop,
         areThereCrops: areThereCropsSignal,
         getCropRecommendations,
-        singleCrop: singleCropSignal,
         addTheCropRecommendation,
         updateSelectionCount
       }}

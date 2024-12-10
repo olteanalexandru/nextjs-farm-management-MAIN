@@ -1,8 +1,17 @@
 import React from 'react';
 import { Form, Button, Row, Col } from 'react-bootstrap';
+import { CropCreate } from '../../types/api';
 
+interface FormComponentProps {
+  handleUpdate: (e: React.FormEvent) => Promise<void>;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleArrayChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: string) => void;
+  updatedCrop: CropCreate;
+  editMode: boolean;
+  setEditMode: (mode: boolean) => void;
+}
 
-function FormComponent({ handleUpdate, handleChange, handleArrayChange, updatedCrop, editMode, setEditMode }) {
+function FormComponent({ handleUpdate, handleChange, handleArrayChange, updatedCrop, editMode, setEditMode }: FormComponentProps) {
   if (!editMode) {
     return null; 
   }
@@ -148,6 +157,19 @@ function FormComponent({ handleUpdate, handleChange, handleArrayChange, updatedC
           </Form.Group>
         </Col>
       </Row>
+
+      <Form.Group>
+        <Form.Label>Fertilizers</Form.Label>
+        {updatedCrop?.fertilizers?.map((fertilizer, index) => (
+          <Form.Control
+            key={index}
+            type="text"
+            name={`fertilizer${index}`}
+            value={fertilizer}
+            onChange={(e) => handleArrayChange(e, index, 'fertilizers')}
+          />
+        ))}
+      </Form.Group>
 
       <Button variant="primary" type="submit">
         Save Changes

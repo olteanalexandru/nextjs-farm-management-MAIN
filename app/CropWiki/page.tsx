@@ -95,7 +95,8 @@ export default function CropWiki() {
   };
 
   const navigateToCrop = (cropId: string) => {
-    router.push(`/Crop/${cropId}`);
+    // Update the navigation to use the new dynamic route structure
+    router.push(`/Crop/${cropId}`, { scroll: false });
   };
 
   const toggleSortOrder = () => {
