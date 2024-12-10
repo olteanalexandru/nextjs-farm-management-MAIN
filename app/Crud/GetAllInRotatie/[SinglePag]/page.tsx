@@ -60,7 +60,7 @@ function SinglePag() {
       SinglePage(_id);
       console.log('SinglePage call');
     } else if (!_id) {
-      navigate.push('/Rotatie');
+      // navigate.push('/Rotatie');
     }
   }, [isUserLoading, _id]);
 

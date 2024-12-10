@@ -26,6 +26,16 @@ type CropCreate = {
   
 };
 
+type WikiQueryParams = {
+  page: number;
+  limit: number;
+  search?: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+  cropType?: string;
+  soilType?: string;
+};
+
 function toDecimal(value: number | null | undefined): number {
   if (value === null || value === undefined || isNaN(value)) {
     return 0;
@@ -230,6 +240,75 @@ export const GET = withApiAuthRequired(async function GET(
       );
 
       const response: ApiResponse<Crop> = { crops: selectedCrops };
+      return Response.json(response);
+    }
+
+    if (action === 'crops' && param1 === 'wiki') {
+      const url = new URL(request.url);
+      const queryParams: WikiQueryParams = {
+        page: Math.max(1, parseInt(url.searchParams.get('page') || '1')),
+        limit: Math.max(1, parseInt(url.searchParams.get('limit') || '10')),
+        search: url.searchParams.get('search') || undefined,
+        sortBy: url.searchParams.get('sortBy') || 'cropName',
+        sortOrder: (url.searchParams.get('sortOrder') || 'asc') as 'asc' | 'desc',
+        cropType: url.searchParams.get('cropType') || undefined,
+        soilType: url.searchParams.get('soilType') || undefined,
+      };
+    
+      const skip = (queryParams.page - 1) * queryParams.limit;
+    
+      const whereClause = {
+        deleted: null,
+        cropType: {
+          not: 'RECOMMENDATION' // Exclude recommendations
+        },
+        ...(queryParams.search && {
+          cropName: {
+            contains: queryParams.search,
+            mode: 'insensitive'
+          }
+        }),
+        ...(queryParams.cropType && {
+          cropType: queryParams.cropType
+        }),
+        ...(queryParams.soilType && {
+          soilType: queryParams.soilType
+        })
+      };
+    
+      // Ensure sortBy is a valid column name
+      const validSortColumns = ['cropName', 'cropType', 'soilType', 'createdAt'];
+      const sortBy = validSortColumns.includes(queryParams.sortBy) 
+        ? queryParams.sortBy 
+        : 'cropName';
+    
+      const [crops, totalCount] = await Promise.all([
+        prisma.crop.findMany({
+          where: whereClause,
+          include: {
+            details: true,
+          },
+          skip,
+          take: queryParams.limit,
+          orderBy: {
+            [sortBy]: queryParams.sortOrder
+          }
+        }),
+        prisma.crop.count({ where: whereClause })
+      ]);
+    
+      const transformedCrops = crops.map(transformCropWithDetails);
+      
+      const response = {
+        crops: transformedCrops,
+        pagination: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          totalItems: totalCount,
+          totalPages: Math.ceil(totalCount / queryParams.limit)
+        }
+      };
+    
       return Response.json(response);
     }
 

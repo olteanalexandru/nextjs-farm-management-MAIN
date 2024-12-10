@@ -354,7 +354,11 @@ export default function RotationPage() {
             onNitrogenBalanceChange={handleNitrogenBalanceChange}
             onDivisionSizeSubmit={handleDivisionSizeSubmit}
             onNitrogenBalanceSubmit={handleNitrogenBalanceSubmit}
-            onDelete={() => handleDeleteRotation(rotationData.id)}
+            onDelete={() => {
+              if (rotationData) {
+                handleDeleteRotation(rotationData.id);
+              }
+            }}
             isUpdating={isUpdating}
           />
           <button
@@ -440,13 +444,14 @@ export default function RotationPage() {
                     <RotationDetails
                       rotation={rotationData}
                       planIndex={0}
-                      divisionSizeValues={rotationData.rotationPlans?.map(rp => rp.divisionSize.toString()) || []}
+                      divisionSizeValues={(rotationData as RotationData).rotationPlans?.map(rp => rp.divisionSize.toString()) || []}
                       nitrogenBalanceMap={nitrogenBalanceMap}
                       onDivisionSizeChange={handleDivisionSizeChange}
                       onNitrogenBalanceChange={handleNitrogenBalanceChange}
                       onDivisionSizeSubmit={handleDivisionSizeSubmit}
                       onNitrogenBalanceSubmit={handleNitrogenBalanceSubmit}
-                      onDelete={() => handleDeleteRotation(rotationData.id)}
+                      onDelete={() => handleDeleteRotation((rotationData as RotationData).id)}
+                      isUpdating={isUpdating}
                     />
                   </>
                 )}

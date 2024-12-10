@@ -2,7 +2,7 @@
   "name": "farm",
   "version": "0.1.0",
   "private": true,
- "scripts": {
+  "scripts": {
     "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "prisma generate && next build",
@@ -17,6 +17,7 @@
     "@auth0/nextjs-auth0": "^3.1.0",
     "@emailjs/browser": "^4.3.3",
     "@next/font": "14.1.4",
+    "@nextui-org/react": "^2.6.5",
     "@preact/signals-react": "^2.2.0",
     "@prisma/client": "^5.21.1",
     "@tailwindcss/aspect-ratio": "^0.4.2",

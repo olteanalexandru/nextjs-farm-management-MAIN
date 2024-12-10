@@ -2,9 +2,10 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Camera, Home, Repeat, Users, Settings, LogOut , LogIn} from 'lucide-react';
+import { Camera, Home, Repeat, Users, Settings, LogOut , LogIn, Database } from 'lucide-react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import React from 'react';
+import { LanguageSwitch } from '@/components/LanguageSwitch';
 
 interface UserProfile {
   name: string;
@@ -22,6 +23,7 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
     { name: 'Home', href: '/', icon: Home },
     { name: 'News', href: '/News', icon: Home },
     { name: 'Crop Rotation', href: '/Rotatie', icon: Repeat },
+    { name: 'Crop Database', href: '/CropWiki', icon: Database },
     { name: 'Dashboard', href: '/dashboard', icon: Camera },
     { name: 'Users', href: '/Login/Register', icon: Users, adminOnly: true },
   ];
@@ -47,7 +49,7 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="ml-4 flex lg:ml-8">
           <Link href="/" className="flex items-center space-x-3">
             <img src="/Logo.png" alt="Logo" className="h-8 w-8" />
-            <span className="text-lg font-semibold text-gray-900">Agricultural Platform</span>
+            <span className="text-lg font-semibold text-gray-900">Agricultural Platform </span>
           </Link>
         </div>
       </div>
@@ -55,6 +57,7 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="flex items-center space-x-4">
         {!isLoading && user ? (
           <div className="hidden md:flex items-center space-x-4">
+           <LanguageSwitch />
             <div className="flex flex-col items-end">
               <span className="text-sm font-medium text-gray-900">{user.name}</span>
               <span className="text-xs text-gray-500">{user.email}</span>
