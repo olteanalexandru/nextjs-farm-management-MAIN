@@ -3,7 +3,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { signal } from "@preact/signals-react";
-import { CropCreate, RecommendationResponse } from '../types/api';
+import { CropCreate, RecommendationResponse, CropType } from '../types/api';
+import { set } from 'lodash';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/Controllers/';
 const API_URL = `${BASE_URL}Crop/`;
@@ -26,6 +27,7 @@ interface ContextProps {
   getCropRecommendations: (cropName?: string) => Promise<RecommendationResponse[]>;
   addTheCropRecommendation: (data: RecommendationResponse) => Promise<void>;
   updateSelectionCount: (cropId: string | number, count: number) => Promise<void>;
+  singleCrop: { value: CropType | null };
 }
 
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
@@ -40,6 +42,7 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
   const selectionsSignal = signal([]);
   const userStatus = signal(false);
   const refreshTrigger = signal(0);
+  const singleCropSignal = signal<CropType | null>(null);
 
   const { user, error: authError, isLoading: isUserLoading } = useUser();
 
@@ -117,9 +120,26 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
         ...data,
         soilResidualNitrogen: data.soilResidualNitrogen
       });
+      
       if (response.status === 200) {
         isSuccessSignal.value = true;
         messageSignal.value = 'Crop updated successfully';
+        
+        // Transform the single crop response and maintain user data
+        const updatedCrop = {
+          ...transformCropForRotation(response.data.data),
+          userId: response.data.data.userId,
+          auth0Id: response.data.data.user?.auth0Id,
+          user: response.data.data.user
+        };
+        
+        // Update the crops state by replacing the updated crop
+        setCrops(prevCrops => 
+          prevCrops.map(crop => 
+            crop.id === updatedCrop.id ? updatedCrop : crop
+          )
+        );
+        
         refreshTrigger.value += 1;
       } else {
         isErrorSignal.value = true;
@@ -132,7 +152,7 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  }, [user]);
+  }, [user, transformCropForRotation]);
 
   const getCrops = useCallback(async () => {
     try {
@@ -202,10 +222,11 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
         const transformedCrop = {
           ...transformCropForRotation(cropData),
           userId: cropData.userId,
-          auth0Id: cropData.user?.auth0Id,
+          auth0Id: cropData.auth0Id,
           user: cropData.user
         };
         setCrops([transformedCrop]);
+        singleCropSignal.value = transformedCrop;
       } else {
         isErrorSignal.value = true;
         messageSignal.value = 'Error loading crop details';
@@ -372,7 +393,8 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
         areThereCrops: areThereCropsSignal,
         getCropRecommendations,
         addTheCropRecommendation,
-        updateSelectionCount
+        updateSelectionCount,
+        singleCrop: singleCropSignal
       }}
     >
       {children}

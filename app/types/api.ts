@@ -67,25 +67,74 @@ export interface CropModel {
 }
 
 export interface Crop {
-  _id?: string | number;
+
+  _id: string | number;
+
+  cropName: string;
+
+  cropType: string;
+
+  cropVariety?: string;
+
+  plantingDate?: string;
+
+  harvestingDate?: string;
+
+  description?: string;
+
+  imageUrl?: string;
+
+  soilType?: string;
+
+  climate?: string;
+
+  ItShouldNotBeRepeatedForXYears: number;
+
+  nitrogenSupply: number;
+
+  nitrogenDemand: number;
+
+  soilResidualNitrogen: number;
+
+  fertilizers: string[];
+
+  pests: string[];
+
+  diseases: string[];
+
+  user?: {
+
+    id: string;
+
+    auth0Id: string;
+
+    roleType: string;
+
+  };
+
+}
+
+export interface CropType {
+  id: string | number;
+  _id?: string;
   cropName: string;
   cropType: string;
   cropVariety?: string;
+  soilType?: string;
+  nitrogenSupply?: number;
+  nitrogenDemand?: number;
+  fertilizers?: string[];
+  pests?: string[];
+  diseases?: string[];
+  ItShouldNotBeRepeatedForXYears?: number;
   plantingDate?: string;
   harvestingDate?: string;
   description?: string;
   imageUrl?: string;
-  soilType?: string;
-  fertilizers?: string[];
-  pests?: string[];
-  diseases?: string[];
-  selectare?: boolean;
-  user?: string;
-  ItShouldNotBeRepeatedForXYears?: number;
-  nitrogenSupply: number;
-  nitrogenDemand: number;
-  soilResidualNitrogen?: number;
   climate?: string;
+  userId?: string;
+  auth0Id?: string;
+  isSelected?: boolean;
 }
 
 export interface CropCreate {
@@ -102,7 +151,7 @@ export interface CropCreate {
   diseases: string[];
   climate: string;
   description: string;
-  imageUrl: string;
+  imageUrl?: string;
   plantingDate?: string;
   harvestingDate?: string;
 }

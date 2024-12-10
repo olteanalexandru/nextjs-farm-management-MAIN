@@ -37,7 +37,7 @@ const CropCard = ({ crop, isSelected, readOnly = false, onSelect }: CropCardProp
     e.stopPropagation();
     const cropId = crop.id?.toString() || crop._id;
     if (cropId) {
-      router.push(`/Crud/GetAllInRotatie/${cropId}`);
+      router.push(`/Crop/${cropId}`);
     }
   };
 

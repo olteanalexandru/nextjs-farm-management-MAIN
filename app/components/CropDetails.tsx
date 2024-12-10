@@ -12,7 +12,7 @@ export default function CropDetails({ cropId, onClose }: CropDetailsProps) {
   const { singleCrop, deleteCrop, isLoading, isError, message } = useGlobalContextCrop();
   const [isEditing, setIsEditing] = useState(false);
 
-  const crop = singleCrop.value;
+  const crop = singleCrop?.value;
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this crop?')) {

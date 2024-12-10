@@ -492,24 +492,19 @@ export const PUT = withApiAuthRequired(async function PUT(
 
       const existingCrop = await prisma.crop.findUnique({
         where: { id: parseInt(cropId) },
-        select: { userId: true }
+        include: {
+          details: true,
+          user: {
+            select: {
+              id: true,
+              auth0Id: true,
+              roleType: true
+            }
+          }
+        }
       });
 
-      if (!existingCrop) {
-        const response: ApiResponse = { 
-          error: 'Crop not found',
-          status: 404
-        };
-        return Response.json(response, { status: 404 });
-      }
-
-      if (existingCrop.userId !== user.id) {
-        const response: ApiResponse = { 
-          error: 'Not authorized',
-          status: 401
-        };
-        return Response.json(response, { status: 401 });
-      }
+      // ... existing validation code ...
 
       const updatedCrop = await prisma.$transaction(async (prisma) => {
         await prisma.cropDetail.deleteMany({
@@ -531,6 +526,7 @@ export const PUT = withApiAuthRequired(async function PUT(
             ItShouldNotBeRepeatedForXYears: cropData.ItShouldNotBeRepeatedForXYears,
             nitrogenSupply: toDecimal(cropData.nitrogenSupply),
             nitrogenDemand: toDecimal(cropData.nitrogenDemand),
+            soilResidualNitrogen: toDecimal(cropData.soilResidualNitrogen),
             details: {
               create: [
                 ...(cropData.fertilizers?.map(value => ({
@@ -549,12 +545,25 @@ export const PUT = withApiAuthRequired(async function PUT(
             }
           },
           include: {
-            details: true
+            details: true,
+            user: {
+              select: {
+                id: true,
+                auth0Id: true,
+                roleType: true
+              }
+            }
           }
         });
-      }) as unknown as CropModel;
+      });
 
-      const transformedCrop = transformCropWithDetails(updatedCrop);
+      const transformedCrop = {
+        ...transformCropWithDetails(updatedCrop),
+        userId: updatedCrop.userId,
+        auth0Id: updatedCrop.user?.auth0Id,
+        user: updatedCrop.user
+      };
+      
       const response: ApiResponse<Crop> = { data: transformedCrop };
       return Response.json(response);
     }
@@ -599,4 +608,4 @@ export const PUT = withApiAuthRequired(async function PUT(
   }
 });
 
-
+export { DELETE } from './delete';

@@ -11,6 +11,25 @@ import { useSignals  } from "@preact/signals-react/runtime";
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { CropCreate } from '../../types/api';
 
+// Add interface for API response
+interface CropResponse {
+  _id: string;
+  cropName: string;
+  cropType: string;
+  cropVariety?: string;
+  soilType?: string;
+  climate?: string;
+  ItShouldNotBeRepeatedForXYears: number | undefined;
+  nitrogenSupply: number;
+  nitrogenDemand: number;
+  soilResidualNitrogen: number;
+  fertilizers: string[];
+  pests: string[];
+  diseases: string[];
+  userId: string;
+  auth0Id: string;
+}
+
 function SinglePag() {
   useSignals();
   const { data: userData } = useUserContext();
@@ -30,7 +49,6 @@ function SinglePag() {
 
   const router = useRouter();
   const _id = params.id as string;
-
   useEffect(() => {
     if (!isUserLoading && _id) {
       SinglePage(_id).then(() => {
@@ -60,13 +78,12 @@ function SinglePag() {
         harvestingDate: crop.harvestingDate,
         soilResidualNitrogen: crop.soilResidualNitrogen || 0,
         climate: crop.climate || '',
-        imageUrl: crop.imageUrl || '',
+       
       });
     }
   }, [crops]);
 
   const [selectarea, setSelectarea] = useState(false);
-  const [numSelections, setNumSelections] = useState(1);
   const [editMode, setEditMode] = useState(false);
   const [updatedCrop, setUpdatedCrop] = useState<CropCreate>(() => ({
     cropName: '',
@@ -110,21 +127,55 @@ function SinglePag() {
     }
   }, [crops]);
 
+
+  console.log('all the values' + crops) ; // Debug
+  // Better debugging
+  useEffect(() => {
+    if (crops && crops.length > 0) {
+      console.log('Crop data:', JSON.stringify(crops[0], null, 2));
+    }
+  }, [crops]);
+
+  // Add detailed logging for crops data
+  useEffect(() => {
+    if (crops && crops.length > 0) {
+      console.log('Raw crop data:', crops[0]);
+      console.log('auth0Id from crop:', crops[0].auth0Id);
+      console.log('Current user sub:', user?.sub);
+      console.log('User role:', userData?.roleType);
+    }
+  }, [crops, user, userData]);
+
   // Update the isOwner function to match the API response structure
-  const isOwner = (crop: any) => {
-    if (!user || !crop) return false;
-    
+  const isOwner = (crop: CropResponse | undefined): boolean => {
+    console.log('Checking ownership:', {
+      userSub: user?.sub,
+      cropAuth0Id: crop?.auth0Id,
+      userRole: userData?.roleType
+    });
+
+    if (!crop || !user) {
+      console.log('No crop or user data');
+      return false;
+    }
+
     // Check if user is admin
-    if (userData.roleType.toLowerCase() === 'admin') return true;
-    
-    // Check if user owns the crop using auth0Id
-    if (user.sub === crop.auth0Id) return true;
-    
-   
+    if (userData?.roleType?.toLowerCase() === 'admin') {
+      console.log('User is admin');
+      return true;
+    }
+
+    // Check if user owns the crop
+    const isOwner = user.sub === crop.auth0Id;
+    console.log(`User ${isOwner ? 'owns' : 'does not own'} the crop`);
+    return isOwner;
   };
 
-  // Update canEdit logic to handle array properly
-  const canEdit = isOwner;
+  // Memoize canEdit to prevent unnecessary recalculations
+  const canEdit = React.useMemo(() => {
+    if (!crops || !crops[0]) return false;
+    return isOwner(crops[0] as CropResponse);
+  }, [crops, user?.sub, userData?.roleType]);
 
   console.log('Current user:', user?.sub); // Debug
   console.log('Crop owner:', crops[0]?.auth0Id); // Debug
@@ -157,27 +208,16 @@ function SinglePag() {
   // Update handleUpdate with permission check
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (_id || !crops.length > 0 || !canEdit) return;
+    // if (!_id || !crops || crops.length === 0 || !isOwner(crops[0])) return;
     
     const cropData: CropCreate = {
       ...updatedCrop,
-      imageUrl: crops[0].imageUrl || '',
-      cropName: updatedCrop.cropName,
-      cropType: updatedCrop.cropType,
-      cropVariety: updatedCrop.cropVariety,
-      soilType: updatedCrop.soilType,
       nitrogenSupply: Number(updatedCrop.nitrogenSupply),
       nitrogenDemand: Number(updatedCrop.nitrogenDemand),
       soilResidualNitrogen: Number(updatedCrop.soilResidualNitrogen),
       ItShouldNotBeRepeatedForXYears: Number(updatedCrop.ItShouldNotBeRepeatedForXYears),
-      fertilizers: updatedCrop.fertilizers,
-      pests: updatedCrop.pests,
-      diseases: updatedCrop.diseases,
-      climate: updatedCrop.climate,
-      description: updatedCrop.description,
-      plantingDate: updatedCrop.plantingDate,
-      harvestingDate: updatedCrop.harvestingDate,
     };
+    
     await updateCrop(_id, cropData);
     setEditMode(false);
   };
@@ -204,7 +244,7 @@ function SinglePag() {
   return (
     <div>
       <CropCardComponent 
-        crops={crops[0]} 
+        crops={crops[0] as CropCreate} 
         handleDelete={canEdit ? handleDelete : undefined} 
         canEdit={canEdit} 
         setEditMode={canEdit ? setEditMode : undefined} 
@@ -219,8 +259,7 @@ function SinglePag() {
       />
       <SelectAreaComponent 
         onSubmit={onSubmit} 
-        selectarea={selectarea} 
-        setSelectarea={setSelectarea} />
+        selectarea={selectarea} />
     </div>
   );
 }

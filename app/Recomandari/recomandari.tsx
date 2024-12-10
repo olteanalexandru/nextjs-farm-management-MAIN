@@ -50,3 +50,9 @@
 
 //   return recommendations;
 // }
+
+
+let something: React.FC = () => {
+    return <div>this will be removed</div>;
+  };
+  export default something;
