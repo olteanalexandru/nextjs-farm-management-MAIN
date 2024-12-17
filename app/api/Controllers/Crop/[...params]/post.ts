@@ -2,11 +2,8 @@ import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { prisma } from 'app/lib/prisma';
 import { getCurrentUser } from 'app/lib/auth';
-import { ApiResponse, CropModel, DetailType, Crop } from 'app/types/api';
+import { ApiResponse, CropModel, DetailType, Crop, CropCreate } from 'app/types/api';
 
-  import {
-    CropCreate , WikiQueryParams
-  } from './types'
   import { toDecimal, transformCropWithDetails } from './helpers';
 
   //post routes are:
