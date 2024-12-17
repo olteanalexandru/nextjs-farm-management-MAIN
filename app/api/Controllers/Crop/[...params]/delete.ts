@@ -4,6 +4,11 @@ import { prisma } from 'app/lib/prisma';
 import { getCurrentUser } from 'app/lib/auth';
 import { ApiResponse, CropModel, DetailType, Crop } from 'app/types/api';
 
+// DELETE routes are:
+// 1. crops/cropId
+// 2. crops/userId/cropId
+
+
 
 export const DELETE = withApiAuthRequired(async function DELETE(
     request: NextRequest,
