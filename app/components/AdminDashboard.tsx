@@ -50,7 +50,7 @@ export default function AdminDashboard() {
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/Controllers/User');
+      const response = await fetch('/api/Controllers/User/all');
       const data = await response.json();
       setUsers(data.users || []);
     } catch (error) {
@@ -98,7 +98,8 @@ export default function AdminDashboard() {
     
     try {
       const response = await fetch(`/api/Controllers/User/${userId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
       });
       if (response.ok) {
         setUsers(users.filter(user => user.id !== userId));
@@ -108,6 +109,24 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error deleting user:', error);
       alert('Failed to delete user');
+    }
+  };
+
+  const updateUserRole = async (email: string, roleType: string) => {
+    try {
+      const response = await fetch('/api/Controllers/User/role', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, roleType })
+      });
+      if (response.ok) {
+        await fetchUsers();
+      } else {
+        throw new Error('Failed to update user role');
+      }
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      alert('Failed to update user role');
     }
   };
 
@@ -151,6 +170,12 @@ export default function AdminDashboard() {
                             className="text-red-600 hover:text-red-900"
                           >
                             Delete
+                          </button>
+                          <button
+                            onClick={() => updateUserRole(user.email, 'ADMIN')}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Promote to Admin
                           </button>
                         </div>
                       </div>

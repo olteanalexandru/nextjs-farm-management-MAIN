@@ -22,7 +22,7 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
   const navigationItems = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'News', href: '/News', icon: Home },
-    { name: 'Crop Rotation', href: '/Rotatie', icon: Repeat },
+    { name: 'Crop Rotation', href: '/Rotatie', icon: Repeat, farmerOnly: true },
     { name: 'Crop Database', href: '/CropWiki', icon: Database },
     { name: 'Dashboard', href: '/dashboard', icon: Camera },
     { name: 'Users', href: '/Login/Register', icon: Users, adminOnly: true },
@@ -93,6 +93,9 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
           <nav className="space-y-1">
             {navigationItems.map((item) => {
               if (item.adminOnly && (!user || !(user as unknown as UserProfile).userRoles?.includes('admin'))) {
+                return null;
+              }
+              if (item.farmerOnly && (!user || !(user as unknown as UserProfile).userRoles?.includes('FARMER'))) {
                 return null;
               }
               

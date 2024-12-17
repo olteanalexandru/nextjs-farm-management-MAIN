@@ -390,9 +390,12 @@ export default function RotationPage() {
                         isSelected={true}
                         readOnly={true}
                       />
-                      <div className="absolute bottom-4 left-4 right-4 bg-white p-2 rounded-lg shadow border">
-                        <div className="flex items-center justify-between">
-                          <label className="text-sm font-medium text-gray-700">Times in Rotation:</label>
+                      <br />
+                      <div className="absolute bottom-4 left-4 right-4 bg-white p-2  rounded-lg shadow border">
+
+                        <div className="flex items-center justify-between ">
+                       
+                          <label className="text-sm font-medium text-gray-700 ">Times in Rotation:</label>
                           <input
                             type="number"
                             min="0"

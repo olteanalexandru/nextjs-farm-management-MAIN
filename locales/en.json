@@ -34,7 +34,8 @@
     "title": "title",
     "subtitle": "subtitle",
     "vision": "vision",
-    "No news available at the moment": "No news available at the moment"
+    "No news available at the moment": "No news available at the moment",
+    "Latest in our newsfeed:": "Latest in our newsfeed:"
   },
   "LinkAdaugaPostare": {
     "addPost": "Add Post"
