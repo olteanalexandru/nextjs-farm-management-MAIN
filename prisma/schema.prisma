@@ -20,6 +20,8 @@ model User {
   posts          Post[]            @relation("UserPosts")
   rotations      Rotation[]        @relation("UserRotations")
   cropSelections UserCropSelection[] @relation("UserSelections")
+  soilTests      SoilTest[]        @relation("UserSoilTests")
+  fertilizationPlans FertilizationPlan[] @relation("UserFertilizationPlans")
 
   @@index([auth0Id])
   @@index([email])
@@ -50,6 +52,7 @@ model Crop {
   details                      CropDetail[]        @relation("CropDetails")
   rotationPlans               RotationPlan[]      @relation("CropRotationPlans")
   userSelections              UserCropSelection[] @relation("CropSelections")
+  fertilizationPlans         FertilizationPlan[] @relation("CropFertilizationPlans")
 
   @@index([userId])
   @@index([cropName])
@@ -128,4 +131,46 @@ model UserCropSelection {
   
   @@unique([userId, cropId])
   @@map("user_crop_selections")
+}
+
+model SoilTest {
+  id              Int       @id @default(autoincrement())
+  userId          String
+  user            User      @relation("UserSoilTests", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  testDate        DateTime
+  fieldLocation   String
+  pH              Decimal   @db.Decimal(4,2)
+  organicMatter   Decimal   @db.Decimal(5,2)
+  nitrogen        Decimal   @db.Decimal(10,2)
+  phosphorus      Decimal   @db.Decimal(10,2)
+  potassium       Decimal   @db.Decimal(10,2)
+  texture         String
+  notes           String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId, testDate])
+  @@map("soil_tests")
+}
+
+model FertilizationPlan {
+  id              Int       @id @default(autoincrement())
+  userId          String
+  user            User      @relation("UserFertilizationPlans", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cropId          Int
+  crop            Crop      @relation("CropFertilizationPlans", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  plannedDate     DateTime
+  fertilizer      String
+  applicationRate Decimal   @db.Decimal(10,2)
+  nitrogenContent Decimal   @db.Decimal(5,2)
+  applicationMethod String
+  notes           String?   @db.Text
+  completed       Boolean   @default(false)
+  completedDate   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId, plannedDate])
+  @@index([cropId])
+  @@map("fertilization_plans")
 }

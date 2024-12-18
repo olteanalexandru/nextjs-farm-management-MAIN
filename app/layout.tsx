@@ -1,32 +1,26 @@
-import './globals.css';
-import React from 'react';
-import 'bootstrap/dist/css/bootstrap.css';
-import '../styles/globalsBot.css';
-import { getLocale, getMessages } from 'next-intl/server';
-import RootProvider from './RootProvider';
-import ModernLayout from './components/ModernLayout';
 import { UserProvider } from '@auth0/nextjs-auth0/client';
-import DatabaseInitializer from './components/DatabaseInitializer';
+import './globals.css';
+import { Inter } from 'next/font/google';
+import ModernLayout from './components/ModernLayout';
+import RootProvider from './RootProvider';
 
-export default async function RootLayout({
+const inter = Inter({ subsets: ['latin'] });
+
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const locale = await getLocale();
-  const messages = await getMessages();
-
   return (
-    <html lang={locale}>
+    <html lang="en">
       <UserProvider>
-        <body>
-          <RootProvider locale={locale} messages={messages}>
-            <DatabaseInitializer />
+        <RootProvider locale="en" messages={{}}>
+          <body className={inter.className}>
             <ModernLayout>
               {children}
             </ModernLayout>
-          </RootProvider>
-        </body>
+          </body>
+        </RootProvider>
       </UserProvider>
     </html>
   );
