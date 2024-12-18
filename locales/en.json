@@ -1,6 +1,9 @@
 {
   "HomePage": {
-    "title": "English World Hello!"
+    "title": "Welcome!"
+  },
+  "AboutUs": {
+    "title": "About Us"
   },
   "ContactUs": {
     "title": "Agricultural Solutions Platform",
@@ -164,6 +167,7 @@
     "fertigation": "Fertigation",
     "injection": "Injection",
     "selectCrop": "Select crop",
-    "confirmDelete": "Are you sure you want to delete this item?"
+    "confirmDelete": "Are you sure you want to delete this item?",
+    "crop": "Crop"
   }
 }

@@ -3,9 +3,28 @@ import { UserProvider, useUserContext } from '../UserStore';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 
+interface Auth0User {
+  sub: string;
+  name: string;
+  email: string;
+  picture: string;
+}
+
+interface Auth0State {
+  user: Auth0User | null;
+  isLoading: boolean;
+  error: Error | null;
+}
+
 // Mock Auth0 hook
+let mockAuth0User: Auth0State = {
+  user: null,
+  isLoading: false,
+  error: null,
+};
+
 vi.mock('@auth0/nextjs-auth0/client', () => ({
-  useUser: vi.fn(),
+  useUser: () => mockAuth0User,
 }));
 
 // Mock axios
@@ -24,8 +43,8 @@ const mockUserData = {
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
-// Mock Auth0 user
-const mockAuth0User = {
+// Mock Auth0 user data
+const mockAuth0UserData: Auth0User = {
   sub: 'auth0|123',
   name: 'Test User',
   email: 'test@example.com',
@@ -38,21 +57,42 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 describe('UserStore', () => {
+  let originalWindow: Window & typeof globalThis;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset Auth0 mock to default state
+    mockAuth0User = {
+      user: null,
+      isLoading: false,
+      error: null,
+    };
+    // Save original window
+    originalWindow = window;
+    // Mock window.location
+    const location = {
+      href: '',
+    };
+    Object.defineProperty(window, 'location', {
+      value: location,
+      writable: true,
+    });
+  });
+
+  afterEach(() => {
+    // Restore original window
+    window = originalWindow;
   });
 
   describe('User Authentication', () => {
     it('should initialize user data when Auth0 user is present', async () => {
-      // Mock Auth0 useUser hook to return a user
-      const useAuth0User = require('@auth0/nextjs-auth0/client').useUser;
-      useAuth0User.mockReturnValue({
-        user: mockAuth0User,
+      // Set up Auth0 mock
+      mockAuth0User = {
+        user: mockAuth0UserData,
         isLoading: false,
         error: null,
-      });
+      };
 
-      // Mock API response for user creation
       mockAxios.post.mockResolvedValueOnce({
         status: 200,
         data: { user: mockUserData },
@@ -69,15 +109,13 @@ describe('UserStore', () => {
     });
 
     it('should handle user initialization error', async () => {
-      // Mock Auth0 useUser hook to return a user
-      const useAuth0User = require('@auth0/nextjs-auth0/client').useUser;
-      useAuth0User.mockReturnValue({
-        user: mockAuth0User,
+      // Set up Auth0 mock
+      mockAuth0User = {
+        user: mockAuth0UserData,
         isLoading: false,
         error: null,
-      });
+      };
 
-      // Mock API error response
       mockAxios.post.mockRejectedValueOnce(new Error('Failed to create user'));
 
       const { result } = renderHook(() => useUserContext(), { wrapper });
@@ -98,13 +136,12 @@ describe('UserStore', () => {
     });
 
     it('should handle no Auth0 user present', async () => {
-      // Mock Auth0 useUser hook to return no user
-      const useAuth0User = require('@auth0/nextjs-auth0/client').useUser;
-      useAuth0User.mockReturnValue({
+      // Set up Auth0 mock with no user
+      mockAuth0User = {
         user: null,
         isLoading: false,
         error: null,
-      });
+      };
 
       const { result } = renderHook(() => useUserContext(), { wrapper });
 
@@ -114,16 +151,16 @@ describe('UserStore', () => {
   });
 
   describe('Role Management', () => {
-    it('should update user role successfully', async () => {
-      // Mock Auth0 useUser hook
-      const useAuth0User = require('@auth0/nextjs-auth0/client').useUser;
-      useAuth0User.mockReturnValue({
-        user: mockAuth0User,
+    beforeEach(() => {
+      // Set up authenticated user for each test
+      mockAuth0User = {
+        user: mockAuth0UserData,
         isLoading: false,
         error: null,
-      });
+      };
+    });
 
-      // Mock API responses
+    it('should update user role successfully', async () => {
       mockAxios.post.mockResolvedValueOnce({
         status: 200,
         data: { user: mockUserData },
@@ -132,6 +169,11 @@ describe('UserStore', () => {
       mockAxios.put.mockResolvedValueOnce({
         status: 200,
         data: { ...mockUserData, roleType: 'ADMIN' },
+      });
+
+      mockAxios.get.mockResolvedValueOnce({
+        status: 200,
+        data: { users: [] },
       });
 
       const { result } = renderHook(() => useUserContext(), { wrapper });
@@ -151,15 +193,6 @@ describe('UserStore', () => {
     });
 
     it('should handle role update error', async () => {
-      // Mock Auth0 useUser hook
-      const useAuth0User = require('@auth0/nextjs-auth0/client').useUser;
-      useAuth0User.mockReturnValue({
-        user: mockAuth0User,
-        isLoading: false,
-        error: null,
-      });
-
-      // Mock API responses
       mockAxios.post.mockResolvedValueOnce({
         status: 200,
         data: { user: mockUserData },
@@ -174,29 +207,27 @@ describe('UserStore', () => {
       });
 
       await expect(
-        act(async () => {
-          await result.current.updateRole('test@example.com', 'ADMIN');
-        })
+        result.current.updateRole('test@example.com', 'ADMIN')
       ).rejects.toThrow('Failed to update role');
     });
   });
 
   describe('Farmer Users Management', () => {
+    beforeEach(() => {
+      // Set up authenticated admin user for each test
+      mockAuth0User = {
+        user: mockAuth0UserData,
+        isLoading: false,
+        error: null,
+      };
+    });
+
     it('should fetch farmer users when user is admin', async () => {
       const mockFarmers = [
         { ...mockUserData, id: 'farmer1' },
         { ...mockUserData, id: 'farmer2' },
       ];
 
-      // Mock Auth0 useUser hook
-      const useAuth0User = require('@auth0/nextjs-auth0/client').useUser;
-      useAuth0User.mockReturnValue({
-        user: mockAuth0User,
-        isLoading: false,
-        error: null,
-      });
-
-      // Mock API responses
       mockAxios.post.mockResolvedValueOnce({
         status: 200,
         data: { user: { ...mockUserData, roleType: 'ADMIN' } },
@@ -217,15 +248,11 @@ describe('UserStore', () => {
     });
 
     it('should delete farmer user successfully', async () => {
-      // Mock Auth0 useUser hook
-      const useAuth0User = require('@auth0/nextjs-auth0/client').useUser;
-      useAuth0User.mockReturnValue({
-        user: mockAuth0User,
-        isLoading: false,
-        error: null,
+      mockAxios.post.mockResolvedValueOnce({
+        status: 200,
+        data: { user: mockUserData },
       });
 
-      // Mock API responses
       mockAxios.delete.mockResolvedValueOnce({
         status: 200,
       });
@@ -242,24 +269,23 @@ describe('UserStore', () => {
 
   describe('Loading State', () => {
     it('should handle loading state during initialization', async () => {
-      // Mock Auth0 useUser hook to return loading state
-      const useAuth0User = require('@auth0/nextjs-auth0/client').useUser;
-      useAuth0User.mockReturnValue({
+      // Start with loading state
+      mockAuth0User = {
         user: null,
         isLoading: true,
         error: null,
-      });
+      };
 
       const { result } = renderHook(() => useUserContext(), { wrapper });
 
       expect(result.current.isLoading).toBe(true);
 
-      // Update mock to finish loading
-      useAuth0User.mockReturnValue({
-        user: mockAuth0User,
+      // Update mock to finish loading with a user
+      mockAuth0User = {
+        user: mockAuth0UserData,
         isLoading: false,
         error: null,
-      });
+      };
 
       mockAxios.post.mockResolvedValueOnce({
         status: 200,
@@ -273,38 +299,29 @@ describe('UserStore', () => {
   });
 
   describe('Authentication Actions', () => {
-    let originalWindow: Window & typeof globalThis;
-
     beforeEach(() => {
-      originalWindow = window;
-      // @ts-ignore
-      window = {
-        ...window,
-        location: {
-          ...window.location,
-          href: '',
-        },
+      // Set up basic user state
+      mockAuth0User = {
+        user: mockAuth0UserData,
+        isLoading: false,
+        error: null,
       };
     });
 
-    afterEach(() => {
-      window = originalWindow;
-    });
-
-    it('should provide login function', () => {
+    it('should provide login function', async () => {
       const { result } = renderHook(() => useUserContext(), { wrapper });
 
-      act(() => {
+      await act(async () => {
         result.current.login();
       });
 
       expect(window.location.href).toBe('/api/auth/login');
     });
 
-    it('should provide logout function', () => {
+    it('should provide logout function', async () => {
       const { result } = renderHook(() => useUserContext(), { wrapper });
 
-      act(() => {
+      await act(async () => {
         result.current.logout();
       });
 

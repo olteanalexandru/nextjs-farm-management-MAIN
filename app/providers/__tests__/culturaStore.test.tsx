@@ -1,12 +1,13 @@
 import { render, act, renderHook, waitFor } from '@testing-library/react';
 import { GlobalContextProvider, useGlobalContextCrop } from '../culturaStore';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 import { CropCreate, RecommendationResponse } from '../../types/api';
 
-// Mock Auth0 hook
+// Create a mock module for Auth0
+const mockUseUser = vi.fn();
 vi.mock('@auth0/nextjs-auth0/client', () => ({
-  useUser: vi.fn(),
+  useUser: () => mockUseUser(),
 }));
 
 // Mock axios
@@ -69,9 +70,8 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 describe('CulturaStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Mock Auth0 useUser hook to return a user by default
-    const useAuth0User = require('@auth0/nextjs-auth0/client').useUser;
-    useAuth0User.mockReturnValue({
+    // Set up authenticated user for each test
+    mockUseUser.mockReturnValue({
       user: mockAuth0User,
       isLoading: false,
       error: null,
@@ -310,8 +310,7 @@ describe('CulturaStore', () => {
 
     it('should handle unauthorized user', async () => {
       // Mock Auth0 useUser hook to return no user
-      const useAuth0User = require('@auth0/nextjs-auth0/client').useUser;
-      useAuth0User.mockReturnValue({
+      mockUseUser.mockReturnValue({
         user: null,
         isLoading: false,
         error: null,

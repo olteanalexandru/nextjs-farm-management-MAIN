@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Input,
@@ -23,15 +23,15 @@ import {
   SortDesc, 
   Calendar, 
   Sprout,
-  Droplet, // Changed from Drop to Droplet
-  RefreshCw, // Add this import
-  ChevronLeft, // Add this import
-  ChevronRight // Add this import
+  Droplet,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 10;
 
-export default function CropWiki() {
+function CropWikiContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [crops, setCrops] = useState<Crop[]>([]);
@@ -95,7 +95,6 @@ export default function CropWiki() {
   };
 
   const navigateToCrop = (cropId: string) => {
-    // Update the navigation to use the new dynamic route structure
     router.push(`/Crop/${cropId}`, { scroll: false });
   };
 
@@ -306,7 +305,7 @@ export default function CropWiki() {
         </div>
       )}
 
-      {/* Replace the Pagination section with this */}
+      {/* Pagination */}
       {!loading && crops.length > 0 && (
         <div className="mt-8 flex justify-center items-center gap-2">
           <Button
@@ -337,5 +336,19 @@ export default function CropWiki() {
         </div>
       )}
     </div>
+  );
+}
+
+// Wrap the main component with Suspense
+export default function CropWiki() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Spinner size="lg" />
+        <p className="text-gray-500 mt-4">Loading...</p>
+      </div>
+    }>
+      <CropWikiContent />
+    </Suspense>
   );
 }
