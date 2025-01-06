@@ -8,10 +8,12 @@ import DashboardLayout from '../components/dashboard/DashboardLayout';
 import { StatsGrid, StatItem } from '../components/dashboard/DashboardStats';
 import AdminDashboard from '../components/AdminDashboard';
 import FarmerDashboard from '../components/FarmerDashboard';
+import { useTranslations } from 'next-intl';
 
 let Spinner = () => null;
 
 export default function Dashboard() {
+  const t = useTranslations('Dashboard');
   const { user, isLoading: isUserLoading } = useUser();
   const { data: userData, isUserLoggedIn } = useUserContext();
   const { getCrops } = useGlobalContextCrop();
@@ -24,7 +26,7 @@ export default function Dashboard() {
 
   if (isUserLoading || !userData) {
     return (
-      <DashboardLayout title="Loading...">
+      <DashboardLayout title={t('loading')}>
         <div className="flex justify-center items-center h-64">
           <Spinner />
         </div>
@@ -34,7 +36,7 @@ export default function Dashboard() {
 
   if (!isUserLoggedIn) {
     return (
-      <DashboardLayout title="Access Denied">
+      <DashboardLayout title={t('accessDenied')}>
         <div className="bg-red-50 border-l-4 border-red-400 p-4">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -44,7 +46,7 @@ export default function Dashboard() {
             </div>
             <div className="ml-3">
               <p className="text-sm text-red-700">
-                Please log in to access the dashboard
+                {t('pleaseLogIn')}
               </p>
             </div>
           </div>
@@ -58,12 +60,12 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout 
-      title={`Welcome, ${userData.name}`}
-      subtitle={`Logged in as ${userData.roleType}`}
+      title={`${t('welcome')}, ${userData.name}`}
+      subtitle={`${t('loggedInAs')} ${userData.roleType}`}
     >
       <StatsGrid>
         <StatItem 
-          label="Role"
+          label={t('role')}
           value={userData.roleType}
           icon={<svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

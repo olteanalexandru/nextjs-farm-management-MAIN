@@ -1,9 +1,88 @@
 {
   "HomePage": {
-    "title": "Bine ați venit!"
+    "title": "Bine ați venit!",
+    "description": "Gestionați-vă ferma eficient",
+    "getStarted": "Începeți",
+    "loginPrompt": "Vă rugăm să vă autentificați pentru a accesa toate funcțiile",
+    "welcomeMessage": "Platforma Dvs. de Management Agricol"
   },
   "AboutUs": {
     "title": "Despre noi"
+  },
+  "ContactUs": {
+    "title": "Platformă de Soluții Agricole",
+    "subtitle": "Creșterea Eficienței și Sustenabilității",
+    "vision": "Viziunea Noastră",
+    "cropManagement": "Managementul Culturilor",
+    "cropManagementDescription": "Instrumente precise de monitorizare și gestionare pentru maximizarea performanței culturilor",
+    "supportCollaboration": "Suport și Colaborare",
+    "supportCollaborationDescription": "Angajați să oferim suport de top și să încurajăm colaborarea pentru succesul utilizatorilor",
+    "comprehensiveTracking": "Urmărire Cuprinzătoare",
+    "comprehensiveTrackingDescription": "Urmăriți și analizați fiecare etapă a ciclului de viață al culturilor dvs. fără probleme",
+    "robustAnalytics": "Analize Robuste",
+    "robustAnalyticsDescription": "Suite de instrumente analitice adaptate pentru optimizarea proceselor agricole",
+    "efficiencyProfitability": "Eficiență și Profitabilitate",
+    "efficiencyProfitabilityDescription": "Proiectat pentru a spori eficiența, a reduce risipa și a crește profitabilitatea fermierilor",
+    "contactUs": "Nu ezitați să ne contactați",
+    "contactUsForm": "Formular de contact"
+  },
+  "Contact": {
+    "title": "Contact",
+    "heading": "Contactați-ne",
+    "description": "Ne-ar plăcea să auzim de la dumneavoastră",
+    "name": "Nume",
+    "email": "Email",
+    "enterName": "Introduceți numele",
+    "enterEmail": "Introduceți emailul",
+    "privacyNotice": "Nu vom împărtăși emailul dvs. cu nimeni",
+    "message": "Mesaj",
+    "enterMessage": "Introduceți mesajul",
+    "send": "Trimite",
+    "form": {
+      "title": "Trimiteți-ne un mesaj",
+      "success": "Mesaj trimis cu succes",
+      "error": "Eroare la trimiterea mesajului"
+    }
+  },
+  "News": {
+    "title": "Știri",
+    "heading": "Știri Agricole",
+    "description": "Rămâneți la curent cu știrile agricole",
+    "latestPosts": "Ultimele Postări",
+    "latestNewsfeed": "Ultimele știri",
+    "subtitle": "Actualizări Agricole",
+    "vision": "Viziunea Industriei",
+    "noNews": "Nu există știri disponibile momentan",
+    "readMore": "Citește mai mult",
+    "category": "Categorie",
+    "date": "Data",
+    "author": "Autor"
+  },
+  "Postari": {
+    "title": "Postări",
+    "description": "Gestionați postările",
+    "posts": "Postări",
+    "delete": "Șterge",
+    "edit": "Editează",
+    "create": "Crează Postare",
+    "loading": "Se încarcă...",
+    "noPostsAvailable": "Nu există postări disponibile",
+    "loadMore": "Încarcă mai mult",
+    "confirmDelete": "Sigur doriți să ștergeți această postare?"
+  },
+  "Common": {
+    "loading": "Se încarcă...",
+    "error": "A apărut o eroare",
+    "success": "Operație reușită",
+    "confirm": "Sunteți sigur?",
+    "cancel": "Anulează",
+    "save": "Salvează",
+    "edit": "Editează",
+    "delete": "Șterge",
+    "submit": "Trimite",
+    "back": "Înapoi",
+    "next": "Următorul",
+    "required": "Câmp obligatoriu"
   },
   "SoilManagement": {
     "title": "Gestionarea Solului",
@@ -55,6 +134,32 @@
     "injection": "Injecție",
     "selectCrop": "Selectați cultura",
     "confirmDelete": "Sigur doriți să ștergeți acest element?",
-    "crop": "Cultură"
+    "crop": "Cultură",
+    "overview": "Prezentare Generală a Solului",
+    "statistics": "Statistici Sol",
+    "analysis": "Analiză Sol",
+    "recommendations": "Recomandări",
+    "history": "Istoric",
+    "addNewRecord": "Adaugă Înregistrare Nouă"
+  },
+  "Recomandari": {
+    "hello": "Bună",
+    "recommendationsBasedOnCropRotation": "Recomandări bazate pe rotația culturilor:",
+    "division": "Diviziune",
+    "crop": "Cultură",
+    "plantingDate": "Data Plantării",
+    "harvestingDate": "Data Recoltării",
+    "divisionSize": "Dimensiunea Diviziunii",
+    "nitrogenBalance": "Bilanț de Azot",
+    "recommendations": "Recomandări",
+    "year": "An"
+  },
+  "Dashboard": {
+    "loading": "Se încarcă...",
+    "accessDenied": "Acces Refuzat",
+    "pleaseLogIn": "Vă rugăm să vă autentificați pentru a accesa tabloul de bord",
+    "welcome": "Bine ați venit",
+    "loggedInAs": "Autentificat ca",
+    "role": "Rol"
   }
 }

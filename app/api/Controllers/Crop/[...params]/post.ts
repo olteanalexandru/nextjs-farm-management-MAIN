@@ -1,15 +1,17 @@
 import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
-import { prisma } from 'app/lib/prisma';
+import { PrismaClient } from '@prisma/client';
 import { getCurrentUser } from 'app/lib/auth';
 import { ApiResponse, CropModel, DetailType, Crop, CropCreate } from 'app/types/api';
 
-  import { toDecimal, transformCropWithDetails } from './helpers';
+const prisma = new PrismaClient();
 
-  //post routes are:
-    // 1. crops/recommendations
-    // 2. crop/single
-    
+import { toDecimal, transformCropWithDetails } from './helpers';
+
+//post routes are:
+// 1. crops/recommendations
+// 2. crop/single
+
 
 export const POST = withApiAuthRequired(async function POST(
   request: NextRequest,

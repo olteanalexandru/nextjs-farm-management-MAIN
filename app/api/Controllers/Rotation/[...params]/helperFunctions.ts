@@ -1,5 +1,7 @@
 import { CropInput } from '../interfaces';
-import { prisma } from 'app/lib/prisma';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export function hasSharedPests(crop1: CropInput, crop2: CropInput): boolean {
     return crop1.pests.some(pest => crop2.pests.includes(pest));

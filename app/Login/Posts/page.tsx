@@ -48,7 +48,7 @@ function Postari() {
             </Container>
 
             <Container>
-                <h1 className="mb-4">{t('Postari')}</h1>
+                <h1 className="mb-4">{t('title')}</h1>
                 
                 {error && (
                     <Alert variant="danger" className="mb-4">
@@ -58,7 +58,7 @@ function Postari() {
 
                 {data.length === 0 ? (
                     <Alert variant="info">
-                        {t('Nu exista postari')}
+                        {t('noPostsAvailable')}
                     </Alert>
                 ) : (
                     <>
@@ -75,7 +75,7 @@ function Postari() {
                                     onClick={loadMore}
                                     disabled={loading}
                                 >
-                                    {loading ? t('Se incarca...') : t('Incarca mai mult')}
+                                    {loading ? t('loading') : t('loadMore')}
                                 </button>
                             </div>
                         )}

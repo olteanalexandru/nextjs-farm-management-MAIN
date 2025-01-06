@@ -1,8 +1,10 @@
 import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
-import { prisma } from 'app/lib/prisma';
+import { PrismaClient } from '@prisma/client';
 import { getCurrentUser } from 'app/lib/auth';
 import { ApiResponse } from 'app/types/api';
+
+const prisma = new PrismaClient();
 
 export const DELETE = withApiAuthRequired(async function DELETE(
   request: NextRequest,

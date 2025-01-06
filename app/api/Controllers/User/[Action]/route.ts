@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from 'app/lib/prisma';
+import { PrismaClient } from '@prisma/client';
 import { getSession } from '@auth0/nextjs-auth0';
 import { User } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
+
+const prisma = new PrismaClient();
 
 type RoleType = 'ADMIN' | 'FARMER';
 
