@@ -49,7 +49,7 @@
     "heading": "Știri Agricole",
     "description": "Rămâneți la curent cu știrile agricole",
     "latestPosts": "Ultimele Postări",
-    "latestNewsfeed": "Ultimele știri",
+    "latestNewsfeed": "Ultimele noutăți",
     "subtitle": "Actualizări Agricole",
     "vision": "Viziunea Industriei",
     "noNews": "Nu există știri disponibile momentan",
@@ -58,7 +58,7 @@
     "date": "Data",
     "author": "Autor"
   },
-  "Postari": {
+  "Posts": {
     "title": "Postări",
     "description": "Gestionați postările",
     "posts": "Postări",
@@ -161,5 +161,15 @@
     "welcome": "Bine ați venit",
     "loggedInAs": "Autentificat ca",
     "role": "Rol"
+  },
+  "RotationDashboard": {
+    "selectedCrops": "Culturi selectate",
+    "noCropsSelected": "Nicio cultură selectată",
+    "seeMore": "Vezi mai mult",
+    "noCropsAvailable": "Nu există culturi",
+    "rotations": "Rotații",
+    "fieldSize": "Dimensiune câmp",
+    "divisionCount": "Număr de diviziuni",
+    "division": "Diviziune"
   }
 }

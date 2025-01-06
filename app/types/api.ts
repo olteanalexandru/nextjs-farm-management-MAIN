@@ -3,6 +3,8 @@ import { Decimal } from '@prisma/client/runtime/library';
 export type DetailType = 'FERTILIZER' | 'PEST' | 'DISEASE';
 
 export interface Post {
+  imageUrl: any;
+  author: any;
   id: number;
   userId: string;
   title: string;

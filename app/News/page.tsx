@@ -49,48 +49,65 @@ export default function Noutati() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-7xl">
-      <h1 className="text-4xl font-bold mb-12 text-gray-800 border-b pb-4">
+    <div className="container mx-auto px-4 py-16 max-w-4xl">
+      <h1 className="text-5xl font-bold mb-16 text-gray-800 text-center">
         {t('Latest in our newsfeed:')}
       </h1>
       
       {data.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="space-y-12">
           {data.map((data) => (
-            <div 
+            <article 
               key={data.id} 
-              className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 
-                       transform hover:-translate-y-1"
+              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300
+                       border border-gray-100"
             >
-              <div className="p-6 h-full flex flex-col">
+              {data.imageUrl && (
+                <div className="w-full h-[400px] relative rounded-t-lg overflow-hidden">
+                  <img 
+                    src={data.imageUrl} 
+                    alt={data.title} 
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+              )}
+              <div className="p-8">
+                <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                  <time>{new Date(data.createdAt).toLocaleDateString()}</time>
+                  {data.author && (
+                    <>
+                      <span>•</span>
+                      <span>{data.author}</span>
+                    </>
+                  )}
+                </div>
                 <PostContent data={data} />
               </div>
-            </div>
+            </article>
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 bg-gray-50 rounded-xl">
+        <div className="text-center py-32 bg-gray-50 rounded-lg">
           <svg
-            className="mx-auto h-12 w-12 text-gray-400 mb-4"
+            className="mx-auto h-16 w-16 text-gray-400 mb-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+              strokeWidth="1.5"
+              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
             />
           </svg>
-          <h3 className="text-2xl font-semibold text-gray-800 mb-2">No news yet</h3>
-          <p className="text-gray-600">Check back later for updates and news.</p>
+          <h3 className="text-3xl font-semibold text-gray-800 mb-3">{t('No articles yet')}</h3>
+          <p className="text-gray-600 text-lg">{t('Check back later for updates and news.')}</p>
         </div>
       )}
       
       {loadingMore && (
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center mt-12">
           <Spinner />
         </div>
       )}
