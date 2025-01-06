@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { PrismaClient } from '@prisma/client';
 import { getCurrentUser } from 'app/lib/auth';
-import { ApiResponse, Post, PostCreate } from 'app/types/api';
+import { ApiResponse, Post, PostCreate, transformPrismaPost } from 'app/types/api';
 
 const prisma = new PrismaClient();
 
@@ -67,7 +67,9 @@ export const PUT = withApiAuthRequired(async function PUT(
       }
     });
 
-    const response: ApiResponse<Post> = { data: updatedPost };
+    const response: ApiResponse<Post> = { 
+      data: transformPrismaPost(updatedPost)
+    };
     return Response.json(response);
   } catch (error) {
     console.error('PUT request error:', error);

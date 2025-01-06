@@ -186,7 +186,7 @@ export interface RecommendationResponse {
 export interface ApiResponse<T = any> {
   data?: T;
   crops?: T[];
-  posts?: T[];
+  posts?: T[];  // Change this line to expect an array of T[]
   selections?: any[];
   error?: string;
   status?: number;
@@ -222,6 +222,22 @@ export function transformCropToApiResponse(crop: CropModel): Crop {
     diseases: crop.details
       ?.filter(d => d.detailType === 'DISEASE')
       .map(d => d.value) || []
+  };
+}
+
+export function transformPrismaPost(prismaPost: any): Post {
+  return {
+    id: prismaPost.id,
+    userId: prismaPost.userId,
+    title: prismaPost.title,
+    brief: prismaPost.brief,
+    description: prismaPost.description,
+    imageUrl: prismaPost.image,  // map image to imageUrl
+    image: prismaPost.image,  // add image property
+    author: prismaPost.user?.name || null,  // map user.name to author
+    createdAt: prismaPost.createdAt,
+    updatedAt: prismaPost.updatedAt,
+    user: prismaPost.user
   };
 }
 

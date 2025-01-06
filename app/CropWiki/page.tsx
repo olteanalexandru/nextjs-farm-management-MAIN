@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useCropWiki } from '../providers/CropWikiStore';
 import {
   Input,
   Select,
@@ -16,7 +17,6 @@ import {
   Button,
   Chip
 } from '@nextui-org/react';
-import { Crop } from 'app/types/api';
 import { 
   Search, 
   SortAsc, 
@@ -34,42 +34,29 @@ const ITEMS_PER_PAGE = 10;
 function CropWikiContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [crops, setCrops] = useState<Crop[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [totalPages, setTotalPages] = useState(1);
-  const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState({
-    search: searchParams.get('search') || '',
-    cropType: searchParams.get('cropType') || '',
-    soilType: searchParams.get('soilType') || '',
-    sortBy: searchParams.get('sortBy') || 'cropName',
-    sortOrder: searchParams.get('sortOrder') || 'asc',
-    page: parseInt(searchParams.get('page') || '1')
-  });
+  const {
+    crops,
+    loading,
+    error,
+    totalPages,
+    filters,
+    fetchCrops,
+    updateFilters,
+    resetFilters
+  } = useCropWiki();
 
-  const fetchCrops = async () => {
-    setLoading(true);
-    try {
-      const queryParams = new URLSearchParams({
-        page: filters.page.toString(),
-        limit: ITEMS_PER_PAGE.toString(),
-        ...(filters.search && { search: filters.search }),
-        ...(filters.cropType && { cropType: filters.cropType }),
-        ...(filters.soilType && { soilType: filters.soilType }),
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder
-      });
-
-      const response = await fetch(`/api/Controllers/Crop/crops/wiki?${queryParams}`);
-      const data = await response.json();
-      setCrops(data.crops);
-      setTotalPages(data.pagination.totalPages);
-    } catch (error) {
-      console.error('Error fetching crops:', error);
-      setError('Failed to load crops. Please try again later.');
-    }
-    setLoading(false);
-  };
+  useEffect(() => {
+    // Initialize filters from URL params
+    const urlFilters = {
+      search: searchParams.get('search') || '',
+      cropType: searchParams.get('cropType') || '',
+      soilType: searchParams.get('soilType') || '',
+      sortBy: searchParams.get('sortBy') || 'cropName',
+      sortOrder: searchParams.get('sortOrder') || 'asc',
+      page: parseInt(searchParams.get('page') || '1')
+    };
+    updateFilters(urlFilters);
+  }, []);
 
   useEffect(() => {
     fetchCrops();
@@ -77,21 +64,14 @@ function CropWikiContent() {
     // Update URL with current filters
     const queryParams = new URLSearchParams(filters as any);
     router.push(`/CropWiki?${queryParams}`);
-  }, [filters]);
+  }, [filters, router]);
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value,
-      page: 1 // Reset page when filters change
-    }));
+    updateFilters({ [key]: value });
   };
 
   const handlePageChange = (page: number) => {
-    setFilters(prev => ({
-      ...prev,
-      page
-    }));
+    updateFilters({ page });
   };
 
   const navigateToCrop = (cropId: string) => {
@@ -99,21 +79,7 @@ function CropWikiContent() {
   };
 
   const toggleSortOrder = () => {
-    setFilters(prev => ({
-      ...prev,
-      sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc'
-    }));
-  };
-
-  const resetFilters = () => {
-    setFilters({
-      search: '',
-      cropType: '',
-      soilType: '',
-      sortBy: 'cropName',
-      sortOrder: 'asc',
-      page: 1
-    });
+    updateFilters({ sortOrder: filters.sortOrder === 'asc' ? 'desc' : 'asc' });
   };
 
   return (

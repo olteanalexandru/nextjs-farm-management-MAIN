@@ -4,6 +4,9 @@ import { ReactNode } from 'react';
 import { UserProvider as AppUserProvider } from './providers/UserStore';
 import { GlobalContextProvider as CulturaProvider } from './providers/culturaStore';
 import { GlobalContextProvider as RotationProvider } from './providers/rotationStore';
+import { AdminProvider } from './providers/AdminStore';
+import { CropWikiProvider } from './providers/CropWikiStore';
+
 import { PostProvider } from './providers/postStore'; 
 import { NextIntlClientProvider } from 'next-intl';
 
@@ -26,13 +29,17 @@ const RootProvider = ({ children, locale, messages }: RootProviderProps) => {
 
   return (
     <AppUserProvider>
+        <AdminProvider>
         <CulturaProvider>
           <RotationProvider>
             <PostProvider>
+              <CropWikiProvider>
               {wrappedChildren}
+              </CropWikiProvider>
             </PostProvider>
           </RotationProvider>
         </CulturaProvider>
+      </AdminProvider>
     </AppUserProvider>
   );
 };

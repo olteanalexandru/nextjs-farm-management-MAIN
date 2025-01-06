@@ -73,7 +73,7 @@ export default function SinglePost() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <h1 className="text-2xl font-semibold text-gray-800 mb-2">Article not found</h1>
-          <p className="text-gray-600">The article you're looking for doesn't exist or has been removed.</p>
+          <p className="text-gray-600">The article you&apos;re looking for doesn&apos;t exist or has been removed.</p>
         </div>
       </div>
     );

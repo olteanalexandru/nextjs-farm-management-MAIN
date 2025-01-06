@@ -54,7 +54,13 @@ export const POST = withApiAuthRequired(async function POST(
       }
     });
 
-    const response: ApiResponse<Post> = { data: post };
+    const postWithAuthor: Post = {
+      ...post,
+      author: post.user.name,
+      imageUrl: post.image || ''
+    };
+
+    const response: ApiResponse<Post> = { data: postWithAuthor };
     return Response.json(response, { status: 201 });
   } catch (error) {
     console.error('POST request error:', error);

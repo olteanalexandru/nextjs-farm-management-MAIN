@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { ApiResponse, Post } from 'app/types/api';
+import { ApiResponse, Post, transformPrismaPost } from 'app/types/api';
 
 const prisma = new PrismaClient();
 
@@ -20,7 +20,8 @@ export async function GET() {
       }
     });
 
-    const response: ApiResponse<Post> = { posts };
+    const transformedPosts = posts.map(transformPrismaPost);
+    const response: ApiResponse<Post[]> = { posts: [transformedPosts] };  // Wrap transformedPosts in an array
     return Response.json(response);
   } catch (error) {
     console.error('GET request error:', error);
