@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGlobalContextRotation } from '../providers/rotationStore';
+import { useRotation } from '../providers/rotationStore';
 import { useTranslations } from 'next-intl';
 
 interface Crop {
@@ -26,7 +26,7 @@ const CropRotationForm: React.FC<CropRotationFormProps> = ({ filteredCrops, onRo
   const [maxYears, setMaxYears] = useState('');
   const [ResidualNitrogenSupply, setResidualNitrogenSupply] = useState(''); 
 
-  const { generateCropRotation } = useGlobalContextRotation();
+  const { generateCropRotation } = useRotation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,20 +43,8 @@ const CropRotationForm: React.FC<CropRotationFormProps> = ({ filteredCrops, onRo
 
       console.log('Sending data:', formData); // Debug log
 
-      const response = await fetch('/api/Controllers/Rotation/generateRotation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-  
-      const data = await response.json();
+      const data = await generateCropRotation(formData);
       console.log('API Response:', data);
-  
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate rotation');
-      }
   
       onRotationGenerated(data);
     } catch (error) {

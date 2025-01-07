@@ -8,6 +8,7 @@ import RotatieForm from './RotatieForm';
 import RotationChart from './Components/RotationChart';
 import RotationDetails from './Components/RotationDetails';
 import { getCropsRepeatedBySelection } from './Components/helperFunctions';
+import { useRotation }  from '../providers/rotationStore';
 
 // Add these interfaces at the top of the file
 interface Crop {
@@ -38,6 +39,7 @@ interface NitrogenBalanceMap {
 
 export default function RotationPage() {
   const { getAllCrops, crops, isLoading } = useGlobalContextCrop();
+  const { fetchRotations, deleteRotation, updateDivisionSize, updateNitrogenBalance } = useRotation();
   const [selectedCrops, setSelectedCrops] = useState<Map<string, number>>(new Map());
   const [showRotationForm, setShowRotationForm] = useState(false);
   const [rotationPlan, setRotationPlan] = useState<RotationData | null>(null);
@@ -57,29 +59,7 @@ export default function RotationPage() {
 
   // Add this new effect to fetch rotations
   useEffect(() => {
-    const fetchRotations = async () => {
-      setIsLoadingRotations(true);
-      setLoadError(null);
-      try {
-        const response = await fetch('/api/Controllers/Rotation/getRotation');
-        if (!response.ok) {
-          throw new Error('Failed to fetch rotations');
-        }
-        const data = await response.json();
-        console.log('Raw rotation data:', data); // Debug log
-        if (!data.data || !Array.isArray(data.data)) {
-          throw new Error('Invalid rotation data format');
-        }
-        setExistingRotations(data.data);
-      } catch (error) {
-        console.error('Error fetching rotations:', error);
-        setLoadError(error instanceof Error ? error.message : 'Failed to load rotations');
-      } finally {
-        setIsLoadingRotations(false);
-      }
-    };
-
-    fetchRotations();
+    fetchRotations().then(setExistingRotations).catch(setLoadError).finally(() => setIsLoadingRotations(false));
   }, []);
 
   // Filter only selected crops
@@ -162,14 +142,8 @@ export default function RotationPage() {
 
   const handleDeleteRotation = async (id: number) => {
     if (!confirm('Are you sure you want to delete this rotation?')) return;
-    
     try {
-      const response = await fetch(`/api/Controllers/Rotation/deleteRotation/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) throw new Error('Failed to delete rotation');
-      
+      await deleteRotation(id);
       setExistingRotations(prev => prev.filter(r => r.id !== id));
     } catch (error) {
       console.error('Error deleting rotation:', error);
@@ -202,22 +176,7 @@ export default function RotationPage() {
     if (!rotationData) return;
     setIsUpdating(true);
     try {
-      const response = await fetch('/api/Controllers/Rotation/updateDivisionSizeAndRedistribute', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: rotationData.id,
-          division: parseInt(division),
-          newDivisionSize: value
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to update division size');
-      
-      const updatedData = await response.json();
-      // Update both rotation data and chart data
+      const updatedData = await updateDivisionSize(rotationData.id, parseInt(division), value);
       setRotationData(updatedData);
       setChartData(updatedData.rotationPlans.map((rp: RotationPlan) => ({
         year: rp.year,
@@ -226,11 +185,7 @@ export default function RotationPage() {
         divisionSize: parseFloat(rp.divisionSize.toString()),
         nitrogenBalance: parseFloat(rp.nitrogenBalance.toString())
       })));
-
-      // Update division size values
-      setDivisionSizeValues(updatedData.rotationPlans.map((rp: RotationPlan) => 
-        rp.divisionSize.toString()
-      ));
+      setDivisionSizeValues(updatedData.rotationPlans.map((rp: RotationPlan) => rp.divisionSize.toString()));
     } catch (error) {
       console.error('Error updating division size:', error);
       alert('Failed to update division size');
@@ -243,25 +198,7 @@ export default function RotationPage() {
     if (!rotationData) return;
     setIsUpdating(true);
     try {
-      const response = await fetch('/api/Controllers/Rotation/updateNitrogenAndRecalculate', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: rotationData.id,
-          year,
-          division: parseInt(division),
-          nitrogenBalance: value,
-          startYear: year // Add this to indicate from which year to recalculate
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to update nitrogen balance');
-      
-      const { data: updatedData } = await response.json();
-      
-      // Update rotation data and chart data with recalculated values
+      const updatedData = await updateNitrogenBalance(rotationData.id, year, parseInt(division), value);
       setRotationData(updatedData);
       setChartData(updatedData.rotationPlans.map((rp: RotationPlan) => ({
         year: rp.year,
@@ -270,14 +207,11 @@ export default function RotationPage() {
         divisionSize: parseFloat(rp.divisionSize.toString()),
         nitrogenBalance: parseFloat(rp.nitrogenBalance.toString())
       })));
-
-      // Update nitrogen balance map with new values
       const newNitrogenMap: NitrogenBalanceMap = {};
       updatedData.rotationPlans.forEach((rp: RotationPlan) => {
         newNitrogenMap[`${rp.year}-${rp.division}`] = rp.nitrogenBalance.toString();
       });
       setNitrogenBalanceMap(newNitrogenMap);
-
     } catch (error) {
       console.error('Error updating nitrogen balance:', error);
       alert('Failed to update nitrogen balance and recalculate rotation');

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useFertilizationPlans } from '../../providers/fertilizationPlanStore';
 
 interface Crop {
   id: number;
@@ -50,60 +51,19 @@ export default function FertilizationPlans() {
     notes: '',
   });
 
+  const { fetchFertilizationPlans, saveFertilizationPlan, deleteFertilizationPlan, fetchCrops } = useFertilizationPlans();
+
   useEffect(() => {
-    Promise.all([
-      fetchFertilizationPlans(),
-      fetchCrops()
-    ]).finally(() => setLoading(false));
+    Promise.all([fetchFertilizationPlans().then(setPlans), fetchCrops().then(setCrops)])
+      .catch(setError)
+      .finally(() => setLoading(false));
   }, []);
-
-  const fetchFertilizationPlans = async () => {
-    try {
-      const response = await fetch('/api/Controllers/Soil/fertilizationPlans');
-      if (!response.ok) throw new Error('Failed to fetch fertilization plans');
-      const data = await response.json();
-      setPlans(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    }
-  };
-
-  const fetchCrops = async () => {
-    try {
-      const response = await fetch('/api/Controllers/Crop/crops/retrieve/all');
-      if (!response.ok) throw new Error('Failed to fetch crops');
-      const data = await response.json();
-      setCrops(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const endpoint = editingPlan
-        ? `/api/Controllers/Soil/fertilizationPlan/${editingPlan.id}`
-        : '/api/Controllers/Soil/fertilizationPlan';
-      const method = editingPlan ? 'PUT' : 'POST';
-
-      const response = await fetch(endpoint, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cropId: parseInt(formData.cropId),
-          plannedDate: new Date(formData.plannedDate).toISOString(),
-          fertilizer: formData.fertilizer,
-          applicationRate: parseFloat(formData.applicationRate),
-          nitrogenContent: parseFloat(formData.nitrogenContent),
-          applicationMethod: formData.applicationMethod,
-          notes: formData.notes,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to save fertilization plan');
-
-      await fetchFertilizationPlans();
+      await saveFertilizationPlan(editingPlan, formData);
+      await fetchFertilizationPlans().then(setPlans);
       setShowForm(false);
       setEditingPlan(null);
       resetForm();
@@ -114,13 +74,9 @@ export default function FertilizationPlans() {
 
   const handleDelete = async (id: number) => {
     if (!confirm(t('confirmDelete'))) return;
-
     try {
-      const response = await fetch(`/api/Controllers/Soil/fertilizationPlan/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete fertilization plan');
-      await fetchFertilizationPlans();
+      await deleteFertilizationPlan(id);
+      await fetchFertilizationPlans().then(setPlans);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     }
@@ -151,7 +107,7 @@ export default function FertilizationPlans() {
         }),
       });
       if (!response.ok) throw new Error('Failed to mark plan as completed');
-      await fetchFertilizationPlans();
+      await fetchFertilizationPlans().then(setPlans);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     }

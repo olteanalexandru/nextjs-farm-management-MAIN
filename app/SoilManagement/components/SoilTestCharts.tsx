@@ -12,6 +12,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import { useSoilTests } from '../../providers/soilTestStore';
 
 interface SoilTest {
   id: number;
@@ -44,17 +45,10 @@ export default function SoilTestCharts({ fieldLocation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [selectedField, setSelectedField] = useState<string | undefined>(fieldLocation);
   const [fields, setFields] = useState<string[]>([]);
+  const { fetchSoilTests } = useSoilTests();
 
   useEffect(() => {
-    fetchSoilTests();
-  }, [selectedField]);
-
-  const fetchSoilTests = async () => {
-    try {
-      const response = await fetch('/api/Controllers/Soil/soilTests');
-      if (!response.ok) throw new Error('Failed to fetch soil tests');
-      const data: SoilTest[] = await response.json();
-
+    fetchSoilTests().then(data => {
       // Get unique field locations
       const uniqueFields = Array.from(new Set(data.map(test => test.fieldLocation)));
       setFields(uniqueFields);
@@ -78,12 +72,8 @@ export default function SoilTestCharts({ fieldLocation }: Props) {
         }));
 
       setChartData(filteredData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
+    }).catch(setError).finally(() => setLoading(false));
+  }, [selectedField]);
 
   if (loading) return <div className="text-center">{t('loading')}</div>;
   if (error) return <div className="text-red-500">{error}</div>;

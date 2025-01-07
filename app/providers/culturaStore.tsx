@@ -4,7 +4,6 @@ import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { signal } from "@preact/signals-react";
 import { CropCreate, RecommendationResponse, CropType } from '../types/api';
-import { set } from 'lodash';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/Controllers/';
 const API_URL = `${BASE_URL}Crop/`;
@@ -28,6 +27,16 @@ interface ContextProps {
   addTheCropRecommendation: (data: RecommendationResponse) => Promise<void>;
   updateSelectionCount: (cropId: string | number, count: number) => Promise<void>;
   singleCrop: { value: CropType | null };
+  fetchSoilTests: () => Promise<any>;
+  saveSoilTest: (editingTest: any, formData: any) => Promise<void>;
+  deleteSoilTest: (id: string) => Promise<void>;
+  fetchFertilizationPlans: () => Promise<any>;
+  saveFertilizationPlan: (editingPlan: any, formData: any) => Promise<void>;
+  deleteFertilizationPlan: (id: string) => Promise<void>;
+  fetchRotations: () => Promise<any>;
+  deleteRotation: (id: string) => Promise<void>;
+  updateDivisionSize: (id: string, division: string, value: number) => Promise<any>;
+  updateNitrogenBalance: (id: string, year: number, division: string, value: number) => Promise<any>;
 }
 
 const GlobalContext = createContext<ContextProps>({} as ContextProps);
@@ -374,6 +383,111 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     }
   }, []);
 
+  const fetchSoilTests = useCallback(async () => {
+    const response = await axios.get('/api/Controllers/Soil/soilTests');
+    if (response.status !== 200) throw new Error('Failed to fetch soil tests');
+    return response.data;
+  }, []);
+
+  const saveSoilTest = useCallback(async (editingTest, formData) => {
+    const endpoint = editingTest
+      ? `/api/Controllers/Soil/soilTest/${editingTest.id}`
+      : '/api/Controllers/Soil/soilTest';
+    const method = editingTest ? 'PUT' : 'POST';
+
+    const response = await axios({
+      method,
+      url: endpoint,
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        testDate: new Date(formData.testDate).toISOString(),
+        fieldLocation: formData.fieldLocation,
+        pH: parseFloat(formData.pH),
+        organicMatter: parseFloat(formData.organicMatter),
+        nitrogen: parseFloat(formData.nitrogen),
+        phosphorus: parseFloat(formData.phosphorus),
+        potassium: parseFloat(formData.potassium),
+        texture: formData.texture,
+        notes: formData.notes,
+      },
+    });
+
+    if (response.status !== 200) throw new Error('Failed to save soil test');
+  }, []);
+
+  const deleteSoilTest = useCallback(async (id) => {
+    const response = await axios.delete(`/api/Controllers/Soil/soilTest/${id}`);
+    if (response.status !== 200) throw new Error('Failed to delete soil test');
+  }, []);
+
+  const fetchFertilizationPlans = useCallback(async () => {
+    const response = await axios.get('/api/Controllers/Soil/fertilizationPlans');
+    if (response.status !== 200) throw new Error('Failed to fetch fertilization plans');
+    return response.data;
+  }, []);
+
+  const saveFertilizationPlan = useCallback(async (editingPlan, formData) => {
+    const endpoint = editingPlan
+      ? `/api/Controllers/Soil/fertilizationPlan/${editingPlan.id}`
+      : '/api/Controllers/Soil/fertilizationPlan';
+    const method = editingPlan ? 'PUT' : 'POST';
+
+    const response = await axios({
+      method,
+      url: endpoint,
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        cropId: parseInt(formData.cropId),
+        plannedDate: new Date(formData.plannedDate).toISOString(),
+        fertilizer: formData.fertilizer,
+        applicationRate: parseFloat(formData.applicationRate),
+        nitrogenContent: parseFloat(formData.nitrogenContent),
+        applicationMethod: formData.applicationMethod,
+        notes: formData.notes,
+      },
+    });
+
+    if (response.status !== 200) throw new Error('Failed to save fertilization plan');
+  }, []);
+
+  const deleteFertilizationPlan = useCallback(async (id) => {
+    const response = await axios.delete(`/api/Controllers/Soil/fertilizationPlan/${id}`);
+    if (response.status !== 200) throw new Error('Failed to delete fertilization plan');
+  }, []);
+
+  const fetchRotations = useCallback(async () => {
+    const response = await axios.get('/api/Controllers/Rotation/getRotation');
+    if (response.status !== 200) throw new Error('Failed to fetch rotations');
+    return response.data;
+  }, []);
+
+  const deleteRotation = useCallback(async (id) => {
+    const response = await axios.delete(`/api/Controllers/Rotation/deleteRotation/${id}`);
+    if (response.status !== 200) throw new Error('Failed to delete rotation');
+  }, []);
+
+  const updateDivisionSize = useCallback(async (id, division, value) => {
+    const response = await axios.put('/api/Controllers/Rotation/updateDivisionSizeAndRedistribute', {
+      id,
+      division,
+      newDivisionSize: value,
+    });
+    if (response.status !== 200) throw new Error('Failed to update division size');
+    return response.data;
+  }, []);
+
+  const updateNitrogenBalance = useCallback(async (id, year, division, value) => {
+    const response = await axios.put('/api/Controllers/Rotation/updateNitrogenAndRecalculate', {
+      id,
+      year,
+      division,
+      nitrogenBalance: value,
+      startYear: year,
+    });
+    if (response.status !== 200) throw new Error('Failed to update nitrogen balance');
+    return response.data;
+  }, []);
+
   return (
     <GlobalContext.Provider
       value={{
@@ -394,7 +508,17 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
         getCropRecommendations,
         addTheCropRecommendation,
         updateSelectionCount,
-        singleCrop: singleCropSignal
+        singleCrop: singleCropSignal,
+        fetchSoilTests,
+        saveSoilTest,
+        deleteSoilTest,
+        fetchFertilizationPlans,
+        saveFertilizationPlan,
+        deleteFertilizationPlan,
+        fetchRotations,
+        deleteRotation,
+        updateDivisionSize,
+        updateNitrogenBalance,
       }}
     >
       {children}

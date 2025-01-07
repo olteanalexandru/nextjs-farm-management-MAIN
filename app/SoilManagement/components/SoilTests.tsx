@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useSoilTests } from '../../providers/soilTestStore';
 
 interface SoilTest {
   id: number;
@@ -48,50 +49,17 @@ export default function SoilTests() {
     notes: '',
   });
 
-  useEffect(() => {
-    fetchSoilTests();
-  }, []);
+  const { fetchSoilTests, saveSoilTest, deleteSoilTest } = useSoilTests();
 
-  const fetchSoilTests = async () => {
-    try {
-      const response = await fetch('/api/Controllers/Soil/soilTests');
-      if (!response.ok) throw new Error('Failed to fetch soil tests');
-      const data = await response.json();
-      setTests(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    fetchSoilTests().then(setTests).catch(setError).finally(() => setLoading(false));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const endpoint = editingTest
-        ? `/api/Controllers/Soil/soilTest/${editingTest.id}`
-        : '/api/Controllers/Soil/soilTest';
-      const method = editingTest ? 'PUT' : 'POST';
-
-      const response = await fetch(endpoint, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          testDate: new Date(formData.testDate).toISOString(),
-          fieldLocation: formData.fieldLocation,
-          pH: parseFloat(formData.pH),
-          organicMatter: parseFloat(formData.organicMatter),
-          nitrogen: parseFloat(formData.nitrogen),
-          phosphorus: parseFloat(formData.phosphorus),
-          potassium: parseFloat(formData.potassium),
-          texture: formData.texture,
-          notes: formData.notes,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to save soil test');
-
-      await fetchSoilTests();
+      await saveSoilTest(editingTest, formData);
+      await fetchSoilTests().then(setTests);
       setShowForm(false);
       setEditingTest(null);
       resetForm();
@@ -102,13 +70,9 @@ export default function SoilTests() {
 
   const handleDelete = async (id: number) => {
     if (!confirm(t('confirmDelete'))) return;
-
     try {
-      const response = await fetch(`/api/Controllers/Soil/soilTest/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete soil test');
-      await fetchSoilTests();
+      await deleteSoilTest(id);
+      await fetchSoilTests().then(setTests);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     }
