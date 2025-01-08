@@ -6,6 +6,9 @@ import { PostContent } from '../components/PostContent';
 import { handleScroll, loadMorePosts } from './Components/scrollHandler';
 import debounce from './Components/debounce';
 import { useTranslations } from 'next-intl';
+import SearchBar from './Components/SearchBar'; // Fix path
+import SocialShare from './Components/SocialShare'; // Fix path
+import { Post } from '../types/api'; // Add Post type import
 
 export default function Noutati() {
   const { data, loading, getAllPosts, error, clearData } = usePostContext();
@@ -13,6 +16,26 @@ export default function Noutati() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const t = useTranslations('News');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredData, setFilteredData] = useState<Post[]>([]);
+
+  // Updated reading time calculation with null checks
+  const getReadingTime = (content?: string) => {
+    if (!content) return '1 min read';
+    const words = content.split(/\s+/).length;
+    const minutes = Math.ceil(words / 200);
+    return `${minutes} min read`;
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    const filtered = data.filter(post => 
+      post.title.toLowerCase().includes(query.toLowerCase()) ||
+      (post.description || '').toLowerCase().includes(query.toLowerCase()) ||
+      (post.brief || '').toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredData(filtered);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,35 +76,57 @@ export default function Noutati() {
       <h1 className="text-5xl font-bold mb-16 text-gray-800 text-center">
         {t('Latest in our newsfeed:')}
       </h1>
+
+      <SearchBar onSearch={handleSearch} />
       
-      {data.length > 0 ? (
+      {(searchQuery ? filteredData : data).length > 0 ? (
         <div className="space-y-12">
-          {data.map((data) => (
+          {(searchQuery ? filteredData : data).map((post) => (
             <article 
-              key={data.id} 
+              key={post.id} 
               className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300
                        border border-gray-100"
             >
-              {data.imageUrl && (
+              {post.imageUrl && (
                 <div className="w-full h-[400px] relative rounded-t-lg overflow-hidden">
                   <img 
-                    src={data.imageUrl} 
-                    alt={data.title} 
+                    src={post.imageUrl} 
+                    alt={post.title} 
                     className="object-cover w-full h-full"
                   />
                 </div>
               )}
               <div className="p-8">
-                <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-                  <time>{new Date(data.createdAt).toLocaleDateString()}</time>
-                  {data.author && (
-                    <>
-                      <span>•</span>
-                      <span>{data.author}</span>
-                    </>
-                  )}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <time>{new Date(post.createdAt).toLocaleDateString()}</time>
+                    {post.author && (
+                      <>
+                        <span>•</span>
+                        <span>{post.author}</span>
+                      </>
+                    )}
+                    <span>•</span>
+                    <span>{getReadingTime(post.description ?? post.brief ?? undefined)}</span>
+                  </div>
+                  <SocialShare 
+                    url={window.location.href} 
+                    title={post.title} 
+                  />
                 </div>
-                <PostContent data={data} />
+                <PostContent data={post} />
+                {post.tags && (
+                  <div className="mt-6 flex gap-2">
+                    {post.tags.split(',').map(tag => (
+                      <span 
+                        key={tag}
+                        className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm"
+                      >
+                        {tag.trim()}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </article>
           ))}

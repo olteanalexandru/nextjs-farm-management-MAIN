@@ -56,9 +56,10 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
             </div>
             
             <div className="flex items-center space-x-4">
+            <LanguageSwitch />
               {!isLoading && user ? (
                 <div className="hidden md:flex items-center space-x-4">
-                  <LanguageSwitch />
+             
                   <div className="flex flex-col items-end">
                     <span className="text-sm font-medium text-gray-900">{user.name}</span>
                     <span className="text-xs text-gray-500">{user.email}</span>
