@@ -8,7 +8,7 @@ import RotatieForm from './RotatieForm';
 import RotationChart from './Components/RotationChart';
 import RotationDetails from './Components/RotationDetails';
 import { getCropsRepeatedBySelection } from './Components/helperFunctions';
-import { useRotation }  from '../providers/rotationStore';
+import { useGlobalContextRotation } from '../providers/rotationStore';
 
 // Add these interfaces at the top of the file
 interface Crop {
@@ -39,7 +39,7 @@ interface NitrogenBalanceMap {
 
 export default function RotationPage() {
   const { getAllCrops, crops, isLoading } = useGlobalContextCrop();
-  const { fetchRotations, deleteRotation, updateDivisionSize, updateNitrogenBalance } = useRotation();
+  const { getCropRotation, deleteCropRotation, updateDivisionSizeAndRedistribute, updateNitrogenBalanceAndRegenerateRotation } = useGlobalContextRotation();
   const [selectedCrops, setSelectedCrops] = useState<Map<string, number>>(new Map());
   const [showRotationForm, setShowRotationForm] = useState(false);
   const [rotationPlan, setRotationPlan] = useState<RotationData | null>(null);
@@ -57,9 +57,25 @@ export default function RotationPage() {
     getAllCrops();
   }, [getAllCrops]);
 
-  // Add this new effect to fetch rotations
+  // Modify this effect to properly handle the Promise
   useEffect(() => {
-    fetchRotations().then(setExistingRotations).catch(setLoadError).finally(() => setIsLoadingRotations(false));
+    const fetchRotations = async () => {
+      setIsLoadingRotations(true);
+      try {
+        const rotations = await getCropRotation();
+        if (Array.isArray(rotations)) {
+          setExistingRotations(rotations);
+        } else {
+          setLoadError('Invalid rotation data received');
+        }
+      } catch (error: any) {
+        setLoadError(error.message || 'Failed to load rotations');
+      } finally {
+        setIsLoadingRotations(false);
+      }
+    };
+
+    fetchRotations();
   }, []);
 
   // Filter only selected crops
@@ -143,7 +159,7 @@ export default function RotationPage() {
   const handleDeleteRotation = async (id: number) => {
     if (!confirm('Are you sure you want to delete this rotation?')) return;
     try {
-      await deleteRotation(id);
+      await deleteCropRotation(id.toString());
       setExistingRotations(prev => prev.filter(r => r.id !== id));
     } catch (error) {
       console.error('Error deleting rotation:', error);
@@ -176,16 +192,13 @@ export default function RotationPage() {
     if (!rotationData) return;
     setIsUpdating(true);
     try {
-      const updatedData = await updateDivisionSize(rotationData.id, parseInt(division), value);
-      setRotationData(updatedData);
-      setChartData(updatedData.rotationPlans.map((rp: RotationPlan) => ({
-        year: rp.year,
-        division: rp.division,
-        cropName: rp.crop.cropName,
-        divisionSize: parseFloat(rp.divisionSize.toString()),
-        nitrogenBalance: parseFloat(rp.nitrogenBalance.toString())
-      })));
-      setDivisionSizeValues(updatedData.rotationPlans.map((rp: RotationPlan) => rp.divisionSize.toString()));
+      await updateDivisionSizeAndRedistribute({
+        rotationName: rotationData.rotationName,
+        division: parseInt(division),
+        newDivisionSize: value
+      });
+      // Refresh rotation data through getCropRotation
+      await getCropRotation();
     } catch (error) {
       console.error('Error updating division size:', error);
       alert('Failed to update division size');
@@ -198,20 +211,14 @@ export default function RotationPage() {
     if (!rotationData) return;
     setIsUpdating(true);
     try {
-      const updatedData = await updateNitrogenBalance(rotationData.id, year, parseInt(division), value);
-      setRotationData(updatedData);
-      setChartData(updatedData.rotationPlans.map((rp: RotationPlan) => ({
-        year: rp.year,
-        division: rp.division,
-        cropName: rp.crop.cropName,
-        divisionSize: parseFloat(rp.divisionSize.toString()),
-        nitrogenBalance: parseFloat(rp.nitrogenBalance.toString())
-      })));
-      const newNitrogenMap: NitrogenBalanceMap = {};
-      updatedData.rotationPlans.forEach((rp: RotationPlan) => {
-        newNitrogenMap[`${rp.year}-${rp.division}`] = rp.nitrogenBalance.toString();
+      await updateNitrogenBalanceAndRegenerateRotation({
+        rotationName: rotationData.rotationName,
+        year: year,
+        division: parseInt(division),
+        nitrogenBalance: value
       });
-      setNitrogenBalanceMap(newNitrogenMap);
+      // Refresh rotation data through getCropRotation
+      await getCropRotation();
     } catch (error) {
       console.error('Error updating nitrogen balance:', error);
       alert('Failed to update nitrogen balance and recalculate rotation');

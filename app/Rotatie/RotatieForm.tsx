@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRotation } from '../providers/rotationStore';
+import { useGlobalContextRotation } from '../providers/rotationStore';
 import { useTranslations } from 'next-intl';
 
 interface Crop {
@@ -11,6 +11,22 @@ interface Crop {
   pests: string[];
   diseases: string[];
   ItShouldNotBeRepeatedForXYears: number;
+  cropType: string;
+  cropVariety: string;
+  plantingDate: string;
+  harvestingDate: string;
+  yield: number;
+  marketValue: number;
+  waterRequirement: number;
+  sunlightRequirement: number;
+  growthDuration: number;
+  description: string;
+  imageUrl: string;
+  fertilizers: string[];
+  selectare: boolean; // Change this line
+  treatments: string[];
+  user: string;
+  residualNitrogen: number;
 }
 
 interface CropRotationFormProps {
@@ -26,7 +42,7 @@ const CropRotationForm: React.FC<CropRotationFormProps> = ({ filteredCrops, onRo
   const [maxYears, setMaxYears] = useState('');
   const [ResidualNitrogenSupply, setResidualNitrogenSupply] = useState(''); 
 
-  const { generateCropRotation } = useRotation();
+  const { generateCropRotation } = useGlobalContextRotation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -6,6 +6,7 @@ import { GlobalContextProvider as CulturaProvider } from './providers/culturaSto
 import { GlobalContextProvider as RotationProvider } from './providers/rotationStore';
 import { AdminProvider } from './providers/AdminStore';
 import { CropWikiProvider } from './providers/CropWikiStore';
+import { SoilTestProvider } from './providers/soilTestStore';
 
 import { PostProvider } from './providers/postStore'; 
 import { NextIntlClientProvider } from 'next-intl';
@@ -34,7 +35,9 @@ const RootProvider = ({ children, locale, messages }: RootProviderProps) => {
           <RotationProvider>
             <PostProvider>
               <CropWikiProvider>
-              {wrappedChildren}
+                <SoilTestProvider>
+                  {wrappedChildren}
+                </SoilTestProvider>
               </CropWikiProvider>
             </PostProvider>
           </RotationProvider>
