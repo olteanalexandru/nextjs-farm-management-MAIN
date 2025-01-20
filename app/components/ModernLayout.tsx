@@ -6,6 +6,8 @@ import { Camera, Home, Repeat, Users, Settings, LogOut, LogIn, Database, Leaf } 
 import { useUser } from '@auth0/nextjs-auth0/client';
 import React from 'react';
 import { LanguageSwitch } from './LanguageSwitch';
+import { useTranslations } from 'next-intl';
+import Cookies from 'js-cookie';
 
 interface UserProfile {
   name: string;
@@ -15,18 +17,20 @@ interface UserProfile {
 }
 
 const ModernLayout = ({ children }: { children: React.ReactNode }) => {
+  const t = useTranslations();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
   const { user, isLoading } = useUser();
+  const currentLanguage = Cookies.get('language') as 'en' | 'ro' || 'en';
 
   const navigationItems = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'News', href: '/News', icon: Home },
-    { name: 'Crop Rotation', href: '/Rotatie', icon: Repeat, farmerOnly: true },
-    { name: 'Crop Database', href: '/CropWiki', icon: Database },
-    { name: 'Soil Management', href: '/SoilManagement', icon: Leaf, farmerOnly: true },
-    { name: 'Dashboard', href: '/dashboard', icon: Camera },
-    { name: 'Users', href: '/Login/Register', icon: Users, adminOnly: true },
+    { name: t('Navigation.home'), href: '/', icon: Home },
+    { name: t('Navigation.news'), href: '/News', icon: Home },
+    { name: t('Navigation.cropRotation'), href: '/Rotatie', icon: Repeat, farmerOnly: true },
+    { name: t('Navigation.cropDatabase'), href: '/CropWiki', icon: Database },
+    { name: t('Navigation.soilManagement'), href: '/SoilManagement', icon: Leaf, farmerOnly: true },
+    { name: t('Navigation.dashboard'), href: '/dashboard', icon: Camera },
+    { name: t('Navigation.users'), href: '/Login/Register', icon: Users, adminOnly: true },
   ];
 
   const isActivePath = (path: string) => pathname === path;
@@ -50,7 +54,7 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
               <div className="ml-4 flex lg:ml-8">
                 <Link href="/" className="flex items-center space-x-3">
                   <img src="/Logo.png" alt="Logo" className="h-8 w-8" />
-                  <span className="text-lg font-semibold text-gray-900">Agricultural Platform </span>
+                  <span className="text-lg font-semibold text-gray-900">{t('Common.platformName')}</span>
                 </Link>
               </div>
             </div>
@@ -78,7 +82,7 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
                   <span className="w-5 h-5 mr-3 text-green-400">
                     <LogIn />
                   </span>
-                  Login
+                  {t('Common.login')}
                 </Link>
               )}
             </div>
@@ -148,6 +152,9 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
       <main className={`pt-16 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-64' : ''}`}>
         <div className="p-6">
           <div className="max-w-7xl mx-auto">
+            <div className="text-2xl font-bold text-gray-700 mb-6 text-center">
+              {t('Common.currentLanguage')}
+            </div>
             {children}
           </div>
         </div>

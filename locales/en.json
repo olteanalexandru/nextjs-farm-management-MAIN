@@ -56,7 +56,15 @@
     "readMore": "Read more",
     "category": "Category",
     "date": "Date",
-    "author": "Author"
+    "author": "Author",
+    "latestInNewsfeed": "Latest in our newsfeed",
+    "noRotationDetails": "No rotation details available",
+    "noRotationPlans": "No rotation plans available",
+    "noChartData": "No chart data available",
+    "soilType": "Soil Type",
+    "nitrogenSupply": "Nitrogen Supply",
+    "nitrogenDemand": "Nitrogen Demand",
+    "timesInRotation": "Times in Rotation"
   },
   "LinkAdaugaPostare": {
     "addPost": "Add Post"
@@ -95,7 +103,11 @@
     "submit": "Submit",
     "back": "Back",
     "next": "Next",
-    "required": "Required field"
+    "required": "Required field",
+    "platformName": "Agricultural Platform",
+    "login": "Login",
+    "logout": "Logout",
+    "currentLanguage": "Current language is English"
   },
   "RotationDashboard": {
     "loading": "Loading",
@@ -149,14 +161,6 @@
     "cancel": "Cancel",
     "testDate": "Test Date",
     "fieldLocation": "Field Location",
-    "pH": "pH Level",
-    "organicMatter": "Organic Matter (%)",
-    "nitrogen": "Nitrogen (ppm)",
-    "phosphorus": "Phosphorus (ppm)",
-    "potassium": "Potassium (ppm)",
-    "texture": "Soil Texture",
-    "notes": "Notes",
-    "actions": "Actions",
     "edit": "Edit",
     "delete": "Delete",
     "updateTest": "Update Test",
@@ -217,5 +221,14 @@
     "welcome": "Welcome",
     "loggedInAs": "Logged in as",
     "role": "Role"
+  },
+  "Navigation": {
+    "home": "Home",
+    "news": "News",
+    "cropRotation": "Crop Rotation",
+    "cropDatabase": "Crop Database",
+    "soilManagement": "Soil Management",
+    "dashboard": "Dashboard",
+    "users": "Users"
   }
 }

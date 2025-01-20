@@ -82,7 +82,11 @@
     "submit": "Trimite",
     "back": "Înapoi",
     "next": "Următorul",
-    "required": "Câmp obligatoriu"
+    "required": "Câmp obligatoriu",
+    "platformName": "Platformă Agricolă",
+    "login": "Autentificare",
+    "logout": "Deconectare",
+    "currentLanguage": "Limba curentă este Română"
   },
   "SoilManagement": {
     "title": "Gestionarea Solului",
@@ -171,5 +175,14 @@
     "fieldSize": "Dimensiune câmp",
     "divisionCount": "Număr de diviziuni",
     "division": "Diviziune"
+  },
+  "Navigation": {
+    "home": "Acasă",
+    "news": "Știri",
+    "cropRotation": "Rotație Culturi",
+    "cropDatabase": "Bază de Date Culturi",
+    "soilManagement": "Managementul Solului",
+    "dashboard": "Panou de Control",
+    "users": "Utilizatori"
   }
 }
