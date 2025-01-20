@@ -56,7 +56,8 @@
     "readMore": "Citește mai mult",
     "category": "Categorie",
     "date": "Data",
-    "author": "Autor"
+    "author": "Autor",
+    "latestInNewsfeed": "Ultimele în fluxul de știri"
   },
   "Posts": {
     "title": "Postări",
@@ -174,7 +175,14 @@
     "rotations": "Rotații",
     "fieldSize": "Dimensiune câmp",
     "divisionCount": "Număr de diviziuni",
-    "division": "Diviziune"
+    "division": "Diviziune",
+    "noRotationDetails": "Nu există detalii despre rotație",
+    "noRotationPlans": "Nu există planuri de rotație",
+    "noChartData": "Nu există date pentru grafic",
+    "soilType": "Tip Sol",
+    "nitrogenSupply": "Aprovizionare cu Azot",
+    "nitrogenDemand": "Cerere de Azot",
+    "timesInRotation": "Frecvența în Rotație"
   },
   "Navigation": {
     "home": "Acasă",
@@ -184,5 +192,21 @@
     "soilManagement": "Managementul Solului",
     "dashboard": "Panou de Control",
     "users": "Utilizatori"
+  },
+  "MainPage": {
+    "welcomeHeader": "Bine ați venit la Managementul Agricol",
+    "welcomeSubheader": "Soluția completă pentru gestionarea fermei dvs",
+    "featuresTitle": "Caracteristici Platformă",
+    "feature1": "Planificarea Rotației Culturilor",
+    "feature2": "Gestionarea Solului",
+    "feature3": "Analize Agricole",
+    "feature4": "Optimizarea Resurselor",
+    "getStartedButton": "Începeți Astăzi",
+    "learnMoreButton": "Aflați Mai Multe",
+    "statsTitle": "Statistici Platformă",
+    "statsUsers": "Utilizatori Activi",
+    "statsFarms": "Ferme Gestionate",
+    "statsArea": "Suprafață Totală Gestionată",
+    "statsEfficiency": "Creștere Eficiență"
   }
 }

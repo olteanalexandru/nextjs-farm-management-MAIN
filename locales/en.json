@@ -57,14 +57,7 @@
     "category": "Category",
     "date": "Date",
     "author": "Author",
-    "latestInNewsfeed": "Latest in our newsfeed",
-    "noRotationDetails": "No rotation details available",
-    "noRotationPlans": "No rotation plans available",
-    "noChartData": "No chart data available",
-    "soilType": "Soil Type",
-    "nitrogenSupply": "Nitrogen Supply",
-    "nitrogenDemand": "Nitrogen Demand",
-    "timesInRotation": "Times in Rotation"
+    "latestInNewsfeed": "Latest in our newsfeed"
   },
   "LinkAdaugaPostare": {
     "addPost": "Add Post"
@@ -132,13 +125,13 @@
     "divisionSize": "Division Size",
     "actions": "Actions",
     "delete": "Delete",
-    "No rotation details available": "No rotation details available",
-    "No rotation plans available": "No rotation plans available",
-    "No chart data available": "No chart data available",
-    "Soil Type": "Soil Type",
-    "Nitrogen Supply": "Nitrogen Supply",
-    "Nitrogen Demand": "Nitrogen Demand",
-    "Times in Rotation": "Times in Rotation"
+    "noRotationDetails": "No rotation details available",
+    "noRotationPlans": "No rotation plans available",
+    "noChartData": "No chart data available",
+    "soilType": "Soil Type",
+    "nitrogenSupply": "Nitrogen Supply",
+    "nitrogenDemand": "Nitrogen Demand",
+    "timesInRotation": "Times in Rotation"
   },
   "CropRotationForm": {
     "fieldSize": "Field Size",
@@ -161,6 +154,14 @@
     "cancel": "Cancel",
     "testDate": "Test Date",
     "fieldLocation": "Field Location",
+    "pH": "pH Level",
+    "organicMatter": "Organic Matter (%)",
+    "nitrogen": "Nitrogen (ppm)",
+    "phosphorus": "Phosphorus (ppm)",
+    "potassium": "Potassium (ppm)",
+    "texture": "Soil Texture",
+    "notes": "Notes",
+    "actions": "Actions",
     "edit": "Edit",
     "delete": "Delete",
     "updateTest": "Update Test",
@@ -200,7 +201,7 @@
     "analysis": "Soil Analysis",
     "recommendations": "Recommendations",
     "history": "History",
-    "addNewRecord": "Add New Record"
+    "addNewRecord": "Add New Record" 
   },
   "Recomandari": {
     "hello": "Hello",
@@ -230,5 +231,21 @@
     "soilManagement": "Soil Management",
     "dashboard": "Dashboard",
     "users": "Users"
+  },
+  "MainPage": {
+    "welcomeHeader": "Welcome to Agricultural Management",
+    "welcomeSubheader": "Your complete farm management solution",
+    "featuresTitle": "Platform Features",
+    "feature1": "Crop Rotation Planning",
+    "feature2": "Soil Management",
+    "feature3": "Agricultural Analytics",
+    "feature4": "Resource Optimization",
+    "getStartedButton": "Get Started Today",
+    "learnMoreButton": "Learn More",
+    "statsTitle": "Platform Statistics",
+    "statsUsers": "Active Users",
+    "statsFarms": "Managed Farms",
+    "statsArea": "Total Area Managed",
+    "statsEfficiency": "Efficiency Increase"
   }
 }
