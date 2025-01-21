@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { CropWikiProvider, useCropWiki } from '@/app/providers/CropWikiStore';
+import { CropWikiProvider, useCropWiki } from '@/providers/CropWikiStore';
 import axios from 'axios';
 
 jest.mock('axios');

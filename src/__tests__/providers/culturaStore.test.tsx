@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { GlobalContextProvider, useGlobalContextCrop } from '@/app/providers/culturaStore';
+import { GlobalContextProvider, useGlobalContextCrop } from '@/providers/culturaStore';
 import axios from 'axios';
 
 jest.mock('axios');
@@ -40,11 +40,19 @@ describe('CulturaStore Integration', () => {
     // Test crop creation
     await act(async () => {
       await result.current.createCrop({
-        cropName: 'Test Crop',
-        cropType: 'GRAIN',
-        nitrogenSupply: 50,
-        nitrogenDemand: 30,
-        soilResidualNitrogen: 20
+          cropName: 'Test Crop',
+          cropType: 'GRAIN',
+          nitrogenSupply: 50,
+          nitrogenDemand: 30,
+          soilResidualNitrogen: 20,
+          cropVariety: '',
+          soilType: '',
+          ItShouldNotBeRepeatedForXYears: 0,
+          fertilizers: [],
+          pests: [],
+          diseases: [],
+          climate: '',
+          description: ''
       });
     });
 

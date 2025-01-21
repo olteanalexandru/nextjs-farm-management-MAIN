@@ -3,14 +3,13 @@ import { Decimal } from '@prisma/client/runtime/library';
 export type DetailType = 'FERTILIZER' | 'PEST' | 'DISEASE';
 
 export interface Post {
-  imageUrl: any;
-  author: any;
   id: number;
   userId: string;
   title: string;
   brief: string | null;
   description: string | null;
-  image: string | null;
+  imageUrl: string | null;
+  author: string | null;
   createdAt: Date;
   updatedAt: Date;
   user?: {
@@ -22,13 +21,16 @@ export interface Post {
   likes?: number;
   shares?: number;
   featured?: boolean;
+  published?: boolean;
 }
 
 export interface PostCreate {
   title: string;
-  brief: string;
-  description: string;
-  image?: string;
+  brief?: string;
+  description?: string;
+  imageUrl?: string;
+  author?: string;
+  content?: string;
 }
 
 export interface PostUpdate {
@@ -190,8 +192,8 @@ export interface RecommendationResponse {
 
 export interface ApiResponse<T = any> {
   data?: T;
-  crops?: T[];
-  posts?: T[];  // Change this line to expect an array of T[]
+  crops?: T extends any[] ? T : T[];
+  posts?: T extends any[] ? T : T[];
   selections?: any[];
   error?: string;
   status?: number;
@@ -237,13 +239,11 @@ export function transformPrismaPost(prismaPost: any): Post {
     title: prismaPost.title,
     brief: prismaPost.brief,
     description: prismaPost.description,
-    imageUrl: prismaPost.image,  // map image to imageUrl
-    image: prismaPost.image,  // add image property
-    author: prismaPost.user?.name || null,  // map user.name to author
+    imageUrl: prismaPost.imageUrl,
+    author: prismaPost.user?.name || null,
     createdAt: prismaPost.createdAt,
     updatedAt: prismaPost.updatedAt,
-    user: prismaPost.user
+    user: prismaPost.user,
+    published: prismaPost.published || false
   };
 }
-
-

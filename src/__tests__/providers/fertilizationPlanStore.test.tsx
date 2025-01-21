@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { FertilizationPlanProvider, useFertilizationPlans } from '@/app/providers/fertilizationPlanStore';
+import { FertilizationPlanProvider, useFertilizationPlans } from '@/providers/fertilizationPlanStore';
 
 describe('FertilizationPlanStore', () => {
   const mockPlan = {

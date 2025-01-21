@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { LanguageProvider, useLanguage } from '@/app/providers/LanguageStore';
+import { LanguageProvider, useLanguage } from '@/providers/LanguageStore';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 

@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { PostProvider, usePostContext } from '@/app/providers/postStore';
+import { PostProvider, usePostContext } from '@/providers/postStore';
 import axios from 'axios';
 
 jest.mock('axios');
@@ -9,8 +9,14 @@ describe('PostStore', () => {
   const mockPost = {
     id: 1,
     title: 'Test Post',
-    content: 'Test Content',
-    author: 'Test Author'
+    brief: 'Test Brief',
+    description: 'Test Description',
+    imageUrl: 'test-image.jpg',
+    author: 'Test Author',
+    userId: '1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    published: true
   };
 
   beforeEach(() => {
@@ -29,8 +35,11 @@ describe('PostStore', () => {
     await act(async () => {
       await result.current.createPost({
         title: 'Test Post',
-        content: 'Test Content',
-        author: 'Test Author'
+        brief: 'Test Brief',
+        description: 'Test Description',
+        imageUrl: 'test-image.jpg',
+        author: 'Test Author',
+        content: 'Test Content'
       });
     });
 

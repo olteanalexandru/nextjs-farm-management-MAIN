@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { SoilTestProvider, useSoilTests } from '@/app/providers/soilTestStore';
+import { SoilTestProvider, useSoilTests } from '@/providers/soilTestStore';
 
 describe('SoilTestStore Integration', () => {
   const mockSoilTest = {

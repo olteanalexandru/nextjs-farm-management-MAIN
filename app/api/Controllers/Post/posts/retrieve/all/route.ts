@@ -21,7 +21,7 @@ export async function GET() {
     });
 
     const transformedPosts = posts.map(transformPrismaPost);
-    const response: ApiResponse<Post[]> = { posts: [transformedPosts] };  // Wrap transformedPosts in an array
+    const response: ApiResponse<Post[]> = { posts: transformedPosts };
     return Response.json(response);
   } catch (error) {
     console.error('GET request error:', error);

@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { GlobalContextProvider, useGlobalContextRotation } from '@/app/providers/rotationStore';
+import { GlobalContextProvider, useGlobalContextRotation } from '@/providers/rotationStore';
 import axios from 'axios';
 
 jest.mock('axios');
