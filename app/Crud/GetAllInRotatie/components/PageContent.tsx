@@ -33,7 +33,7 @@ export function PageContent() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {crops.map((crop, index) => (
-        <Card key={crop._id || index} className="h-100 shadow-sm">
+        <Card key={crop.id} className="h-100 shadow-sm">
           <Card.Body>
             <Card.Title>{crop.cropName}</Card.Title>
             {crop.plantingDate && (
@@ -42,7 +42,7 @@ export function PageContent() {
             {crop.harvestingDate && (
               <Card.Text>Harvest Date: {new Date(crop.harvestingDate).toLocaleDateString()}</Card.Text>
             )}
-            <Card.Text>Nitrogen Balance: {crop.nitrogenDemand - crop.nitrogenSupply}</Card.Text>
+            <Card.Text>Nitrogen Balance: {Number(crop.nitrogenDemand) - Number(crop.nitrogenSupply)}</Card.Text>
           </Card.Body>
         </Card>
       ))}

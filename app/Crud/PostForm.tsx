@@ -17,7 +17,7 @@ export default function PostForm({ post, onCancel, onSuccess }: PostFormProps) {
         title: post?.title || '',
         brief: post?.brief || '',
         description: post?.description || '',
-        image: post?.image || ''
+        image: post?.imageUrl || ''
     });
     const { createPost, updatePost } = usePostContext();
 
@@ -27,7 +27,7 @@ export default function PostForm({ post, onCancel, onSuccess }: PostFormProps) {
                 title: post.title,
                 brief: post.brief || '',
                 description: post.description || '',
-                image: post.image || ''
+                image: post.imageUrl || ''
             });
         }
     }, [post]);

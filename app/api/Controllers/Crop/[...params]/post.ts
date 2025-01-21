@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { PrismaClient } from '@prisma/client';
 import { getCurrentUser } from 'app/lib/auth';
-import { ApiResponse, CropModel, DetailType, Crop, CropCreate } from 'app/types/api';
+import { ApiResponse, DetailType, Crop, CropCreate, RecommendationResponse } from 'app/types/api';
 
 const prisma = new PrismaClient();
 
@@ -73,11 +73,11 @@ export const POST = withApiAuthRequired(async function POST(
           include: {
             details: true
           }
-        }) as unknown as CropModel;
+        });
 
         const transformedCrop = transformCropWithDetails(crop);
-        const response: ApiResponse<Crop> = { 
-          data: transformedCrop,
+        const response: ApiResponse<RecommendationResponse[]> = { 
+          crops: [transformedCrop],
           status: 201 
         };
         return Response.json(response, { status: 201 });
@@ -113,28 +113,20 @@ export const POST = withApiAuthRequired(async function POST(
           soilResidualNitrogen: toDecimal(cropData.soilResidualNitrogen),
           details: {
             create: [
-              ...(cropData.fertilizers?.map(value => ({
-                value,
-                detailType: 'FERTILIZER' as DetailType
-              })) || []),
-              ...(cropData.pests?.map(value => ({
-                value,
-                detailType: 'PEST' as DetailType
-              })) || []),
-              ...(cropData.diseases?.map(value => ({
-                value,
-                detailType: 'DISEASE' as DetailType
-              })) || [])
+          ...(cropData.details?.map(detail => ({
+            value: detail.value,
+            detailType: detail.detailType
+          })) || [])
             ]
           }
         },
         include: {
           details: true
         }
-      }) as unknown as CropModel;
+      });
 
       const transformedCrop = transformCropWithDetails(crop);
-      const response: ApiResponse<Crop> = { data: transformedCrop };
+      const response: ApiResponse<RecommendationResponse[]> = { crops: [transformedCrop] };
       return Response.json(response, { status: 201 });
     }
 

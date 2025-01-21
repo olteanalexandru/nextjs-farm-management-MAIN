@@ -24,7 +24,7 @@ export function CropContent({ crop }: CropContentProps) {
                     </p>
                 )}
                 <p className="text-sm text-gray-600">
-                    Nitrogen Balance: {crop.nitrogenDemand - crop.nitrogenSupply}
+                    Nitrogen Balance: {Number(crop.nitrogenDemand) - Number(crop.nitrogenSupply)}
                 </p>
             </div>
         </div>

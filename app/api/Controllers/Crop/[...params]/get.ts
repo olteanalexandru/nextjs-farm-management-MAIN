@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { PrismaClient } from '@prisma/client';
 import { getCurrentUser } from 'app/lib/auth';
-import { ApiResponse, CropModel, DetailType, Crop } from 'app/types/api';
+import { ApiResponse, DetailType, Crop, RecommendationResponse } from 'app/types/api';
 
 const prisma = new PrismaClient();
 
@@ -61,7 +61,7 @@ export const GET = withApiAuthRequired(async function GET(
 
       const transformedRecommendations = recommendations.map(transformCropWithDetails);
       
-      const response: ApiResponse<Crop> = { 
+      const response: ApiResponse<RecommendationResponse[]> = { 
         crops: transformedRecommendations,
         status: 200
       };
@@ -82,7 +82,7 @@ export const GET = withApiAuthRequired(async function GET(
       });
 
       const transformedCrops = crops.map(transformCropWithDetails);
-      const response: ApiResponse<Crop> = { crops: transformedCrops };
+      const response: ApiResponse<RecommendationResponse[]> = { crops: transformedCrops };
       return Response.json(response);
     }
 
@@ -124,7 +124,7 @@ export const GET = withApiAuthRequired(async function GET(
         auth0Id: crop.user?.auth0Id
       };
       
-      const response: ApiResponse<Crop> = { crops: [transformedCrop] };
+      const response: ApiResponse<RecommendationResponse[]> = { crops: [transformedCrop] };
       return Response.json(response);
     }
 
@@ -199,10 +199,10 @@ export const GET = withApiAuthRequired(async function GET(
       });
 
       const selectedCrops = selections.flatMap(selection => 
-        Array(selection.selectionCount).fill(transformCropWithDetails(selection.crop as unknown as CropModel))
+        Array(selection.selectionCount).fill(transformCropWithDetails(selection.crop as unknown as Crop))
       );
 
-      const response: ApiResponse<Crop> = { crops: selectedCrops };
+      const response: ApiResponse<RecommendationResponse[]> = { crops: selectedCrops };
       return Response.json(response);
     }
 

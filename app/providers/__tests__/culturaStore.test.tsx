@@ -50,9 +50,13 @@ const mockCropCreate: CropCreate = {
   nitrogenDemand: 100,
   soilResidualNitrogen: 20,
   ItShouldNotBeRepeatedForXYears: 2,
-  fertilizers: [],
-  pests: ['Pest 1', 'Pest 2'],
-  diseases: ['Disease 1', 'Disease 2'],
+  details: [
+    { detailType: 'FERTILIZER', value: '' },
+    { detailType: 'PEST', value: 'Pest 1' },
+    { detailType: 'PEST', value: 'Pest 2' },
+    { detailType: 'DISEASE', value: 'Disease 1' },
+    { detailType: 'DISEASE', value: 'Disease 2' }
+  ]
 };
 
 // Mock Auth0 user

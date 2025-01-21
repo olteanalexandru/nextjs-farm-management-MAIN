@@ -24,9 +24,9 @@ export default function PostItem({ post }: { post: Post }) {
             {post.description && (
                 <div className='description'>{post.description}</div>
             )}
-            {post.image && (
+            {post.imageUrl && (
                 <div className='image'>
-                    <img src={post.image} alt={post.title} />
+                    <img src={post.imageUrl} alt={post.title} />
                 </div>
             )}
             <div className='meta'>

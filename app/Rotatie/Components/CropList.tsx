@@ -45,7 +45,7 @@ const CropList = ({ selectedCrops, onSelectionCount, selectedCounts }: CropListP
                       min="0"
                       max="10"
                       className="form-control"
-                      value={selectedCounts.get(crop.id?.toString() || crop._id) || 0}
+                      value={selectedCounts.get((crop.id?.toString() || crop._id)!) || 0}
                       onChange={(e) => onSelectionCount(crop, parseInt(e.target.value))}
                     />
                   </div>

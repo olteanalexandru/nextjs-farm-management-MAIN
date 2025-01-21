@@ -127,7 +127,7 @@ function FormComponent({ handleUpdate, handleChange, handleArrayChange, updatedC
             <Form.Control
               type="date"
               name="plantingDate"
-              value={updatedCrop?.plantingDate}
+              value={updatedCrop?.plantingDate instanceof Date ? updatedCrop.plantingDate.toISOString().slice(0, 10) : updatedCrop?.plantingDate}
               onChange={handleChange}
             />
           </Form.Group>
@@ -141,7 +141,7 @@ function FormComponent({ handleUpdate, handleChange, handleArrayChange, updatedC
             <Form.Control
               type="date"
               name="harvestingDate"
-              value={updatedCrop?.harvestingDate}
+              value={updatedCrop?.harvestingDate instanceof Date ? updatedCrop.harvestingDate.toISOString().slice(0, 10) : updatedCrop?.harvestingDate}
               onChange={handleChange}
             />
           </Form.Group>

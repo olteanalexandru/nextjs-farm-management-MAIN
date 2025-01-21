@@ -32,8 +32,8 @@ function CropCardComponent({ crops, handleDelete, canEdit, setEditMode }: CropCa
         <ListGroup.Item>Soil Type: {crops.soilType}</ListGroup.Item>
         <ListGroup.Item>Nitrogen Demand: {crops.nitrogenDemand}</ListGroup.Item>
         <ListGroup.Item>Nitrogen Supply: {crops.nitrogenSupply}</ListGroup.Item>
-        <ListGroup.Item>Planting Date: {crops.plantingDate}</ListGroup.Item>
-        <ListGroup.Item>Harvesting Date: {crops.harvestingDate}</ListGroup.Item>
+        <ListGroup.Item>Planting Date: {crops.plantingDate instanceof Date ? crops.plantingDate.toLocaleDateString() : crops.plantingDate}</ListGroup.Item>
+        <ListGroup.Item>Harvesting Date: {crops.harvestingDate instanceof Date ? crops.harvestingDate.toLocaleDateString() : crops.harvestingDate}</ListGroup.Item>
         <ListGroup.Item>Soil Residual Nitrogen: {crops.soilResidualNitrogen}</ListGroup.Item>
       </ListGroup>
       {canEdit && (

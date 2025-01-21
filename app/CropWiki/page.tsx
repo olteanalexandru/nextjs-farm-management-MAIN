@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCropWiki } from '../providers/CropWikiStore';
+import { RecommendationResponse } from '../types/api';
 import {
   Input,
   Select,
@@ -74,8 +75,8 @@ function CropWikiContent() {
     updateFilters({ page });
   };
 
-  const navigateToCrop = (cropId: string) => {
-    router.push(`/Crop/${cropId}`, { scroll: false });
+  const navigateToCrop = (crop: RecommendationResponse) => {
+    router.push(`/Crop/${crop._id || crop.id}`, { scroll: false });
   };
 
   const toggleSortOrder = () => {
@@ -229,9 +230,9 @@ function CropWikiContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {crops.map((crop) => (
             <Card
-              key={crop._id}
+              key={crop.id}
               isPressable
-              onPress={() => crop._id && navigateToCrop(crop._id.toString())}
+              onPress={() => navigateToCrop(crop as unknown as RecommendationResponse)}
               className="hover:shadow-lg transition-shadow w-full"
             >
               <CardBody className="p-4">

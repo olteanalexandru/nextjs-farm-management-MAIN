@@ -11,28 +11,27 @@ import RecommendationList from '../Crud/RecommendationList';
 import PostList from '../Crud/PostList';
 import { RecommendationResponse } from 'app/types/api';
 
-interface FermierUser {
+interface Recommendation {
   _id: string;
-  id: string;
-  name: string;
-  email: string;
-  roleType: string;
-  picture?: string;
-}
-
-interface Crop {
   id: number;
   cropName: string;
   cropType: string;
-  // Add other crop properties as needed
+  nitrogenSupply: number;
+  nitrogenDemand: number;
+  pests: string[];
+  diseases: string[];
 }
 
-interface Post {
-  id: string | number;
-  title: string;
-  brief: string | null;
-  image?: string | null;
-}
+const mapToRecommendation = (response: RecommendationResponse): Recommendation => ({
+  _id: response._id || String(response.id), // Fallback to id if _id is undefined
+  id: response.id,
+  cropName: response.cropName,
+  cropType: response.cropType,
+  nitrogenSupply: response.nitrogenSupply,
+  nitrogenDemand: response.nitrogenDemand,
+  pests: response.pests || [],
+  diseases: response.diseases || []
+});
 
 type Tab = 'users' | 'recommendations' | 'posts' | 'settings';
 
@@ -166,7 +165,7 @@ export default function AdminDashboard() {
                 <p className="text-gray-500">No recommendations found</p>
               ) : (
                 <RecommendationList 
-                  recommendations={crops}
+                  recommendations={crops.map(mapToRecommendation)}
                   onDelete={async (id: number) => {
                     await getCropRecommendations();
                   }}

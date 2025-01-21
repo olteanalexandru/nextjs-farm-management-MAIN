@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { getCurrentUser } from 'app/lib/auth';
-import { ApiResponse, Post, PostCreate } from 'app/types/api';
+import { ApiResponse, Post, PostCreate, transformPrismaPost } from 'app/types/api';
 
 const prisma = new PrismaClient();
 
@@ -12,10 +12,10 @@ export const POST = withApiAuthRequired(async function POST(
 ) {
   try {
     const auth0User = await getCurrentUser(request);
-    const postData = await request.json() as PostCreate;
-    const { title, brief, description, image } = postData;
+    const requestData = await request.json() as PostCreate;
+    const { title, brief, description, imageUrl } = requestData;
 
-    if (!title || !brief || !description) {
+    if (!title) {
       const response: ApiResponse = { 
         error: 'Missing required fields',
         status: 400
@@ -38,12 +38,13 @@ export const POST = withApiAuthRequired(async function POST(
 
     const post = await prisma.post.create({
       data: {
-        userId: dbUser.id, // Use the database user ID
+        userId: dbUser.id,
         title,
-        brief,
-        description,
-        image
-      },
+        brief: brief || null,
+        description: description || null,
+        imageUrl: imageUrl || null,
+        published: false
+      } as Prisma.PostUncheckedCreateInput,
       include: {
         user: {
           select: {
@@ -54,13 +55,8 @@ export const POST = withApiAuthRequired(async function POST(
       }
     });
 
-    const postWithAuthor: Post = {
-      ...post,
-      author: post.user.name,
-      imageUrl: post.image || ''
-    };
-
-    const response: ApiResponse<Post> = { data: postWithAuthor };
+    const transformedPost = transformPrismaPost(post);
+    const response: ApiResponse<Post> = { data: transformedPost };
     return Response.json(response, { status: 201 });
   } catch (error) {
     console.error('POST request error:', error);

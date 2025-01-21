@@ -86,9 +86,11 @@ export default function RotationPage() {
       const newMap = new Map(prev);
       const cropId = crop.id?.toString() || crop._id;
       if (count > 0) {
-        newMap.set(cropId, count);
+        newMap.set(cropId as string, count);
       } else {
-        newMap.delete(cropId);
+        if (cropId) {
+          newMap.delete(cropId);
+        }
       }
       return newMap;
     });
@@ -341,7 +343,7 @@ export default function RotationPage() {
                             type="number"
                             min="0"
                             max="10"
-                            value={selectedCrops.get(crop.id?.toString() || crop._id) || 0}
+                            value={selectedCrops.get((crop.id?.toString() || crop._id) as string) || 0}
                             onChange={(e) => handleSelectionCount(crop, parseInt(e.target.value))}
                             className="w-20 px-2 py-1 border rounded-md"
                           />

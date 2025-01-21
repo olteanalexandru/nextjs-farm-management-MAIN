@@ -59,7 +59,7 @@ export default function CropForm({ onSuccess }: CropFormProps) {
   ) => {
     setFormData(prev => ({
       ...prev,
-      [field]: prev[field].map((item: string, i: number) => 
+      [field]: (prev[field] || []).map((item: string, i: number) => 
         i === index ? value : item
       )
     }));
@@ -68,14 +68,14 @@ export default function CropForm({ onSuccess }: CropFormProps) {
   const addArrayField = (field: 'fertilizers' | 'pests' | 'diseases') => {
     setFormData(prev => ({
       ...prev,
-      [field]: [...prev[field], '']
+      [field]: [...(prev[field] || []), '']
     }));
   };
 
   const removeArrayField = (field: 'fertilizers' | 'pests' | 'diseases', index: number) => {
     setFormData(prev => ({
       ...prev,
-      [field]: prev[field].filter((_: string, i: number) => i !== index)
+      [field]: (prev[field] || []).filter((_: string, i: number) => i !== index)
     }));
   };
 
@@ -170,7 +170,7 @@ export default function CropForm({ onSuccess }: CropFormProps) {
         {arrayFields.map((field) => (
           <div key={field} className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 capitalize">{field}</label>
-            {formData[field].map((value: string, index: number) => (
+            {(formData[field] || []).map((value: string, index: number) => (
               <div key={index} className="flex gap-2">
                 <input
                   type="text"

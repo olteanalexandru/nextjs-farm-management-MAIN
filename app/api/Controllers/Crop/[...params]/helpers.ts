@@ -1,15 +1,17 @@
-import { Crop } from "app/types/api";
+import { RecommendationResponse } from "app/types/api";
+import { Decimal } from "@prisma/client/runtime/library";
 
-export function toDecimal(value: number | null | undefined): number {
+export function toDecimal(value: number | null | undefined): Decimal {
     if (value === null || value === undefined || isNaN(value)) {
-      return 0;
+    return new Decimal(0);
     }
-    return Number(value);
+    return new Decimal(value);
   }
   
-  export function transformCropWithDetails(crop: any): Crop {
+  export function transformCropWithDetails(crop: any): RecommendationResponse {
     return {
-      _id: crop.id,
+      id: crop.id,
+      _id: crop.id.toString(),
       cropName: crop.cropName,
       cropType: crop.cropType || '',
       cropVariety: crop.cropVariety || '',
@@ -20,9 +22,9 @@ export function toDecimal(value: number | null | undefined): number {
       soilType: crop.soilType || '',
       climate: crop.climate || '',
       ItShouldNotBeRepeatedForXYears: crop.ItShouldNotBeRepeatedForXYears || 0,
-      nitrogenSupply: toDecimal(crop.nitrogenSupply),
-      nitrogenDemand: toDecimal(crop.nitrogenDemand),
-      soilResidualNitrogen: toDecimal(crop.soilResidualNitrogen),
+      nitrogenSupply: Number(crop.nitrogenSupply) || 0,
+      nitrogenDemand: Number(crop.nitrogenDemand) || 0,
+      soilResidualNitrogen: crop.soilResidualNitrogen ? Number(crop.soilResidualNitrogen) : undefined,
       fertilizers: crop.details
         ?.filter((d: any) => d.detailType === 'FERTILIZER')
         .map((d: any) => d.value) || [],

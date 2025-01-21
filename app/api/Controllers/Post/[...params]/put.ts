@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { PrismaClient } from '@prisma/client';
 import { getCurrentUser } from 'app/lib/auth';
-import { ApiResponse, Post, PostCreate, transformPrismaPost } from 'app/types/api';
+import { ApiResponse, Post, PostUpdate, transformPrismaPost } from 'app/types/api';
 
 const prisma = new PrismaClient();
 
@@ -13,7 +13,7 @@ export const PUT = withApiAuthRequired(async function PUT(
   try {
     const [action, postId] = params.params;
     const auth0User = await getCurrentUser(request);
-    const updateData = await request.json() as PostCreate;
+    const updateData = await request.json() as PostUpdate;
 
     // Get the user from our database using Auth0 ID
     const dbUser = await prisma.user.findUnique({
@@ -54,8 +54,7 @@ export const PUT = withApiAuthRequired(async function PUT(
       data: {
         title: updateData.title,
         brief: updateData.brief,
-        description: updateData.description,
-        image: updateData.image
+        description: updateData.description
       },
       include: {
         user: {

@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { signal } from "@preact/signals-react";
-import { CropCreate, RecommendationResponse, CropType } from '../types/api';
+import { CropCreate, RecommendationResponse } from '../types/api'; // Remove CropType
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/Controllers/';
 const API_URL = `${BASE_URL}Crop/`;
@@ -26,7 +26,7 @@ interface ContextProps {
   getCropRecommendations: (cropName?: string) => Promise<RecommendationResponse[]>;
   addTheCropRecommendation: (data: RecommendationResponse) => Promise<void>;
   updateSelectionCount: (cropId: string | number, count: number) => Promise<void>;
-  singleCrop: { value: CropType | null };
+  singleCrop: { value: RecommendationResponse | null };
   fetchSoilTests: () => Promise<any>;
   saveSoilTest: (editingTest: any, formData: any) => Promise<void>;
   deleteSoilTest: (id: string) => Promise<void>;
@@ -51,7 +51,7 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
   const selectionsSignal = signal([]);
   const userStatus = signal(false);
   const refreshTrigger = signal(0);
-  const singleCropSignal = signal<CropType | null>(null);
+  const singleCropSignal = signal<RecommendationResponse | null>(null); // Update type
 
   const { user, error: authError, isLoading: isUserLoading } = useUser();
 
@@ -332,8 +332,8 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
       const cleanedData = {
         ...data,
         cropType: 'RECOMMENDATION',
-        pests: data.pests.filter(pest => pest.trim() !== ''),
-        diseases: data.diseases.filter(disease => disease.trim() !== ''),
+        pests: data.pests ? data.pests.filter(pest => pest.trim() !== '') : [],
+        diseases: data.diseases ? data.diseases.filter(disease => disease.trim() !== '') : [],
         nitrogenSupply: Number(data.nitrogenSupply),
         nitrogenDemand: Number(data.nitrogenDemand)
       };

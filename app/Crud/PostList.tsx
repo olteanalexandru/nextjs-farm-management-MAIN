@@ -90,9 +90,9 @@ export default function PostList({ posts, onDelete }: PostListProps) {
                 {post.brief && (
                   <p className="text-sm text-gray-500 mt-2">{post.brief}</p>
                 )}
-                {post.image && (
+                {post.imageUrl && (
                   <img 
-                    src={post.image} 
+                    src={post.imageUrl} 
                     alt={post.title}
                     className="mt-4 w-full h-40 object-cover rounded"
                   />
