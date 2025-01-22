@@ -1,5 +1,5 @@
 import { render, act, renderHook, waitFor } from '@testing-library/react';
-import { SoilManagementProvider, useSoilManagement } from '../soilManagementStore';
+import { SoilManagementProvider, useSoilManagement } from '@/providers/soilManagementStore';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock fetch globally
@@ -287,26 +287,31 @@ describe('SoilManagementStore', () => {
 
   describe('Loading State', () => {
     it('should manage loading state during API calls', async () => {
-      mockFetch.mockImplementationOnce(
-        () => new Promise(resolve => setTimeout(resolve, 100))
-          .then(() => ({
-            ok: true,
-            json: async () => [mockSoilTest],
-          }))
+      const mockFetch = vi.fn().mockImplementation(() => 
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              ok: true,
+              json: () => Promise.resolve([mockSoilTest])
+            });
+          }, 100);
+        })
       );
-
+      global.fetch = mockFetch;
+    
       const { result } = renderHook(() => useSoilManagement(), { wrapper });
-
-      expect(result.current.loading).toBe(false);
-
-      const fetchPromise = act(async () => {
-        await result.current.fetchSoilTests();
+    
+      let fetchPromise;
+      await act(async () => {
+        expect(result.current.loading).toBe(false);
+        fetchPromise = result.current.fetchSoilTests();
+        expect(result.current.loading).toBe(true);
       });
-
-      expect(result.current.loading).toBe(true);
-
-      await fetchPromise;
-
+    
+      await act(async () => {
+        await fetchPromise;
+      });
+      
       expect(result.current.loading).toBe(false);
     });
   });

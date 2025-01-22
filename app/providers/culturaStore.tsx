@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { signal } from "@preact/signals-react";
-import { CropCreate, RecommendationResponse } from '../types/api'; // Remove CropType
+import { CropCreate, RecommendationResponse } from '../types/api';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/Controllers/';
 const API_URL = `${BASE_URL}Crop/`;
@@ -51,7 +51,7 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
   const selectionsSignal = signal([]);
   const userStatus = signal(false);
   const refreshTrigger = signal(0);
-  const singleCropSignal = signal<RecommendationResponse | null>(null); // Update type
+  const singleCropSignal = signal<RecommendationResponse | null>(null);
 
   const { user, error: authError, isLoading: isUserLoading } = useUser();
 
@@ -62,6 +62,13 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
       getAllCrops();
     }
   }, [refreshTrigger.value, isUserLoading]);
+
+  const resetSignals = useCallback(() => {
+    loadingSignal.value = true;
+    isErrorSignal.value = false;
+    isSuccessSignal.value = false;
+    messageSignal.value = '';
+  }, []);
 
   const transformCropForRotation = useCallback((crop: any, selections: any[] = []): RecommendationResponse => {
     const id = crop.id || parseInt(crop._id);
@@ -75,8 +82,8 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
       cropName: crop.cropName,
       cropType: crop.cropType || '',
       cropVariety: crop.cropVariety || '',
-      plantingDate: crop.plantingDate?.toISOString(),
-      harvestingDate: crop.harvestingDate?.toISOString(),
+      plantingDate: typeof crop.plantingDate === 'string' ? crop.plantingDate : crop.plantingDate?.toISOString(),
+      harvestingDate: typeof crop.harvestingDate === 'string' ? crop.harvestingDate : crop.harvestingDate?.toISOString(),
       description: crop.description || '',
       imageUrl: crop.imageUrl || '',
       soilType: crop.soilType || '',
@@ -97,7 +104,7 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
 
   const createCrop = useCallback(async (data: CropCreate) => {
     try {
-      loadingSignal.value = true;
+      resetSignals();
       const response = await axios.post(`${API_URL}crop/single`, {
         ...data,
         soilResidualNitrogen: data.soilResidualNitrogen
@@ -117,11 +124,11 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  }, []);
+  }, [resetSignals]);
 
   const updateCrop = useCallback(async (cropId: string, data: CropCreate) => {
     try {
-      loadingSignal.value = true;
+      resetSignals();
       if (!user) {
         throw new Error('User is not authenticated');
       }
@@ -131,10 +138,6 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
       });
       
       if (response.status === 200) {
-        isSuccessSignal.value = true;
-        messageSignal.value = 'Crop updated successfully';
-        
-        // Transform the single crop response and maintain user data
         const updatedCrop = {
           ...transformCropForRotation(response.data.data),
           userId: response.data.data.userId,
@@ -142,13 +145,14 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
           user: response.data.data.user
         };
         
-        // Update the crops state by replacing the updated crop
         setCrops(prevCrops => 
           prevCrops.map(crop => 
             crop.id === updatedCrop.id ? updatedCrop : crop
           )
         );
         
+        isSuccessSignal.value = true;
+        messageSignal.value = 'Crop updated successfully';
         refreshTrigger.value += 1;
       } else {
         isErrorSignal.value = true;
@@ -161,15 +165,16 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  }, [user, transformCropForRotation]);
+  }, [user, transformCropForRotation, resetSignals]);
 
   const getCrops = useCallback(async () => {
     try {
-      loadingSignal.value = true;
+      resetSignals();
       const response = await axios.get(`${API_URL}crops/retrieve/all`);
       if (response.status === 200) {
         const transformedCrops = (response.data.crops || []).map(transformCropForRotation);
         setCrops(transformedCrops);
+        isSuccessSignal.value = true;
       }
     } catch (error) {
       console.error('Error fetching crops:', error);
@@ -177,11 +182,11 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  }, []);
+  }, [transformCropForRotation, resetSignals]);
 
   const deleteCrop = useCallback(async (cropId: string) => {
     try {
-      loadingSignal.value = true;
+      resetSignals();
       if (!user) {
         throw new Error('User is not authenticated');
       }
@@ -201,16 +206,19 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  }, [user]);
+  }, [user, resetSignals]);
 
   const selectare = useCallback(async (cropId: string | number, selectare: boolean) => {
     try {
-      loadingSignal.value = true;
+      resetSignals();
       const response = await axios.put(`${API_URL}crops/${cropId}/selectare`, { selectare });
       if (response.status === 200) {
         isSuccessSignal.value = true;
         messageSignal.value = 'Crop selection updated successfully';
-        await getAllCrops(); // Refresh to get updated selection status
+        await getAllCrops();
+      } else {
+        isErrorSignal.value = true;
+        messageSignal.value = 'Error updating crop selection';
       }
     } catch (err) {
       console.error(err);
@@ -219,14 +227,13 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  }, []);
+  }, [resetSignals]);
 
   const SinglePage = useCallback(async (id: string) => {
     try {
-      loadingSignal.value = true;
+      resetSignals();
       const response = await axios.get(`${API_URL}crop/id/${id}`);
       if (response.status === 200 && response.data.crops && response.data.crops[0]) {
-        isSuccessSignal.value = true;
         const cropData = response.data.crops[0];
         const transformedCrop = {
           ...transformCropForRotation(cropData),
@@ -236,6 +243,7 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
         };
         setCrops([transformedCrop]);
         singleCropSignal.value = transformedCrop;
+        isSuccessSignal.value = true;
       } else {
         isErrorSignal.value = true;
         messageSignal.value = 'Error loading crop details';
@@ -247,11 +255,11 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  }, []);
+  }, [transformCropForRotation, resetSignals]);
 
   const getAllCrops = useCallback(async () => {
     try {
-      loadingSignal.value = true;
+      resetSignals();
       console.log('Fetching all crops...');
       
       const response = await axios.get(`${API_URL}crops/retrieve/all`);
@@ -264,16 +272,14 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
         console.log('Raw crops:', allCrops.length);
         
         const transformedCrops = allCrops
-          .filter((crop: any) => crop && crop.cropName) // Only valid crops
-          .map((crop: any) => ({
-            ...crop, // Keep all fields from the API
-            isSelected: Boolean(selections.find((s: any) => s.cropId === crop.id)?.selectionCount > 0)
-          }));
+          .filter((crop: any) => crop && crop.cropName)
+          .map((crop: any) => transformCropForRotation(crop, selections));
         
         console.log('Setting crops:', transformedCrops.length);
+        areThereCropsSignal.value = true;
         setCrops(transformedCrops);
-        areThereCropsSignal.value = transformedCrops.length > 0;
         selectionsSignal.value = selections;
+        isSuccessSignal.value = true;
       } else {
         console.error('Invalid response format:', response);
         isErrorSignal.value = true;
@@ -287,11 +293,11 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  }, []);
+  }, [transformCropForRotation, resetSignals]);
 
   const getCropRecommendations = useCallback(async (cropName?: string): Promise<RecommendationResponse[]> => {
     try {
-      loadingSignal.value = true;
+      resetSignals();
       const url = cropName 
         ? `${API_URL}crops/recommendations/${cropName}`
         : `${API_URL}crops/recommendations`;
@@ -300,6 +306,7 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
       
       if (response.status === 200 && response.data.crops) {
         const recommendations = response.data.crops;
+        isSuccessSignal.value = true;
         return recommendations.map((rec: any) => ({
           id: rec.id,
           _id: rec.id.toString(),
@@ -324,11 +331,11 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  }, []);
+  }, [resetSignals]);
 
   const addTheCropRecommendation = useCallback(async (data: RecommendationResponse) => {
     try {
-      loadingSignal.value = true;
+      resetSignals();
       const cleanedData = {
         ...data,
         cropType: 'RECOMMENDATION',
@@ -362,17 +369,21 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  }, []);
+  }, [resetSignals]);
 
   const updateSelectionCount = useCallback(async (cropId: string | number, count: number) => {
     try {
-      loadingSignal.value = true;
+      resetSignals();
       const response = await axios.put(`${API_URL}crops/${cropId}/selectare`, { 
         selectare: true,
         numSelections: count 
       });
       if (response.status === 200) {
+        isSuccessSignal.value = true;
         await getAllCrops();
+      } else {
+        isErrorSignal.value = true;
+        messageSignal.value = 'Error updating selection count';
       }
     } catch (err) {
       console.error(err);
@@ -381,7 +392,7 @@ export function GlobalContextProvider({ children }: { children: React.ReactNode 
     } finally {
       loadingSignal.value = false;
     }
-  }, []);
+  }, [resetSignals]);
 
   const fetchSoilTests = useCallback(async () => {
     const response = await axios.get('/api/Controllers/Soil/soilTests');

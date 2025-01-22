@@ -1,5 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { FertilizationPlanProvider, useFertilizationPlans } from '@/providers/fertilizationPlanStore';
+import { vi } from 'vitest';
 
 describe('FertilizationPlanStore', () => {
   const mockPlan = {
@@ -13,14 +14,16 @@ describe('FertilizationPlanStore', () => {
   };
 
   beforeEach(() => {
-    global.fetch = jest.fn();
+    global.fetch = vi.fn();
   });
 
   test('fetchFertilizationPlans retrieves plans', async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => [mockPlan]
-    });
+    (global.fetch as any).mockImplementationOnce(() => 
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([mockPlan])
+      })
+    );
 
     const { result } = renderHook(() => useFertilizationPlans(), {
       wrapper: FertilizationPlanProvider
@@ -35,10 +38,19 @@ describe('FertilizationPlanStore', () => {
   });
 
   test('saveFertilizationPlan handles creation', async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockPlan
-    });
+    (global.fetch as any)
+      .mockImplementationOnce(() => 
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockPlan)
+        })
+      )
+      .mockImplementationOnce(() => 
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([mockPlan])
+        })
+      );
 
     const { result } = renderHook(() => useFertilizationPlans(), {
       wrapper: FertilizationPlanProvider
@@ -79,11 +91,11 @@ describe('FertilizationPlanStore Integration', () => {
   };
 
   beforeEach(() => {
-    global.fetch = jest.fn();
+    global.fetch = vi.fn();
   });
 
   test('complete fertilization plan lifecycle', async () => {
-    (global.fetch as jest.Mock)
+    (global.fetch as any)
       .mockImplementationOnce(() => Promise.resolve({
         ok: true,
         json: () => Promise.resolve([mockPlan])
@@ -91,6 +103,10 @@ describe('FertilizationPlanStore Integration', () => {
       .mockImplementationOnce(() => Promise.resolve({
         ok: true,
         json: () => Promise.resolve(mockPlan)
+      }))
+      .mockImplementationOnce(() => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([mockPlan])
       }));
 
     const { result } = renderHook(() => useFertilizationPlans(), {
@@ -129,7 +145,7 @@ describe('FertilizationPlanStore Integration', () => {
   });
 
   test('handles API errors appropriately', async () => {
-    (global.fetch as jest.Mock).mockImplementationOnce(() => 
+    (global.fetch as any).mockImplementationOnce(() => 
       Promise.reject(new Error('API Error'))
     );
 

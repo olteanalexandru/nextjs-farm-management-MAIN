@@ -36,7 +36,6 @@ describe('SoilTestStore Integration', () => {
       wrapper: SoilTestProvider
     });
 
-    // Test fetching soil tests
     await act(async () => {
       const tests = await result.current.fetchSoilTests();
       expect(tests).toEqual([mockSoilTest]);
@@ -78,6 +77,8 @@ describe('SoilTestStore Integration', () => {
       wrapper: SoilTestProvider
     });
 
-    await expect(result.current.fetchSoilTests()).rejects.toThrow('API Error');
+    await act(async () => {
+      await expect(result.current.fetchSoilTests()).rejects.toThrow('API Error');
+    });
   });
 });

@@ -1,9 +1,21 @@
 import { renderHook, act } from '@testing-library/react';
 import { AdminProvider, useAdminStore } from '@/providers/AdminStore';
 import axios from 'axios';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+vi.mock('axios', () => ({
+  default: {
+    get: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn()
+  }
+}));
+
+const mockedAxios = axios as unknown as {
+  get: ReturnType<typeof vi.fn>;
+  put: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
+};
 
 describe('AdminStore Integration', () => {
   const mockUsers = [
@@ -12,7 +24,7 @@ describe('AdminStore Integration', () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('fetches users successfully', async () => {
@@ -86,14 +98,28 @@ describe('AdminStore Integration', () => {
   });
 
   test('deletes user successfully', async () => {
-    mockedAxios.delete.mockResolvedValueOnce({ status: 200 });
-
+    // Setup initial state
     const { result } = renderHook(() => useAdminStore(), {
       wrapper: AdminProvider
     });
 
-    result.current.users = mockUsers;
+    // Set initial users
+    await act(async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: { users: mockUsers } });
+      await result.current.fetchUsers();
+    });
 
+    // Mock delete response
+    mockedAxios.delete.mockResolvedValueOnce({ status: 200 });
+    
+    // Mock subsequent fetch after delete
+    mockedAxios.get.mockResolvedValueOnce({ 
+      data: { 
+        users: mockUsers.filter(user => user.id !== '1') 
+      } 
+    });
+
+    // Perform delete
     await act(async () => {
       await result.current.deleteUser('1');
     });

@@ -1,12 +1,13 @@
 import { renderHook, act } from '@testing-library/react';
 import { CropWikiProvider, useCropWiki } from '@/providers/CropWikiStore';
 import axios from 'axios';
+import { vi, describe, test, beforeEach, expect } from 'vitest';
 
-jest.mock('axios');
+vi.mock('axios');
 
 describe('CropWikiStore Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('fetches and filters crops', async () => {
@@ -15,7 +16,7 @@ describe('CropWikiStore Integration', () => {
       { id: 2, cropName: 'Corn', cropType: 'GRAIN', soilType: 'CLAY' }
     ];
 
-    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    const mockedAxios = axios as unknown as { get: ReturnType<typeof vi.fn> };
     mockedAxios.get.mockResolvedValueOnce({
       data: {
         crops: mockCrops,

@@ -2,18 +2,25 @@ import { renderHook, act } from '@testing-library/react';
 import { LanguageProvider, useLanguage } from '@/providers/LanguageStore';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { vi, describe, test, beforeEach, expect } from 'vitest';
 
-jest.mock('axios');
-jest.mock('js-cookie');
+vi.mock('axios');
+vi.mock('js-cookie');
 
 describe('LanguageStore Integration', () => {
-  const mockedAxios = axios as jest.Mocked<typeof axios>;
-  const mockedCookies = Cookies as jest.Mocked<typeof Cookies>;
+  const mockedAxios = axios as unknown as { 
+    post: ReturnType<typeof vi.fn>,
+    get: ReturnType<typeof vi.fn>
+  };
+  const mockedCookies = Cookies as unknown as {
+    get: ReturnType<typeof vi.fn>,
+    set: ReturnType<typeof vi.fn>
+  };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     Object.defineProperty(window, 'location', {
-      value: { reload: jest.fn() },
+      value: { reload: vi.fn() },
       writable: true
     });
   });

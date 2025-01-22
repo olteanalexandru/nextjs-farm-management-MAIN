@@ -1,5 +1,5 @@
 import { render, act, renderHook, waitFor } from '@testing-library/react';
-import { UserProvider, useUserContext } from '../UserStore';
+import { UserProvider, useUserContext } from '@/providers/UserStore';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 
@@ -280,16 +280,18 @@ describe('UserStore', () => {
 
       expect(result.current.isLoading).toBe(true);
 
-      // Update mock to finish loading with a user
-      mockAuth0User = {
-        user: mockAuth0UserData,
-        isLoading: false,
-        error: null,
-      };
+      await act(async () => {
+        // Update mock to finish loading with a user
+        mockAuth0User = {
+          user: mockAuth0UserData,
+          isLoading: false,
+          error: null,
+        };
 
-      mockAxios.post.mockResolvedValueOnce({
-        status: 200,
-        data: { user: mockUserData },
+        mockAxios.post.mockResolvedValueOnce({
+          status: 200,
+          data: { user: mockUserData },
+        });
       });
 
       await waitFor(() => {

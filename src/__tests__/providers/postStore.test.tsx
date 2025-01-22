@@ -1,9 +1,27 @@
 import { renderHook, act } from '@testing-library/react';
 import { PostProvider, usePostContext } from '@/providers/postStore';
 import axios from 'axios';
+import { vi, describe, test, beforeEach, expect } from 'vitest';
+import { UserProvider } from '@auth0/nextjs-auth0/client';
 
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+// Mock Auth0
+vi.mock('@auth0/nextjs-auth0/client', () => ({
+  UserProvider: ({ children }: { children: React.ReactNode }) => children,
+  useUser: () => ({ user: { sub: 'test-user' } })
+}));
+
+vi.mock('axios');
+const mockedAxios = axios as unknown as {
+  post: ReturnType<typeof vi.fn>,
+  get: ReturnType<typeof vi.fn>,
+  delete: ReturnType<typeof vi.fn>
+};
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <UserProvider>
+    <PostProvider>{children}</PostProvider>
+  </UserProvider>
+);
 
 describe('PostStore', () => {
   const mockPost = {
@@ -20,7 +38,7 @@ describe('PostStore', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('createPost should add new post', async () => {
@@ -28,9 +46,7 @@ describe('PostStore', () => {
       data: { data: mockPost, error: null } 
     });
 
-    const { result } = renderHook(() => usePostContext(), {
-      wrapper: PostProvider
-    });
+    const { result } = renderHook(() => usePostContext(), { wrapper });
 
     await act(async () => {
       await result.current.createPost({
@@ -52,9 +68,7 @@ describe('PostStore', () => {
       data: { posts: [mockPost], error: null } 
     });
 
-    const { result } = renderHook(() => usePostContext(), {
-      wrapper: PostProvider
-    });
+    const { result } = renderHook(() => usePostContext(), { wrapper });
 
     await act(async () => {
       await result.current.getAllPosts();
@@ -69,9 +83,7 @@ describe('PostStore', () => {
       data: { error: null } 
     });
 
-    const { result } = renderHook(() => usePostContext(), {
-      wrapper: PostProvider
-    });
+    const { result } = renderHook(() => usePostContext(), { wrapper });
 
     result.current.setData([mockPost]);
 

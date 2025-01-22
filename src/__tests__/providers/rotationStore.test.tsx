@@ -1,11 +1,27 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { GlobalContextProvider, useGlobalContextRotation } from '@/providers/rotationStore';
 import axios from 'axios';
+import { vi, describe, test, beforeEach, expect } from 'vitest';
+import { UserProvider } from '@auth0/nextjs-auth0/client';
 
-jest.mock('axios');
-jest.mock('@auth0/nextjs-auth0/client', () => ({
+// Mock Auth0
+vi.mock('@auth0/nextjs-auth0/client', () => ({
+  UserProvider: ({ children }: { children: React.ReactNode }) => children,
   useUser: () => ({ user: { sub: 'test-user-id' } })
 }));
+
+vi.mock('axios');
+const mockedAxios = axios as unknown as {
+  post: ReturnType<typeof vi.fn>,
+  get: ReturnType<typeof vi.fn>,
+  put: ReturnType<typeof vi.fn>
+};
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <UserProvider>
+    <GlobalContextProvider>{children}</GlobalContextProvider>
+  </UserProvider>
+);
 
 describe('RotationStore Integration', () => {
   const mockRotation = {
@@ -20,17 +36,18 @@ describe('RotationStore Integration', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('generates and manages crop rotation', async () => {
-    const mockedAxios = axios as jest.Mocked<typeof axios>;
-    mockedAxios.post.mockResolvedValueOnce({ status: 201, data: [mockRotation] });
-    mockedAxios.get.mockResolvedValueOnce({ status: 200, data: [mockRotation] });
-
-    const { result } = renderHook(() => useGlobalContextRotation(), {
-      wrapper: GlobalContextProvider
+    mockedAxios.post.mockResolvedValueOnce({ 
+      data: [mockRotation]
     });
+    mockedAxios.get.mockResolvedValueOnce({ 
+      data: [mockRotation]
+    });
+
+    const { result } = renderHook(() => useGlobalContextRotation(), { wrapper });
 
     // Test rotation generation
     await act(async () => {
@@ -44,28 +61,28 @@ describe('RotationStore Integration', () => {
       });
     });
 
-    expect(result.current.cropRotation).toEqual([mockRotation]);
-    expect(result.current.isSuccess).toBe(true);
+    await waitFor(() => {
+      expect(result.current.cropRotation).toEqual([mockRotation]);
+      expect(result.current.isSuccess).toBe(true);
+    });
 
     // Test fetching rotations
     await act(async () => {
       await result.current.getCropRotation();
     });
 
-    expect(result.current.cropRotation).toEqual([mockRotation]);
-    expect(result.current.error).toBeNull();
+    await waitFor(() => {
+      expect(result.current.cropRotation).toEqual([mockRotation]);
+      expect(result.current.error).toBeNull();
+    });
   });
 
   test('handles nitrogen balance updates', async () => {
-    const mockedAxios = axios as jest.Mocked<typeof axios>;
     mockedAxios.put.mockResolvedValueOnce({ 
-      status: 200, 
-      data: [{ ...mockRotation, nitrogenBalance: 60 }] 
+      data: [{ ...mockRotation, nitrogenBalance: 60 }]
     });
 
-    const { result } = renderHook(() => useGlobalContextRotation(), {
-      wrapper: GlobalContextProvider
-    });
+    const { result } = renderHook(() => useGlobalContextRotation(), { wrapper });
 
     await act(async () => {
       await result.current.updateNitrogenBalanceAndRegenerateRotation({
@@ -76,7 +93,10 @@ describe('RotationStore Integration', () => {
       });
     });
 
-    expect(result.current.isSuccess).toBe(true);
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
     expect(mockedAxios.put).toHaveBeenCalledWith(
       expect.stringContaining('/updateNitrogenBalance/rotation/'),
       expect.any(Object)
