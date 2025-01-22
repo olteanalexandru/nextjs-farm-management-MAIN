@@ -1,5 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { SoilTestProvider, useSoilTests } from '@/providers/soilTestStore';
+import { vi } from 'vitest';
 
 describe('SoilTestStore Integration', () => {
   const mockSoilTest = {
@@ -17,7 +18,7 @@ describe('SoilTestStore Integration', () => {
 
   beforeEach(() => {
     // Mock fetch globally
-    global.fetch = jest.fn();
+    global.fetch = vi.fn();
   });
 
   test('full soil test lifecycle', async () => {

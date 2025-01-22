@@ -278,6 +278,7 @@ describe('UserStore', () => {
 
       const { result } = renderHook(() => useUserContext(), { wrapper });
 
+      // Initial state should be loading
       expect(result.current.isLoading).toBe(true);
 
       await act(async () => {
@@ -287,11 +288,17 @@ describe('UserStore', () => {
           isLoading: false,
           error: null,
         };
+      });
 
-        mockAxios.post.mockResolvedValueOnce({
-          status: 200,
-          data: { user: mockUserData },
-        });
+      // Mock successful user creation
+      mockAxios.post.mockResolvedValueOnce({
+        status: 200,
+        data: { user: mockUserData },
+      });
+
+      // Wait for all state updates to complete
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
       });
 
       await waitFor(() => {

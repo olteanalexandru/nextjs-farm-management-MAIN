@@ -40,16 +40,15 @@ describe('RotationStore Integration', () => {
   });
 
   test('generates and manages crop rotation', async () => {
-    mockedAxios.post.mockResolvedValueOnce({ 
-      data: [mockRotation]
-    });
-    mockedAxios.get.mockResolvedValueOnce({ 
-      data: [mockRotation]
-    });
-
+    const responseData = {
+      data: [mockRotation]  // Changed structure to match API response
+    };
+    
+    mockedAxios.post.mockResolvedValueOnce(responseData);
+    mockedAxios.get.mockResolvedValueOnce(responseData);
+  
     const { result } = renderHook(() => useGlobalContextRotation(), { wrapper });
-
-    // Test rotation generation
+  
     await act(async () => {
       await result.current.generateCropRotation({
         fieldSize: 100,
@@ -61,12 +60,12 @@ describe('RotationStore Integration', () => {
       });
     });
 
+    // Use waitFor to ensure state updates are complete
     await waitFor(() => {
       expect(result.current.cropRotation).toEqual([mockRotation]);
       expect(result.current.isSuccess).toBe(true);
     });
 
-    // Test fetching rotations
     await act(async () => {
       await result.current.getCropRotation();
     });
@@ -76,14 +75,18 @@ describe('RotationStore Integration', () => {
       expect(result.current.error).toBeNull();
     });
   });
-
+  
   test('handles nitrogen balance updates', async () => {
-    mockedAxios.put.mockResolvedValueOnce({ 
-      data: [{ ...mockRotation, nitrogenBalance: 60 }]
-    });
-
+    const responseData = {
+      data: [{ ...mockRotation, nitrogenBalance: 60 }]  // Changed structure to match API response
+    };
+    mockedAxios.put.mockResolvedValueOnce(responseData);
+    
+    // Mock get request that follows update
+    mockedAxios.get.mockResolvedValueOnce(responseData);
+  
     const { result } = renderHook(() => useGlobalContextRotation(), { wrapper });
-
+  
     await act(async () => {
       await result.current.updateNitrogenBalanceAndRegenerateRotation({
         rotationName: 'Test Rotation',
@@ -101,5 +104,7 @@ describe('RotationStore Integration', () => {
       expect.stringContaining('/updateNitrogenBalance/rotation/'),
       expect.any(Object)
     );
+
+    expect(result.current.cropRotation).toEqual([{ ...mockRotation, nitrogenBalance: 60 }]);
   });
 });

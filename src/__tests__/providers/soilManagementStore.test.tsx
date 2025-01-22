@@ -287,7 +287,9 @@ describe('SoilManagementStore', () => {
 
   describe('Loading State', () => {
     it('should manage loading state during API calls', async () => {
-      const mockFetch = vi.fn().mockImplementation(() => 
+      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+
+      mockFetch.mockImplementationOnce(() => 
         new Promise((resolve) => {
           setTimeout(() => {
             resolve({
@@ -297,21 +299,22 @@ describe('SoilManagementStore', () => {
           }, 100);
         })
       );
-      global.fetch = mockFetch;
-    
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
-    
+
+      expect(result.current.loading).toBe(false);
+
       let fetchPromise;
       await act(async () => {
-        expect(result.current.loading).toBe(false);
         fetchPromise = result.current.fetchSoilTests();
-        expect(result.current.loading).toBe(true);
       });
-    
+      
+      // Check loading state immediately after starting fetch
+      expect(result.current.loading).toBe(true);
+
+      // Wait for fetch to complete
       await act(async () => {
         await fetchPromise;
       });
-      
+
       expect(result.current.loading).toBe(false);
     });
   });
