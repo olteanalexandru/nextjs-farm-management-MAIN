@@ -20,3 +20,12 @@ export type CropCreate = {
     
   };
   
+  export type WikiQueryParams = {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+    cropType?: string;
+    soilType?: string;
+  };
