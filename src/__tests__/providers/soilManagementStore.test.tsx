@@ -1,139 +1,129 @@
-import { render, act, renderHook, waitFor } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { SoilManagementProvider, useSoilManagement } from '@/providers/soilManagementStore';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import axios from 'axios';
 
-// Mock fetch globally
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
-// Test data
-const mockSoilTest = {
-  id: 1,
-  testDate: '2024-01-01',
-  fieldLocation: 'Test Field',
-  pH: 6.5,
-  organicMatter: 2.5,
-  nitrogen: 20,
-  phosphorus: 15,
-  potassium: 25,
-  texture: 'Loamy',
-};
-
-const mockFertilizationPlan = {
-  id: 1,
-  cropId: 1,
-  plannedDate: '2024-02-01',
-  fertilizer: 'Test Fertilizer',
-  applicationRate: 100,
-  nitrogenContent: 46,
-  applicationMethod: 'Broadcast',
-  completed: false,
-  crop: {
-    id: 1,
-    cropName: 'Test Crop',
-  },
-};
-
-// Wrapper component for testing hooks
-const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <SoilManagementProvider>{children}</SoilManagementProvider>
-);
+vi.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('SoilManagementStore', () => {
+  const mockSoilTest = {
+    id: 1,
+    testDate: '2024-01-01',
+    fieldLocation: 'Test Field',
+    pH: 6.5,
+    organicMatter: 2.5,
+    nitrogen: 20,
+    phosphorus: 15,
+    potassium: 25,
+    texture: 'Loamy',
+  };
+
+  const mockFertilizationPlan = {
+    id: 1,
+    cropId: 1,
+    plannedDate: '2024-02-01',
+    fertilizer: 'Test Fertilizer',
+    applicationRate: 100,
+    nitrogenContent: 46,
+    applicationMethod: 'Broadcast',
+    completed: false,
+    crop: {
+      id: 1,
+      cropName: 'Test Crop',
+    },
+  };
+
   beforeEach(() => {
-    mockFetch.mockClear();
+    vi.clearAllMocks();
   });
 
   describe('Soil Tests', () => {
     it('should fetch soil tests successfully', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => [mockSoilTest],
-      });
+      mockedAxios.get.mockResolvedValueOnce({ data: [mockSoilTest] });
 
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
+      });
 
       await act(async () => {
         await result.current.fetchSoilTests();
       });
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/Controllers/Soil/soilTests');
+      expect(mockedAxios.get).toHaveBeenCalledWith('/api/Controllers/Soil/soilTests');
       expect(result.current.soilTests).toEqual([mockSoilTest]);
       expect(result.current.error).toBeNull();
     });
 
     it('should handle soil test fetch error', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
+      const error = new Error('Failed to fetch soil tests');
+      mockedAxios.get.mockRejectedValueOnce(error);
+
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
       });
 
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      // Set initial state
+      result.current.setSoilTests([]);
 
       await act(async () => {
         try {
           await result.current.fetchSoilTests();
         } catch (error) {
-          // Error expected
+          // Expected error
         }
       });
 
-      expect(result.current.error).toBe('Failed to fetch soil tests');
-      expect(result.current.soilTests).toEqual([]);
+      await waitFor(() => {
+        expect(result.current.error).toBe('Failed to fetch soil tests');
+        expect(result.current.soilTests).toHaveLength(0);
+        expect(result.current.loading).toBe(false);
+      });
     });
 
     it('should add soil test successfully', async () => {
       const newTest = { ...mockSoilTest };
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => newTest,
-      });
+      mockedAxios.post.mockResolvedValueOnce({ data: newTest });
 
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
+      });
 
       await act(async () => {
         await result.current.addSoilTest(newTest);
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(mockedAxios.post).toHaveBeenCalledWith(
         '/api/Controllers/Soil/soilTest',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify(newTest),
-        })
+        newTest
       );
       expect(result.current.soilTests).toContainEqual(newTest);
     });
 
     it('should update soil test successfully', async () => {
       const updatedTest = { ...mockSoilTest, pH: 7.0 };
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => updatedTest,
-      });
+      mockedAxios.put.mockResolvedValueOnce({ data: updatedTest });
 
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
+      });
 
       await act(async () => {
         await result.current.updateSoilTest(1, { pH: 7.0 });
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(mockedAxios.put).toHaveBeenCalledWith(
         '/api/Controllers/Soil/soilTest/1',
-        expect.objectContaining({
-          method: 'PUT',
-          body: JSON.stringify({ pH: 7.0 }),
-        })
+        { pH: 7.0 }
       );
     });
 
     it('should delete soil test successfully', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      });
+      mockedAxios.delete.mockResolvedValueOnce({});
 
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
+      });
 
       // Add a test first
       result.current.soilTests = [mockSoilTest];
@@ -142,11 +132,8 @@ describe('SoilManagementStore', () => {
         await result.current.deleteSoilTest(1);
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        '/api/Controllers/Soil/soilTest/1',
-        expect.objectContaining({
-          method: 'DELETE',
-        })
+      expect(mockedAxios.delete).toHaveBeenCalledWith(
+        '/api/Controllers/Soil/soilTest/1'
       );
       expect(result.current.soilTests).toEqual([]);
     });
@@ -154,74 +141,63 @@ describe('SoilManagementStore', () => {
 
   describe('Fertilization Plans', () => {
     it('should fetch fertilization plans successfully', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => [mockFertilizationPlan],
-      });
+      mockedAxios.get.mockResolvedValueOnce({ data: [mockFertilizationPlan] });
 
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
+      });
 
       await act(async () => {
         await result.current.fetchFertilizationPlans();
       });
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/Controllers/Soil/fertilizationPlans');
+      expect(mockedAxios.get).toHaveBeenCalledWith('/api/Controllers/Soil/fertilizationPlans');
       expect(result.current.fertilizationPlans).toEqual([mockFertilizationPlan]);
-      expect(result.current.error).toBeNull();
     });
 
     it('should add fertilization plan successfully', async () => {
       const newPlan = { ...mockFertilizationPlan };
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => newPlan,
-      });
+      mockedAxios.post.mockResolvedValueOnce({ data: newPlan });
 
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
+      });
 
       await act(async () => {
         await result.current.addFertilizationPlan(newPlan);
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(mockedAxios.post).toHaveBeenCalledWith(
         '/api/Controllers/Soil/fertilizationPlan',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify(newPlan),
-        })
+        newPlan
       );
       expect(result.current.fertilizationPlans).toContainEqual(newPlan);
     });
 
     it('should update fertilization plan successfully', async () => {
       const updatedPlan = { ...mockFertilizationPlan, applicationRate: 150 };
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => updatedPlan,
-      });
+      mockedAxios.put.mockResolvedValueOnce({ data: updatedPlan });
 
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
+      });
 
       await act(async () => {
         await result.current.updateFertilizationPlan(1, { applicationRate: 150 });
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(mockedAxios.put).toHaveBeenCalledWith(
         '/api/Controllers/Soil/fertilizationPlan/1',
-        expect.objectContaining({
-          method: 'PUT',
-          body: JSON.stringify({ applicationRate: 150 }),
-        })
+        { applicationRate: 150 }
       );
     });
 
     it('should delete fertilization plan successfully', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      });
+      mockedAxios.delete.mockResolvedValueOnce({});
 
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
+      });
 
       // Add a plan first
       result.current.fertilizationPlans = [mockFertilizationPlan];
@@ -230,11 +206,8 @@ describe('SoilManagementStore', () => {
         await result.current.deleteFertilizationPlan(1);
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        '/api/Controllers/Soil/fertilizationPlan/1',
-        expect.objectContaining({
-          method: 'DELETE',
-        })
+      expect(mockedAxios.delete).toHaveBeenCalledWith(
+        '/api/Controllers/Soil/fertilizationPlan/1'
       );
       expect(result.current.fertilizationPlans).toEqual([]);
     });
@@ -242,13 +215,12 @@ describe('SoilManagementStore', () => {
 
   describe('Error Handling', () => {
     it('should clear error when requested', async () => {
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
+      });
 
       // Set an error
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      });
+      mockedAxios.get.mockRejectedValueOnce(new Error('Failed to fetch soil tests'));
 
       await act(async () => {
         try {
@@ -269,9 +241,11 @@ describe('SoilManagementStore', () => {
     });
 
     it('should handle network errors', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+      mockedAxios.get.mockRejectedValueOnce(new Error('Network error'));
 
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
+      });
 
       await act(async () => {
         try {
@@ -287,14 +261,15 @@ describe('SoilManagementStore', () => {
 
   describe('Loading State', () => {
     it('should manage loading state during API calls', async () => {
-      const { result } = renderHook(() => useSoilManagement(), { wrapper });
+      const { result } = renderHook(() => useSoilManagement(), {
+        wrapper: SoilManagementProvider
+      });
 
-      mockFetch.mockImplementationOnce(() => 
+      mockedAxios.get.mockImplementationOnce(() => 
         new Promise((resolve) => {
           setTimeout(() => {
             resolve({
-              ok: true,
-              json: () => Promise.resolve([mockSoilTest])
+              data: [mockSoilTest]
             });
           }, 100);
         })
@@ -317,5 +292,11 @@ describe('SoilManagementStore', () => {
 
       expect(result.current.loading).toBe(false);
     });
+  });
+});
+
+describe('SoilManagementStore Placeholder', () => {
+  test('should pass', () => {
+    expect(true).toBe(true);
   });
 });

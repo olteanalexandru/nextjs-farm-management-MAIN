@@ -1,6 +1,10 @@
 import { renderHook, act } from '@testing-library/react';
 import { SoilTestProvider, useSoilTests } from '@/providers/soilTestStore';
 import { vi } from 'vitest';
+import axios from 'axios';
+
+vi.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('SoilTestStore Integration', () => {
   const mockSoilTest = {
@@ -17,21 +21,12 @@ describe('SoilTestStore Integration', () => {
   };
 
   beforeEach(() => {
-    // Mock fetch globally
-    global.fetch = vi.fn();
+    vi.clearAllMocks();
   });
 
   test('full soil test lifecycle', async () => {
-    // Mock successful responses
-    (global.fetch as jest.Mock)
-      .mockImplementationOnce(() => Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve([mockSoilTest])
-      }))
-      .mockImplementationOnce(() => Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(mockSoilTest)
-      }));
+    mockedAxios.get.mockResolvedValueOnce({ data: [mockSoilTest] });
+    mockedAxios.post.mockResolvedValueOnce({ data: mockSoilTest });
 
     const { result } = renderHook(() => useSoilTests(), {
       wrapper: SoilTestProvider
@@ -42,7 +37,6 @@ describe('SoilTestStore Integration', () => {
       expect(tests).toEqual([mockSoilTest]);
     });
 
-    // Test creating a new soil test
     const newTestData = {
       testDate: '2023-02-01',
       fieldLocation: 'New Field',
@@ -59,20 +53,25 @@ describe('SoilTestStore Integration', () => {
       await result.current.saveSoilTest(null, newTestData);
     });
 
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(mockedAxios.post).toHaveBeenCalledWith(
       '/api/Controllers/Soil/soilTest',
       expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: expect.any(String)
+        testDate: expect.any(String),
+        fieldLocation: 'New Field',
+        pH: 7.0,
+        organicMatter: 3.0,
+        nitrogen: 25,
+        phosphorus: 35,
+        potassium: 45,
+        texture: 'sandy',
+        notes: 'New test'
       })
     );
   });
 
   test('handles API errors appropriately', async () => {
-    (global.fetch as jest.Mock).mockImplementationOnce(() => 
-      Promise.reject(new Error('API Error'))
-    );
+    const error = new Error('API Error');
+    mockedAxios.get.mockRejectedValueOnce(error);
 
     const { result } = renderHook(() => useSoilTests(), {
       wrapper: SoilTestProvider
@@ -81,5 +80,7 @@ describe('SoilTestStore Integration', () => {
     await act(async () => {
       await expect(result.current.fetchSoilTests()).rejects.toThrow('API Error');
     });
+
+    expect(result.current.error).toBe('API Error');
   });
 });

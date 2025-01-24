@@ -1,5 +1,8 @@
 'use client';
 
+import { makeAutoObservable, runInAction } from 'mobx';
+import { observer } from 'mobx-react';
+import axios from 'axios';
 import { createContext, useContext, ReactNode } from 'react';
 
 interface SoilTest {
@@ -27,36 +30,57 @@ interface SoilTestFormData {
   notes?: string;
 }
 
-interface SoilTestContextType {
-  fetchSoilTests: () => Promise<SoilTest[]>;
-  saveSoilTest: (editingTest: SoilTest | null, formData: SoilTestFormData) => Promise<void>;
-  deleteSoilTest: (id: number) => Promise<void>;
-}
+class SoilTestStore {
+  soilTests: SoilTest[] = [];
+  loading: boolean = false;
+  error: string | null = null;
 
-const SoilTestContext = createContext<SoilTestContextType | undefined>(undefined);
+  constructor() {
+    makeAutoObservable(this);
+  }
 
-export function SoilTestProvider({ children }: { children: ReactNode }) {
-  const fetchSoilTests = async (): Promise<SoilTest[]> => {
-    const response = await fetch('/api/Controllers/Soil/soilTests');
-    if (!response.ok) {
-      throw new Error('Failed to fetch soil tests');
-    }
-    return response.json();
+  setLoading = (value: boolean) => {
+    this.loading = value;
   };
 
-  const saveSoilTest = async (editingTest: SoilTest | null, formData: SoilTestFormData): Promise<void> => {
+  setError = (error: string | null) => {
+    this.error = error;
+  };
+
+  setSoilTests = (tests: SoilTest[]) => {
+    this.soilTests = tests;
+  };
+
+  fetchSoilTests = async (): Promise<SoilTest[]> => {
+    try {
+      this.setLoading(true);
+      const response = await axios.get<SoilTest[]>('/api/Controllers/Soil/soilTests');
+      runInAction(() => {
+        this.soilTests = response.data;
+      });
+      return response.data;
+    } catch (err) {
+      runInAction(() => {
+        this.error = err instanceof Error ? err.message : 'An error occurred';
+      });
+      throw err;
+    } finally {
+      runInAction(() => {
+        this.loading = false;
+      });
+    }
+  };
+
+  saveSoilTest = async (editingTest: SoilTest | null, formData: SoilTestFormData): Promise<void> => {
     const url = editingTest
       ? `/api/Controllers/Soil/soilTest/${editingTest.id}`
       : '/api/Controllers/Soil/soilTest';
 
-    const method = editingTest ? 'PUT' : 'POST';
+    const method = editingTest ? 'put' : 'post';
 
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    try {
+      this.setLoading(true);
+      const response = await axios[method](url, {
         testDate: new Date(formData.testDate).toISOString(),
         fieldLocation: formData.fieldLocation,
         pH: parseFloat(formData.pH),
@@ -66,34 +90,60 @@ export function SoilTestProvider({ children }: { children: ReactNode }) {
         potassium: parseFloat(formData.potassium),
         texture: formData.texture,
         notes: formData.notes,
-      }),
-    });
+      });
 
-    if (!response.ok) {
-      throw new Error(`Failed to ${editingTest ? 'update' : 'create'} soil test`);
+      runInAction(() => {
+        if (editingTest) {
+          const index = this.soilTests.findIndex(test => test.id === editingTest.id);
+          if (index !== -1) {
+            this.soilTests[index] = response.data;
+          }
+        } else {
+          this.soilTests.push(response.data);
+        }
+      });
+    } catch (err) {
+      runInAction(() => {
+        this.error = err instanceof Error ? err.message : 'An error occurred';
+      });
+      throw err;
+    } finally {
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   };
 
-  const deleteSoilTest = async (id: number): Promise<void> => {
-    const response = await fetch(`/api/Controllers/Soil/soilTest/${id}`, {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to delete soil test');
+  deleteSoilTest = async (id: number): Promise<void> => {
+    try {
+      this.setLoading(true);
+      await axios.delete(`/api/Controllers/Soil/soilTest/${id}`);
+      runInAction(() => {
+        this.soilTests = this.soilTests.filter(test => test.id !== id);
+      });
+    } catch (err) {
+      runInAction(() => {
+        this.error = err instanceof Error ? err.message : 'An error occurred';
+      });
+      throw err;
+    } finally {
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   };
+}
 
+const soilTestStore = new SoilTestStore();
+const SoilTestContext = createContext<SoilTestStore>(soilTestStore);
+
+export const SoilTestProvider = observer(({ children }: { children: ReactNode }) => {
   return (
-    <SoilTestContext.Provider value={{
-      fetchSoilTests,
-      saveSoilTest,
-      deleteSoilTest,
-    }}>
+    <SoilTestContext.Provider value={soilTestStore}>
       {children}
     </SoilTestContext.Provider>
   );
-}
+});
 
 export function useSoilTests() {
   const context = useContext(SoilTestContext);

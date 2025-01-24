@@ -51,8 +51,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const syncUser = async () => {
+      setIsLoading(true);
+
       if (authLoading) {
-        setIsLoading(true);
         return;
       }
 

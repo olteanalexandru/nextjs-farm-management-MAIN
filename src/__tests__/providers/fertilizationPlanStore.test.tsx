@@ -1,6 +1,18 @@
+import { vi, describe, test, expect, beforeEach } from 'vitest';
+import axios from 'axios';
+import { configure } from 'mobx';
 import { renderHook, act } from '@testing-library/react';
 import { FertilizationPlanProvider, useFertilizationPlans } from '@/providers/fertilizationPlanStore';
-import { vi } from 'vitest';
+
+configure({ enforceActions: 'always' });
+
+vi.mock('axios');
+const mockedAxios = axios as unknown as {
+  get: ReturnType<typeof vi.fn>,
+  post: ReturnType<typeof vi.fn>,
+  put: ReturnType<typeof vi.fn>,
+  delete: ReturnType<typeof vi.fn>
+};
 
 describe('FertilizationPlanStore', () => {
   const mockPlan = {
@@ -10,20 +22,16 @@ describe('FertilizationPlanStore', () => {
     applicationRate: 100,
     nitrogenContent: 30,
     applicationMethod: 'broadcast',
+    completed: false,
     crop: { id: 1, cropName: 'Test Crop' }
   };
 
   beforeEach(() => {
-    global.fetch = vi.fn();
+    vi.clearAllMocks();
   });
 
   test('fetchFertilizationPlans retrieves plans', async () => {
-    (global.fetch as any).mockImplementationOnce(() => 
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve([mockPlan])
-      })
-    );
+    mockedAxios.get.mockResolvedValueOnce({ data: [mockPlan] });
 
     const { result } = renderHook(() => useFertilizationPlans(), {
       wrapper: FertilizationPlanProvider
@@ -35,26 +43,12 @@ describe('FertilizationPlanStore', () => {
 
     expect(result.current.plans).toEqual([mockPlan]);
     expect(result.current.error).toBeNull();
+    expect(mockedAxios.get).toHaveBeenCalledWith('/api/Controllers/Soil/fertilizationPlans');
   });
 
   test('saveFertilizationPlan handles creation', async () => {
-    (global.fetch as any)
-      .mockImplementationOnce(() => 
-        Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockPlan)
-        })
-      )
-      .mockImplementationOnce(() => 
-        Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve([mockPlan])
-        })
-      );
-
-    const { result } = renderHook(() => useFertilizationPlans(), {
-      wrapper: FertilizationPlanProvider
-    });
+    mockedAxios.post.mockResolvedValueOnce({ data: mockPlan });
+    mockedAxios.get.mockResolvedValueOnce({ data: [mockPlan] });
 
     const formData = {
       cropId: '1',
@@ -65,102 +59,104 @@ describe('FertilizationPlanStore', () => {
       applicationMethod: 'broadcast'
     };
 
+    const { result } = renderHook(() => useFertilizationPlans(), {
+      wrapper: FertilizationPlanProvider
+    });
+
     await act(async () => {
       await result.current.saveFertilizationPlan(null, formData);
     });
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/api/Controllers/Soil/fertilizationPlan',
-      expect.any(Object)
-    );
-  });
-});
-
-describe('FertilizationPlanStore Integration', () => {
-  const mockPlan = {
-    id: 1,
-    cropId: 1,
-    plannedDate: '2023-01-01',
-    fertilizer: 'Test Fertilizer',
-    applicationRate: 100,
-    nitrogenContent: 30,
-    applicationMethod: 'broadcast',
-    notes: 'Test notes',
-    completed: false,
-    crop: { id: 1, cropName: 'Test Crop' }
-  };
-
-  beforeEach(() => {
-    global.fetch = vi.fn();
-  });
-
-  test('complete fertilization plan lifecycle', async () => {
-    (global.fetch as any)
-      .mockImplementationOnce(() => Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve([mockPlan])
-      }))
-      .mockImplementationOnce(() => Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(mockPlan)
-      }))
-      .mockImplementationOnce(() => Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve([mockPlan])
-      }));
-
-    const { result } = renderHook(() => useFertilizationPlans(), {
-      wrapper: FertilizationPlanProvider
-    });
-
-    // Test fetching plans
-    await act(async () => {
-      const plans = await result.current.fetchFertilizationPlans();
-      expect(plans).toEqual([mockPlan]);
-    });
-
-    // Test creating a new plan
-    const newPlanData = {
-      cropId: '1',
-      plannedDate: '2023-02-01',
-      fertilizer: 'New Fertilizer',
-      applicationRate: '150',
-      nitrogenContent: '35',
-      applicationMethod: 'foliar',
-      notes: 'New test'
-    };
-
-    await act(async () => {
-      await result.current.saveFertilizationPlan(null, newPlanData);
-    });
-
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(mockedAxios.post).toHaveBeenCalledWith(
       '/api/Controllers/Soil/fertilizationPlan',
       expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: expect.any(String)
+        cropId: 1,
+        plannedDate: expect.any(String),
+        fertilizer: 'Test Fertilizer',
+        applicationRate: 100,
+        nitrogenContent: 30,
+        applicationMethod: 'broadcast'
       })
     );
   });
 
-  test('handles API errors appropriately', async () => {
-    (global.fetch as any).mockImplementationOnce(() => 
-      Promise.reject(new Error('API Error'))
-    );
+  test('updateFertilizationPlan handles updates', async () => {
+    const updateData = {
+      fertilizer: 'Updated Fertilizer',
+      applicationRate: 150
+    };
+
+    mockedAxios.put.mockResolvedValueOnce({ data: { ...mockPlan, ...updateData } });
+    mockedAxios.get.mockResolvedValueOnce({ data: [{ ...mockPlan, ...updateData }] });
 
     const { result } = renderHook(() => useFertilizationPlans(), {
       wrapper: FertilizationPlanProvider
     });
 
     await act(async () => {
-      try {
-        await result.current.fetchFertilizationPlans();
-      } catch (error) {
-        expect(error).toBeDefined();
-      }
+      await result.current.updateFertilizationPlan(1, updateData);
     });
 
-    expect(result.current.error).toBeDefined();
+    expect(mockedAxios.put).toHaveBeenCalledWith(
+      '/api/Controllers/Soil/fertilizationPlan/1',
+      updateData
+    );
+  });
+
+  test('deleteFertilizationPlan removes plan', async () => {
+    mockedAxios.delete.mockResolvedValueOnce({ data: {} });
+
+    const { result } = renderHook(() => useFertilizationPlans(), {
+      wrapper: FertilizationPlanProvider
+    });
+
+    act(() => {
+      result.current.setPlans([mockPlan]);
+    });
+
+    await act(async () => {
+      await result.current.deleteFertilizationPlan(1);
+    });
+
+    expect(mockedAxios.delete).toHaveBeenCalledWith('/api/Controllers/Soil/fertilizationPlan/1');
+    expect(result.current.plans).toHaveLength(0);
+  });
+
+  test('handles API errors appropriately', async () => {
+    const error = new Error('API Error');
+    mockedAxios.get.mockRejectedValueOnce(error);
+
+    const { result } = renderHook(() => useFertilizationPlans(), {
+      wrapper: FertilizationPlanProvider
+    });
+
+    try {
+      await act(async () => {
+        await result.current.fetchFertilizationPlans();
+      });
+    } catch (err) {
+      expect(err).toBe(error);
+    }
+
+    expect(result.current.error).toBe('API Error');
+    expect(result.current.loading).toBe(false);
+  });
+
+  test('loading state is managed correctly', async () => {
+    mockedAxios.get.mockResolvedValueOnce({ data: [mockPlan] });
+
+    const { result } = renderHook(() => useFertilizationPlans(), {
+      wrapper: FertilizationPlanProvider
+    });
+
+    expect(result.current.loading).toBe(false);
+    
+    const promise = act(async () => {
+      await result.current.fetchFertilizationPlans();
+    });
+    expect(result.current.loading).toBe(true);
+    
+    await promise;
+    expect(result.current.loading).toBe(false);
   });
 });

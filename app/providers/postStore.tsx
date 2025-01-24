@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState,  type ReactNode, useCallback } from 'react';
 import axios from 'axios';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { ApiResponse, Post, PostCreate, PostUpdate } from '../types/api';

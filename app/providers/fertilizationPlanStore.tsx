@@ -1,6 +1,9 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback } from 'react';
+import { makeAutoObservable, runInAction } from 'mobx';
+import { observer } from 'mobx-react';
+import axios from 'axios';
+import { createContext, useContext } from 'react';
 
 interface Crop {
   id: number;
@@ -30,120 +33,148 @@ interface FertilizationPlanFormData {
   notes?: string;
 }
 
-interface FertilizationPlanContextType {
-  plans: FertilizationPlan[];
-  loading: boolean;
-  error: string | null;
-  fetchFertilizationPlans: () => Promise<FertilizationPlan[]>;
-  saveFertilizationPlan: (editingPlan: FertilizationPlan | null, formData: FertilizationPlanFormData) => Promise<void>;
-  deleteFertilizationPlan: (id: number) => Promise<void>;
-  fetchCrops: () => Promise<Crop[]>;
-  clearError: () => void;
-}
+export class FertilizationPlanStore {
+  plans: FertilizationPlan[] = [];
+  crops: Crop[] = [];
+  loading: boolean = false;
+  error: string | null = null;
 
-const FertilizationPlanContext = createContext<FertilizationPlanContextType | undefined>(undefined);
+  constructor() {
+    makeAutoObservable(this);
+  }
 
-export function FertilizationPlanProvider({ children }: { children: React.ReactNode }) {
-  const [plans, setPlans] = useState<FertilizationPlan[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  clearError = () => {
+    this.error = null;
+  };
 
-  const fetchFertilizationPlans = useCallback(async () => {
+  setLoading = (value: boolean) => {
+    this.loading = value;
+  };
+
+  setError = (error: string | null) => {
+    this.error = error;
+  };
+
+  setPlans = (plans: FertilizationPlan[]) => {
+    this.plans = plans;
+  };
+
+  setCrops = (crops: Crop[]) => {
+    this.crops = crops;
+  };
+
+  fetchFertilizationPlans = async () => {
     try {
-      setLoading(true);
-      const response = await fetch('/api/Controllers/Soil/fertilizationPlans');
-      if (!response.ok) throw new Error('Failed to fetch fertilization plans');
-      const data = await response.json();
-      setPlans(data);
-      return data;
+      this.setLoading(true);
+      const response = await axios.get<FertilizationPlan[]>('/api/Controllers/Soil/fertilizationPlans');
+      runInAction(() => {
+        this.plans = response.data;
+      });
+      return response.data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      runInAction(() => {
+        this.error = err instanceof Error ? err.message : 'An error occurred';
+      });
       throw err;
     } finally {
-      setLoading(false);
+      runInAction(() => {
+        this.loading = false;
+      });
     }
-  }, []);
+  };
 
-  const fetchCrops = useCallback(async () => {
+  fetchCrops = async () => {
     try {
-      const response = await fetch('/api/Controllers/Crop/crops');
-      if (!response.ok) throw new Error('Failed to fetch crops');
-      return await response.json();
+      const response = await axios.get<Crop[]>('/api/Controllers/Crop/crops');
+      runInAction(() => {
+        this.crops = response.data;
+      });
+      return response.data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      runInAction(() => {
+        this.error = err instanceof Error ? err.message : 'An error occurred';
+      });
       throw err;
     }
-  }, []);
+  };
 
-  const saveFertilizationPlan = useCallback(async (editingPlan: FertilizationPlan | null, formData: FertilizationPlanFormData) => {
+  saveFertilizationPlan = async (editingPlan: FertilizationPlan | null, formData: FertilizationPlanFormData) => {
     const endpoint = editingPlan
       ? `/api/Controllers/Soil/fertilizationPlan/${editingPlan.id}`
       : '/api/Controllers/Soil/fertilizationPlan';
-    const method = editingPlan ? 'PUT' : 'POST';
+    const method = editingPlan ? 'put' : 'post';
 
     try {
-      setLoading(true);
-      const response = await fetch(endpoint, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cropId: parseInt(formData.cropId),
-          plannedDate: new Date(formData.plannedDate).toISOString(),
-          fertilizer: formData.fertilizer,
-          applicationRate: parseFloat(formData.applicationRate),
-          nitrogenContent: parseFloat(formData.nitrogenContent),
-          applicationMethod: formData.applicationMethod,
-          notes: formData.notes,
-        }),
+      this.setLoading(true);
+      await axios[method](endpoint, {
+        cropId: parseInt(formData.cropId),
+        plannedDate: new Date(formData.plannedDate).toISOString(),
+        fertilizer: formData.fertilizer,
+        applicationRate: parseFloat(formData.applicationRate),
+        nitrogenContent: parseFloat(formData.nitrogenContent),
+        applicationMethod: formData.applicationMethod,
+        notes: formData.notes,
       });
-
-      if (!response.ok) throw new Error('Failed to save fertilization plan');
-      await fetchFertilizationPlans();
+      await this.fetchFertilizationPlans();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      runInAction(() => {
+        this.error = err instanceof Error ? err.message : 'An error occurred';
+      });
       throw err;
     } finally {
-      setLoading(false);
+      runInAction(() => {
+        this.loading = false;
+      });
     }
-  }, [fetchFertilizationPlans]);
+  };
 
-  const deleteFertilizationPlan = useCallback(async (id: number) => {
+  updateFertilizationPlan = async (id: number, data: Partial<FertilizationPlan>) => {
     try {
-      setLoading(true);
-      const response = await fetch(`/api/Controllers/Soil/fertilizationPlan/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete fertilization plan');
-      setPlans(prev => prev.filter(plan => plan.id !== id));
+      this.setLoading(true);
+      await axios.put(`/api/Controllers/Soil/fertilizationPlan/${id}`, data);
+      await this.fetchFertilizationPlans();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      runInAction(() => {
+        this.error = err instanceof Error ? err.message : 'An error occurred';
+      });
       throw err;
     } finally {
-      setLoading(false);
+      runInAction(() => {
+        this.loading = false;
+      });
     }
-  }, []);
+  };
 
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  deleteFertilizationPlan = async (id: number) => {
+    try {
+      this.setLoading(true);
+      await axios.delete(`/api/Controllers/Soil/fertilizationPlan/${id}`);
+      runInAction(() => {
+        this.plans = this.plans.filter(plan => plan.id !== id);
+      });
+    } catch (err) {
+      runInAction(() => {
+        this.error = err instanceof Error ? err.message : 'An error occurred';
+      });
+      throw err;
+    } finally {
+      runInAction(() => {
+        this.loading = false;
+      });
+    }
+  };
+}
 
+const fertilizationPlanStore = new FertilizationPlanStore();
+const FertilizationPlanContext = createContext<FertilizationPlanStore>(fertilizationPlanStore);
+
+export const FertilizationPlanProvider = observer(({ children }: { children: React.ReactNode }) => {
   return (
-    <FertilizationPlanContext.Provider
-      value={{
-        plans,
-        loading,
-        error,
-        fetchFertilizationPlans,
-        saveFertilizationPlan,
-        deleteFertilizationPlan,
-        fetchCrops,
-        clearError,
-      }}
-    >
+    <FertilizationPlanContext.Provider value={fertilizationPlanStore}>
       {children}
     </FertilizationPlanContext.Provider>
   );
-}
+});
 
 export function useFertilizationPlans() {
   const context = useContext(FertilizationPlanContext);

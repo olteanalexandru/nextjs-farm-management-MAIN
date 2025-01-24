@@ -1,9 +1,7 @@
 import { NextRequest } from 'next/server';
-import { withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { PrismaClient } from '@prisma/client';
-import { getCurrentUser } from 'app/lib/auth';
 import { ApiResponse,  Crop, RecommendationResponse } from 'app/types/api';
-import {  transformCropWithDetails } from '@/api/Controllers/Crop/[...params]/helpers';
+import {  transformCropWithDetails } from '@/api/Controllers/Crop/crops/utils/helpers';
 import {
     WikiQueryParams
      } from '@/api/Controllers/Crop/crops/wiki/types';

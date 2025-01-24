@@ -1,9 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import { observer } from 'mobx-react';
+import { Form, Input, Button, Table, Select, DatePicker, Alert, Modal } from 'antd';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { useSoilTests } from '../../providers/soilTestStore';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import styles from './SoilTests.module.scss';
 
 interface SoilTest {
   id: number;
@@ -30,274 +35,226 @@ interface SoilTestFormData {
   notes?: string;
 }
 
-export default function SoilTests() {
+const SoilTests = observer(() => {
   const t = useTranslations('SoilManagement');
-  const [tests, setTests] = useState<SoilTest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [editingTest, setEditingTest] = useState<SoilTest | null>(null);
-  const [formData, setFormData] = useState<SoilTestFormData>({
-    testDate: '',
-    fieldLocation: '',
-    pH: '',
-    organicMatter: '',
-    nitrogen: '',
-    phosphorus: '',
-    potassium: '',
-    texture: '',
-    notes: '',
-  });
-
-  const { fetchSoilTests, saveSoilTest, deleteSoilTest } = useSoilTests();
+  const [form] = Form.useForm();
+  const soilTestStore = useSoilTests();
 
   useEffect(() => {
-    fetchSoilTests().then(setTests).catch(setError).finally(() => setLoading(false));
-  }, []);
+    soilTestStore.fetchSoilTests();
+  }, [soilTestStore]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (values: any) => {
+    const formData: SoilTestFormData = {
+      testDate: values.testDate.format('YYYY-MM-DD'),
+      fieldLocation: values.fieldLocation,
+      pH: values.pH.toString(),
+      organicMatter: values.organicMatter.toString(),
+      nitrogen: values.nitrogen.toString(),
+      phosphorus: values.phosphorus.toString(),
+      potassium: values.potassium.toString(),
+      texture: values.texture,
+      notes: values.notes,
+    };
+
     try {
-      await saveSoilTest(editingTest, formData);
-      await fetchSoilTests().then(setTests);
-      setShowForm(false);
-      setEditingTest(null);
-      resetForm();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      await soilTestStore.saveSoilTest(null, formData);
+      form.resetFields();
+    } catch (error) {
+      console.error('Failed to save soil test:', error);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm(t('confirmDelete'))) return;
-    try {
-      await deleteSoilTest(id);
-      await fetchSoilTests().then(setTests);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    }
-  };
-
-  const handleEdit = (test: SoilTest) => {
-    setEditingTest(test);
-    setFormData({
-      testDate: new Date(test.testDate).toISOString().split('T')[0],
-      fieldLocation: test.fieldLocation,
-      pH: test.pH.toString(),
-      organicMatter: test.organicMatter.toString(),
-      nitrogen: test.nitrogen.toString(),
-      phosphorus: test.phosphorus.toString(),
-      potassium: test.potassium.toString(),
-      texture: test.texture,
-      notes: test.notes || '',
-    });
-    setShowForm(true);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      testDate: '',
-      fieldLocation: '',
-      pH: '',
-      organicMatter: '',
-      nitrogen: '',
-      phosphorus: '',
-      potassium: '',
-      texture: '',
-      notes: '',
+  const handleDelete = (id: number) => {
+    Modal.confirm({
+      title: t('confirmDelete'),
+      onOk: async () => {
+        try {
+          await soilTestStore.deleteSoilTest(id);
+        } catch (error) {
+          console.error('Failed to delete soil test:', error);
+        }
+      },
     });
   };
 
-  if (loading) return <LoadingSpinner />;
+  const columns = [
+    {
+      title: t('testDate'),
+      dataIndex: 'testDate',
+      key: 'testDate',
+      render: (date: string) => dayjs(date).format('YYYY-MM-DD'),
+    },
+    {
+      title: t('fieldLocation'),
+      dataIndex: 'fieldLocation',
+      key: 'fieldLocation',
+    },
+    {
+      title: t('pH'),
+      dataIndex: 'pH',
+      key: 'pH',
+    },
+    {
+      title: t('organicMatter'),
+      dataIndex: 'organicMatter',
+      key: 'organicMatter',
+      render: (value: number) => `${value}%`,
+    },
+    {
+      title: 'NPK',
+      key: 'npk',
+      render: (_: any, record: SoilTest) => (
+        `${record.nitrogen}/${record.phosphorus}/${record.potassium}`
+      ),
+    },
+    {
+      title: t('texture'),
+      dataIndex: 'texture',
+      key: 'texture',
+    },
+    {
+      title: t('actions'),
+      key: 'actions',
+      render: (_: any, record: SoilTest) => (
+        <div className={styles.actions}>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => {
+              form.setFieldsValue({
+                ...record,
+                testDate: dayjs(record.testDate),
+              });
+            }}
+          />
+          <Button
+            type="link"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.id)}
+          />
+        </div>
+      ),
+    },
+  ];
+
+  if (soilTestStore.loading) return <LoadingSpinner />;
 
   return (
-    <div className="space-y-6">
-      {error && (
-        <div className="bg-red-50 text-red-500 p-4 rounded-md">{error}</div>
+    <div className={styles.soilTests}>
+      {soilTestStore.error && (
+        <Alert type="error" message={soilTestStore.error} showIcon />
       )}
 
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">{t('soilTests')}</h2>
-        <button
-          onClick={() => {
-            setShowForm(!showForm);
-            setEditingTest(null);
-            resetForm();
-          }}
-          className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
+      <div className={styles.header}>
+        <h2>{t('soilTests')}</h2>
+        <Button type="primary" onClick={() => form.resetFields()}>
+          {t('addNewTest')}
+        </Button>
+      </div>
+
+      <Form
+        form={form}
+        onFinish={handleSubmit}
+        layout="vertical"
+      >
+        <div className={styles.formGrid}>
+          <Form.Item
+            name="testDate"
+            label={t('testDate')}
+            rules={[{ required: true }]}
+          >
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+
+          <Form.Item
+            name="fieldLocation"
+            label={t('fieldLocation')}
+            rules={[{ required: true }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="pH"
+            label={t('pH')}
+            rules={[{ required: true }]}
+          >
+            <Input type="number" step="0.1" />
+          </Form.Item>
+
+          <Form.Item
+            name="organicMatter"
+            label={t('organicMatter')}
+            rules={[{ required: true }]}
+          >
+            <Input type="number" step="0.01" />
+          </Form.Item>
+
+          <Form.Item
+            name="nitrogen"
+            label={t('nitrogen')}
+            rules={[{ required: true }]}
+          >
+            <Input type="number" step="0.01" />
+          </Form.Item>
+
+          <Form.Item
+            name="phosphorus"
+            label={t('phosphorus')}
+            rules={[{ required: true }]}
+          >
+            <Input type="number" step="0.01" />
+          </Form.Item>
+
+          <Form.Item
+            name="potassium"
+            label={t('potassium')}
+            rules={[{ required: true }]}
+          >
+            <Input type="number" step="0.01" />
+          </Form.Item>
+
+          <Form.Item
+            name="texture"
+            label={t('texture')}
+            rules={[{ required: true }]}
+          >
+            <Select>
+              <Select.Option value="Sandy">{t('sandy')}</Select.Option>
+              <Select.Option value="Loamy">{t('loamy')}</Select.Option>
+              <Select.Option value="Clay">{t('clay')}</Select.Option>
+              <Select.Option value="Silt">{t('silt')}</Select.Option>
+              <Select.Option value="Sandy Loam">{t('sandyLoam')}</Select.Option>
+              <Select.Option value="Clay Loam">{t('clayLoam')}</Select.Option>
+              <Select.Option value="Silt Loam">{t('siltLoam')}</Select.Option>
+            </Select>
+          </Form.Item>
+        </div>
+
+        <Form.Item
+          name="notes"
+          label={t('notes')}
         >
-          {showForm ? t('cancel') : t('addNewTest')}
-        </button>
-      </div>
+          <Input.TextArea rows={3} />
+        </Form.Item>
 
-      {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('testDate')}</label>
-              <input
-                type="date"
-                required
-                value={formData.testDate}
-                onChange={(e) => setFormData({ ...formData, testDate: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('fieldLocation')}</label>
-              <input
-                type="text"
-                required
-                value={formData.fieldLocation}
-                onChange={(e) => setFormData({ ...formData, fieldLocation: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('pH')}</label>
-              <input
-                type="number"
-                required
-                step="0.1"
-                value={formData.pH}
-                onChange={(e) => setFormData({ ...formData, pH: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('organicMatter')}</label>
-              <input
-                type="number"
-                required
-                step="0.01"
-                value={formData.organicMatter}
-                onChange={(e) => setFormData({ ...formData, organicMatter: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('nitrogen')}</label>
-              <input
-                type="number"
-                required
-                step="0.01"
-                value={formData.nitrogen}
-                onChange={(e) => setFormData({ ...formData, nitrogen: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('phosphorus')}</label>
-              <input
-                type="number"
-                required
-                step="0.01"
-                value={formData.phosphorus}
-                onChange={(e) => setFormData({ ...formData, phosphorus: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('potassium')}</label>
-              <input
-                type="number"
-                required
-                step="0.01"
-                value={formData.potassium}
-                onChange={(e) => setFormData({ ...formData, potassium: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('texture')}</label>
-              <select
-                required
-                value={formData.texture}
-                onChange={(e) => setFormData({ ...formData, texture: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              >
-                <option value="">{t('selectTexture')}</option>
-                <option value="Sandy">{t('sandy')}</option>
-                <option value="Loamy">{t('loamy')}</option>
-                <option value="Clay">{t('clay')}</option>
-                <option value="Silt">{t('silt')}</option>
-                <option value="Sandy Loam">{t('sandyLoam')}</option>
-                <option value="Clay Loam">{t('clayLoam')}</option>
-                <option value="Silt Loam">{t('siltLoam')}</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">{t('notes')}</label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={3}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-            />
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
-            >
-              {editingTest ? t('updateTest') : t('addTest')}
-            </button>
-          </div>
-        </form>
-      )}
+        <Form.Item>
+          <Button type="primary" htmlType="submit">
+            {form.getFieldValue('id') ? t('updateTest') : t('addTest')}
+          </Button>
+        </Form.Item>
+      </Form>
 
-      <div className="mt-6">
-        {tests.length === 0 ? (
-          <p className="text-gray-500 text-center">{t('noTests')}</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('testDate')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('fieldLocation')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('pH')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('organicMatter')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NPK</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('texture')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {tests.map((test) => (
-                  <tr key={test.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {new Date(test.testDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">{test.fieldLocation}</td>
-                    <td className="px-6 py-4">{test.pH}</td>
-                    <td className="px-6 py-4">{test.organicMatter}%</td>
-                    <td className="px-6 py-4">
-                      {test.nitrogen}/{test.phosphorus}/{test.potassium}
-                    </td>
-                    <td className="px-6 py-4">{test.texture}</td>
-                    <td className="px-6 py-4 space-x-2">
-                      <button
-                        onClick={() => handleEdit(test)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        {t('edit')}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(test.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        {t('delete')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <Table
+        columns={columns}
+        dataSource={soilTestStore.soilTests}
+        rowKey="id"
+        pagination={{ pageSize: 10 }}
+      />
     </div>
   );
-}
+});
+
+export default SoilTests;

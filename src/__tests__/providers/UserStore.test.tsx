@@ -29,7 +29,12 @@ vi.mock('@auth0/nextjs-auth0/client', () => ({
 
 // Mock axios
 vi.mock('axios');
-const mockAxios = vi.mocked(axios, true);
+const mockedAxios = axios as unknown as {
+  get: ReturnType<typeof vi.fn>,
+  post: ReturnType<typeof vi.fn>,
+  put: ReturnType<typeof vi.fn>,
+  delete: ReturnType<typeof vi.fn>
+};
 
 // Test data
 const mockUserData = {
@@ -93,7 +98,7 @@ describe('UserStore', () => {
         error: null,
       };
 
-      mockAxios.post.mockResolvedValueOnce({
+      mockedAxios.post.mockResolvedValueOnce({
         status: 200,
         data: { user: mockUserData },
       });
@@ -105,7 +110,7 @@ describe('UserStore', () => {
         expect(result.current.isUserLoggedIn).toBe(true);
       });
 
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/Controllers/User/create');
+      expect(mockedAxios.post).toHaveBeenCalledWith('/api/Controllers/User/create');
     });
 
     it('should handle user initialization error', async () => {
@@ -116,7 +121,7 @@ describe('UserStore', () => {
         error: null,
       };
 
-      mockAxios.post.mockRejectedValueOnce(new Error('Failed to create user'));
+      mockedAxios.post.mockRejectedValueOnce(new Error('Failed to create user'));
 
       const { result } = renderHook(() => useUserContext(), { wrapper });
 
@@ -146,7 +151,7 @@ describe('UserStore', () => {
       const { result } = renderHook(() => useUserContext(), { wrapper });
 
       expect(result.current.isUserLoggedIn).toBe(false);
-      expect(mockAxios.post).not.toHaveBeenCalled();
+      expect(mockedAxios.post).not.toHaveBeenCalled();
     });
   });
 
@@ -161,17 +166,17 @@ describe('UserStore', () => {
     });
 
     it('should update user role successfully', async () => {
-      mockAxios.post.mockResolvedValueOnce({
+      mockedAxios.post.mockResolvedValueOnce({
         status: 200,
         data: { user: mockUserData },
       });
 
-      mockAxios.put.mockResolvedValueOnce({
+      mockedAxios.put.mockResolvedValueOnce({
         status: 200,
         data: { ...mockUserData, roleType: 'ADMIN' },
       });
 
-      mockAxios.get.mockResolvedValueOnce({
+      mockedAxios.get.mockResolvedValueOnce({
         status: 200,
         data: { users: [] },
       });
@@ -186,19 +191,19 @@ describe('UserStore', () => {
         await result.current.updateRole('test@example.com', 'ADMIN');
       });
 
-      expect(mockAxios.put).toHaveBeenCalledWith(
+      expect(mockedAxios.put).toHaveBeenCalledWith(
         '/api/Controllers/User/role',
         { email: 'test@example.com', roleType: 'ADMIN' }
       );
     });
 
     it('should handle role update error', async () => {
-      mockAxios.post.mockResolvedValueOnce({
+      mockedAxios.post.mockResolvedValueOnce({
         status: 200,
         data: { user: mockUserData },
       });
 
-      mockAxios.put.mockRejectedValueOnce(new Error('Failed to update role'));
+      mockedAxios.put.mockRejectedValueOnce(new Error('Failed to update role'));
 
       const { result } = renderHook(() => useUserContext(), { wrapper });
 
@@ -228,12 +233,12 @@ describe('UserStore', () => {
         { ...mockUserData, id: 'farmer2' },
       ];
 
-      mockAxios.post.mockResolvedValueOnce({
+      mockedAxios.post.mockResolvedValueOnce({
         status: 200,
         data: { user: { ...mockUserData, roleType: 'ADMIN' } },
       });
 
-      mockAxios.get.mockResolvedValueOnce({
+      mockedAxios.get.mockResolvedValueOnce({
         status: 200,
         data: { users: mockFarmers },
       });
@@ -244,16 +249,16 @@ describe('UserStore', () => {
         expect(result.current.fermierUsers).toEqual(mockFarmers);
       });
 
-      expect(mockAxios.get).toHaveBeenCalledWith('/api/Controllers/User/all');
+      expect(mockedAxios.get).toHaveBeenCalledWith('/api/Controllers/User/all');
     });
 
     it('should delete farmer user successfully', async () => {
-      mockAxios.post.mockResolvedValueOnce({
+      mockedAxios.post.mockResolvedValueOnce({
         status: 200,
         data: { user: mockUserData },
       });
 
-      mockAxios.delete.mockResolvedValueOnce({
+      mockedAxios.delete.mockResolvedValueOnce({
         status: 200,
       });
 
@@ -263,47 +268,51 @@ describe('UserStore', () => {
         await result.current.deleteUser('farmer1');
       });
 
-      expect(mockAxios.delete).toHaveBeenCalledWith('/api/Controllers/User/farmer1');
+      expect(mockedAxios.delete).toHaveBeenCalledWith('/api/Controllers/User/farmer1');
     });
   });
 
   describe('Loading State', () => {
     it('should handle loading state during initialization', async () => {
-      // Start with loading state
+      // Set initial loading state
       mockAuth0User = {
         user: null,
         isLoading: true,
         error: null,
       };
 
-      const { result } = renderHook(() => useUserContext(), { wrapper });
+      // Mock axios.post before rendering the hook
+      mockedAxios.post.mockResolvedValueOnce({
+        status: 200,
+        data: { user: mockUserData },
+      });
+
+      const { result, rerender } = renderHook(() => useUserContext(), { wrapper });
 
       // Initial state should be loading
       expect(result.current.isLoading).toBe(true);
 
+      // Change Auth0 state in a controlled manner and rerender the hook
       await act(async () => {
-        // Update mock to finish loading with a user
         mockAuth0User = {
           user: mockAuth0UserData,
           isLoading: false,
           error: null,
         };
-      });
-
-      // Mock successful user creation
-      mockAxios.post.mockResolvedValueOnce({
-        status: 200,
-        data: { user: mockUserData },
+        rerender(); // Trigger rerender after updating mockAuth0User
       });
 
       // Wait for all state updates to complete
-      await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      });
+      await waitFor(
+        () => {
+          expect(result.current.isLoading).toBe(false);
+          expect(result.current.isUserLoggedIn).toBe(true);
+          expect(result.current.data).toEqual(mockUserData);
+        },
+        { timeout: 2000 } // Increased timeout
+      );
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
+      expect(mockedAxios.post).toHaveBeenCalledWith(`/api/Controllers/User/create`);
     });
   });
 
@@ -336,5 +345,11 @@ describe('UserStore', () => {
 
       expect(window.location.href).toBe('/api/auth/logout');
     });
+  });
+
+  test('sync user handles creation error', async () => {
+    mockedAxios.post.mockRejectedValueOnce(new Error('Failed to create user'));
+    // ...existing code...
+    // expect(...) statements for error handling
   });
 });

@@ -151,6 +151,8 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     }
   };
 
+  
+
   const getCropRotation = async () => {
     if (!user?.sub) return;
     setLoading(true);

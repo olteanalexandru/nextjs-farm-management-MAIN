@@ -1,9 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import { observer } from 'mobx-react';
+import { Form, Input, Button, Table, Select, DatePicker, Alert, Modal, Tag, Space } from 'antd';
+import { EditOutlined, DeleteOutlined, CheckOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { useFertilizationPlans } from '../../providers/fertilizationPlanStore';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import styles from './FertilizationPlans.module.scss';
 
 interface Crop {
   id: number;
@@ -33,287 +38,264 @@ interface FertilizationPlanFormData {
   notes?: string;
 }
 
-export default function FertilizationPlans() {
+const FertilizationPlans = observer(() => {
   const t = useTranslations('SoilManagement');
-  const [plans, setPlans] = useState<FertilizationPlan[]>([]);
-  const [crops, setCrops] = useState<Crop[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [form] = Form.useForm();
   const [showForm, setShowForm] = useState(false);
   const [editingPlan, setEditingPlan] = useState<FertilizationPlan | null>(null);
-  const [formData, setFormData] = useState<FertilizationPlanFormData>({
-    cropId: '',
-    plannedDate: '',
-    fertilizer: '',
-    applicationRate: '',
-    nitrogenContent: '',
-    applicationMethod: '',
-    notes: '',
-  });
-
-  const { fetchFertilizationPlans, saveFertilizationPlan, deleteFertilizationPlan, fetchCrops } = useFertilizationPlans();
+  const fertilizationStore = useFertilizationPlans();
 
   useEffect(() => {
-    Promise.all([fetchFertilizationPlans().then(setPlans), fetchCrops().then(setCrops)])
-      .catch(setError)
-      .finally(() => setLoading(false));
-  }, []);
+    fertilizationStore.fetchFertilizationPlans();
+    fertilizationStore.fetchCrops();
+  }, [fertilizationStore]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (values: any) => {
+    const formData: FertilizationPlanFormData = {
+      cropId: values.cropId,
+      plannedDate: values.plannedDate.format('YYYY-MM-DD'),
+      fertilizer: values.fertilizer,
+      applicationRate: values.applicationRate.toString(),
+      nitrogenContent: values.nitrogenContent.toString(),
+      applicationMethod: values.applicationMethod,
+      notes: values.notes,
+    };
+
     try {
-      await saveFertilizationPlan(editingPlan, formData);
-      await fetchFertilizationPlans().then(setPlans);
+      await fertilizationStore.saveFertilizationPlan(editingPlan, formData);
       setShowForm(false);
       setEditingPlan(null);
-      resetForm();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      form.resetFields();
+    } catch (error) {
+      console.error('Failed to save fertilization plan:', error);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm(t('confirmDelete'))) return;
-    try {
-      await deleteFertilizationPlan(id);
-      await fetchFertilizationPlans().then(setPlans);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    }
+  const handleDelete = (id: number) => {
+    Modal.confirm({
+      title: t('confirmDelete'),
+      onOk: async () => {
+        try {
+          await fertilizationStore.deleteFertilizationPlan(id);
+        } catch (error) {
+          console.error('Failed to delete fertilization plan:', error);
+        }
+      },
+    });
   };
 
   const handleEdit = (plan: FertilizationPlan) => {
     setEditingPlan(plan);
-    setFormData({
+    form.setFieldsValue({
       cropId: plan.crop.id.toString(),
-      plannedDate: new Date(plan.plannedDate).toISOString().split('T')[0],
+      plannedDate: dayjs(plan.plannedDate),
       fertilizer: plan.fertilizer,
-      applicationRate: plan.applicationRate.toString(),
-      nitrogenContent: plan.nitrogenContent.toString(),
+      applicationRate: plan.applicationRate,
+      nitrogenContent: plan.nitrogenContent,
       applicationMethod: plan.applicationMethod,
-      notes: plan.notes || '',
+      notes: plan.notes,
     });
     setShowForm(true);
   };
 
   const handleComplete = async (id: number) => {
     try {
-      const response = await fetch(`/api/Controllers/Soil/fertilizationPlan/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          completed: true,
-          completedDate: new Date().toISOString(),
-        }),
+      await fertilizationStore.updateFertilizationPlan(id, {
+        completed: true,
+        completedDate: new Date().toISOString(),
       });
-      if (!response.ok) throw new Error('Failed to mark plan as completed');
-      await fetchFertilizationPlans().then(setPlans);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (error) {
+      console.error('Failed to complete fertilization plan:', error);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      cropId: '',
-      plannedDate: '',
-      fertilizer: '',
-      applicationRate: '',
-      nitrogenContent: '',
-      applicationMethod: '',
-      notes: '',
-    });
-  };
+  const columns = [
+    {
+      title: t('plannedDate'),
+      dataIndex: 'plannedDate',
+      key: 'plannedDate',
+      render: (date: string) => dayjs(date).format('YYYY-MM-DD'),
+    },
+    {
+      title: t('crop'),
+      dataIndex: ['crop', 'cropName'],
+      key: 'crop',
+    },
+    {
+      title: t('fertilizer'),
+      dataIndex: 'fertilizer',
+      key: 'fertilizer',
+    },
+    {
+      title: t('applicationRate'),
+      dataIndex: 'applicationRate',
+      key: 'applicationRate',
+      render: (rate: number) => `${rate} kg/ha`,
+    },
+    {
+      title: t('nitrogenContent'),
+      dataIndex: 'nitrogenContent',
+      key: 'nitrogenContent',
+      render: (content: number) => `${content}%`,
+    },
+    {
+      title: t('applicationMethod'),
+      dataIndex: 'applicationMethod',
+      key: 'applicationMethod',
+    },
+    {
+      title: t('status'),
+      key: 'status',
+      render: (_: any, record: FertilizationPlan) => (
+        <Tag color={record.completed ? 'success' : 'warning'}>
+          {record.completed ? t('completed') : t('pending')}
+          {record.completedDate && ` (${dayjs(record.completedDate).format('YYYY-MM-DD')})`}
+        </Tag>
+      ),
+    },
+    {
+      title: t('actions'),
+      key: 'actions',
+      render: (_: any, record: FertilizationPlan) => (
+        <Space>
+          {!record.completed && (
+            <>
+              <Button
+                type="link"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+              />
+              <Button
+                type="link"
+                icon={<CheckOutlined />}
+                onClick={() => handleComplete(record.id)}
+              />
+            </>
+          )}
+          <Button
+            type="link"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.id)}
+          />
+        </Space>
+      ),
+    },
+  ];
 
-  if (loading) return <LoadingSpinner />;
+  if (fertilizationStore.loading) return <LoadingSpinner />;
 
   return (
-    <div className="space-y-6">
-      {error && (
-        <div className="bg-red-50 text-red-500 p-4 rounded-md">{error}</div>
+    <div className={styles.fertilizationPlans}>
+      {fertilizationStore.error && (
+        <Alert type="error" message={fertilizationStore.error} showIcon />
       )}
 
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">{t('fertilizationPlans')}</h2>
-        <button
+      <div className={styles.header}>
+        <h2>{t('fertilizationPlans')}</h2>
+        <Button
+          type="primary"
           onClick={() => {
             setShowForm(!showForm);
             setEditingPlan(null);
-            resetForm();
+            form.resetFields();
           }}
-          className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
         >
           {showForm ? t('cancel') : t('addNewPlan')}
-        </button>
+        </Button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('crop')}</label>
-              <select
-                required
-                value={formData.cropId}
-                onChange={(e) => setFormData({ ...formData, cropId: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              >
-                <option value="">{t('selectCrop')}</option>
-                {crops.map((crop) => (
-                  <option key={crop.id} value={crop.id}>
-                    {crop.cropName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('plannedDate')}</label>
-              <input
-                type="date"
-                required
-                value={formData.plannedDate}
-                onChange={(e) => setFormData({ ...formData, plannedDate: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('fertilizer')}</label>
-              <input
-                type="text"
-                required
-                value={formData.fertilizer}
-                onChange={(e) => setFormData({ ...formData, fertilizer: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('applicationRate')}</label>
-              <input
-                type="number"
-                required
-                step="0.01"
-                value={formData.applicationRate}
-                onChange={(e) => setFormData({ ...formData, applicationRate: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('nitrogenContent')}</label>
-              <input
-                type="number"
-                required
-                step="0.01"
-                value={formData.nitrogenContent}
-                onChange={(e) => setFormData({ ...formData, nitrogenContent: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">{t('applicationMethod')}</label>
-              <select
-                required
-                value={formData.applicationMethod}
-                onChange={(e) => setFormData({ ...formData, applicationMethod: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-              >
-                <option value="">{t('selectMethod')}</option>
-                <option value="Broadcast">{t('broadcast')}</option>
-                <option value="Band">{t('band')}</option>
-                <option value="Foliar">{t('foliar')}</option>
-                <option value="Fertigation">{t('fertigation')}</option>
-                <option value="Injection">{t('injection')}</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">{t('notes')}</label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={3}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-            />
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
+        <Form
+          form={form}
+          onFinish={handleSubmit}
+          layout="vertical"
+        >
+          <div className={styles.formGrid}>
+            <Form.Item
+              name="cropId"
+              label={t('crop')}
+              rules={[{ required: true }]}
             >
-              {editingPlan ? t('updatePlan') : t('addPlan')}
-            </button>
+              <Select placeholder={t('selectCrop')}>
+                {fertilizationStore.crops?.map((crop) => (
+                  <Select.Option key={crop.id} value={crop.id.toString()}>
+                    {crop.cropName}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="plannedDate"
+              label={t('plannedDate')}
+              rules={[{ required: true }]}
+            >
+              <DatePicker />
+            </Form.Item>
+
+            <Form.Item
+              name="fertilizer"
+              label={t('fertilizer')}
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+
+            <Form.Item
+              name="applicationRate"
+              label={t('applicationRate')}
+              rules={[{ required: true }]}
+            >
+              <Input type="number" step="0.01" />
+            </Form.Item>
+
+            <Form.Item
+              name="nitrogenContent"
+              label={t('nitrogenContent')}
+              rules={[{ required: true }]}
+            >
+              <Input type="number" step="0.01" />
+            </Form.Item>
+
+            <Form.Item
+              name="applicationMethod"
+              label={t('applicationMethod')}
+              rules={[{ required: true }]}
+            >
+              <Select placeholder={t('selectMethod')}>
+                <Select.Option value="Broadcast">{t('broadcast')}</Select.Option>
+                <Select.Option value="Band">{t('band')}</Select.Option>
+                <Select.Option value="Foliar">{t('foliar')}</Select.Option>
+                <Select.Option value="Fertigation">{t('fertigation')}</Select.Option>
+                <Select.Option value="Injection">{t('injection')}</Select.Option>
+              </Select>
+            </Form.Item>
           </div>
-        </form>
+
+          <Form.Item
+            name="notes"
+            label={t('notes')}
+          >
+            <Input.TextArea rows={3} />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              {editingPlan ? t('updatePlan') : t('addPlan')}
+            </Button>
+          </Form.Item>
+        </Form>
       )}
 
-      <div className="mt-6">
-        {plans.length === 0 ? (
-          <p className="text-gray-500 text-center">{t('noPlans')}</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('plannedDate')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('crop')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('fertilizer')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('applicationRate')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('nitrogenContent')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('applicationMethod')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('status')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {plans.map((plan) => (
-                  <tr key={plan.id} className={plan.completed ? 'bg-gray-50' : ''}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {new Date(plan.plannedDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">{plan.crop.cropName}</td>
-                    <td className="px-6 py-4">{plan.fertilizer}</td>
-                    <td className="px-6 py-4">{plan.applicationRate} kg/ha</td>
-                    <td className="px-6 py-4">{plan.nitrogenContent}%</td>
-                    <td className="px-6 py-4">{plan.applicationMethod}</td>
-                    <td className="px-6 py-4">
-                      {plan.completed ? (
-                        <span className="text-green-600">
-                          {t('completed')} {plan.completedDate && `(${new Date(plan.completedDate).toLocaleDateString()})`}
-                        </span>
-                      ) : (
-                        <span className="text-yellow-600">{t('pending')}</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 space-x-2">
-                      {!plan.completed && (
-                        <>
-                          <button
-                            onClick={() => handleEdit(plan)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            {t('edit')}
-                          </button>
-                          <button
-                            onClick={() => handleComplete(plan.id)}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            {t('complete')}
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={() => handleDelete(plan.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        {t('delete')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <Table
+        columns={columns}
+        dataSource={fertilizationStore.plans}
+        rowKey="id"
+        pagination={{ pageSize: 10 }}
+      />
     </div>
   );
-}
+});
+
+export default FertilizationPlans;
