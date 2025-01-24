@@ -40,7 +40,7 @@ export default function Noutati() {
     <div className="container">
       <br />
       <br />
-      <h3 className="text-2xl font-bold mb-6">{t('Latest in our newsfeed:')}</h3>
+      <h3 className="text-2xl font-bold mb-6">{t('latestInNewsfeed')}</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {displayPosts.length > 0 ? (
@@ -53,7 +53,7 @@ export default function Noutati() {
           ))
         ) : (
           <div className="col-span-2 text-center py-8 text-gray-600">
-            {t('No news available at the moment')}
+            {t('noNews')}
           </div>
         )}
       </div>

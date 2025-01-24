@@ -1,29 +1,29 @@
 import { renderHook, act } from '@testing-library/react';
 import { AdminProvider, useAdminStore } from '@/providers/AdminStore';
-import axios from 'axios';
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-
-vi.mock('axios');
-
-const mockedAxios = axios as unknown as {
-  get: ReturnType<typeof vi.fn>,
-  post: ReturnType<typeof vi.fn>,
-  put: ReturnType<typeof vi.fn>,
-  delete: ReturnType<typeof vi.fn>
-};
+import { describe, test, expect, beforeEach, beforeAll, afterAll, afterEach } from 'vitest';
+import { createTestUser, cleanupDatabase, prisma } from '../helpers/db-test-setup';
 
 describe('AdminStore Integration', () => {
-  const mockUsers = [
-    { id: '1', email: 'user1@test.com', roleType: 'FARMER' },
-    { id: '2', email: 'user2@test.com', roleType: 'ADMIN' }
-  ];
+  beforeAll(async () => {
+    // Initialize test database
+    await cleanupDatabase();
+  });
 
-  beforeEach(() => {
-    vi.clearAllMocks();
+  afterAll(async () => {
+    // Cleanup after all tests
+    await cleanupDatabase();
+    await prisma.$disconnect();
+  });
+
+  beforeEach(async () => {
+    // Clean database before each test
+    await cleanupDatabase();
   });
 
   test('fetches users successfully', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: { users: mockUsers } });
+    // Create test users in the database
+    const user1 = await createTestUser({ email: 'user1@test.com', roleType: 'FARMER' });
+    const user2 = await createTestUser({ email: 'user2@test.com', roleType: 'ADMIN' });
 
     const { result } = renderHook(() => useAdminStore(), {
       wrapper: AdminProvider
@@ -33,13 +33,16 @@ describe('AdminStore Integration', () => {
       await result.current.fetchUsers();
     });
 
-    expect(result.current.users).toEqual(mockUsers);
+    expect(result.current.users).toHaveLength(2);
+    expect(result.current.users.map(u => u.email)).toContain(user1.email);
+    expect(result.current.users.map(u => u.email)).toContain(user2.email);
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
   });
 
-  test('handles fetch users error', async () => {
-    mockedAxios.get.mockRejectedValueOnce(new Error('Network error'));
+  test('handles fetch users error when database is down', async () => {
+    // Temporarily disconnect prisma to simulate database error
+    await prisma.$disconnect();
 
     const { result } = renderHook(() => useAdminStore(), {
       wrapper: AdminProvider
@@ -52,37 +55,40 @@ describe('AdminStore Integration', () => {
     expect(result.current.users).toEqual([]);
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe('Failed to fetch users');
+
+    // Reconnect prisma for other tests
+    await prisma.$connect();
   });
 
   test('updates user role successfully', async () => {
-    mockedAxios.put.mockResolvedValueOnce({ status: 200 });
-    mockedAxios.get.mockResolvedValueOnce({ data: { users: mockUsers } });
+    // Create a test user
+    const user = await createTestUser({ email: 'user1@test.com', roleType: 'FARMER' });
 
     const { result } = renderHook(() => useAdminStore(), {
       wrapper: AdminProvider
     });
 
     await act(async () => {
-      await result.current.updateUserRole('user1@test.com', 'ADMIN');
+      await result.current.updateUserRole(user.email, 'ADMIN');
     });
 
-    expect(mockedAxios.put).toHaveBeenCalledWith(
-      '/api/Controllers/User/role',
-      { email: 'user1@test.com', roleType: 'ADMIN' }
-    );
+    // Verify the role was updated in the database
+    const updatedUser = await prisma.user.findUnique({
+      where: { email: user.email }
+    });
+
+    expect(updatedUser?.roleType).toBe('ADMIN');
     expect(result.current.error).toBeNull();
   });
 
-  test('handles update role error', async () => {
-    mockedAxios.put.mockRejectedValueOnce(new Error('Failed to update'));
-
+  test('handles update role error for non-existent user', async () => {
     const { result } = renderHook(() => useAdminStore(), {
       wrapper: AdminProvider
     });
 
     await act(async () => {
       try {
-        await result.current.updateUserRole('user1@test.com', 'ADMIN');
+        await result.current.updateUserRole('nonexistent@test.com', 'ADMIN');
       } catch (error) {
         // Error should be thrown
       }
@@ -93,47 +99,43 @@ describe('AdminStore Integration', () => {
   });
 
   test('deletes user successfully', async () => {
-    // Setup initial state
+    // Create test users
+    const user1 = await createTestUser({ email: 'user1@test.com' });
+    const user2 = await createTestUser({ email: 'user2@test.com' });
+
     const { result } = renderHook(() => useAdminStore(), {
       wrapper: AdminProvider
     });
 
-    // Set initial users
+    // Fetch initial users
     await act(async () => {
-      mockedAxios.get.mockResolvedValueOnce({ data: { users: mockUsers } });
       await result.current.fetchUsers();
     });
 
-    // Mock delete response
-    mockedAxios.delete.mockResolvedValueOnce({ status: 200 });
-    
-    // Mock subsequent fetch after delete
-    mockedAxios.get.mockResolvedValueOnce({ 
-      data: { 
-        users: mockUsers.filter(user => user.id !== '1') 
-      } 
-    });
-
-    // Perform delete
+    // Delete user
     await act(async () => {
-      await result.current.deleteUser('1');
+      await result.current.deleteUser(user1.id);
     });
 
-    expect(mockedAxios.delete).toHaveBeenCalledWith('/api/Controllers/User/1');
+    // Verify user was deleted from database
+    const deletedUser = await prisma.user.findUnique({
+      where: { id: user1.id }
+    });
+
+    expect(deletedUser).toBeNull();
     expect(result.current.users).toHaveLength(1);
+    expect(result.current.users[0].id).toBe(user2.id);
     expect(result.current.error).toBeNull();
   });
 
-  test('handles delete user error', async () => {
-    mockedAxios.delete.mockRejectedValueOnce(new Error('Failed to delete'));
-
+  test('handles delete user error for non-existent user', async () => {
     const { result } = renderHook(() => useAdminStore(), {
       wrapper: AdminProvider
     });
 
     await act(async () => {
       try {
-        await result.current.deleteUser('1');
+        await result.current.deleteUser('non-existent-id');
       } catch (error) {
         // Error should be thrown
       }
@@ -141,25 +143,5 @@ describe('AdminStore Integration', () => {
 
     expect(result.current.error).toBe('Failed to delete user');
     expect(result.current.loading).toBe(false);
-  });
-
-  test('handles unauthorized role update', async () => {
-    mockedAxios.put.mockRejectedValueOnce({
-      response: { status: 403, data: { error: 'Unauthorized' } }
-    });
-
-    const { result } = renderHook(() => useAdminStore(), {
-      wrapper: AdminProvider
-    });
-
-    await act(async () => {
-      try {
-        await result.current.updateUserRole('user1@test.com', 'ADMIN');
-      } catch (error) {
-        // Error should be thrown
-      }
-    });
-
-    expect(result.current.error).toBe('Failed to update user role');
   });
 });

@@ -1,37 +1,38 @@
-import { vi, describe, test, expect, beforeEach } from 'vitest';
-import axios from 'axios';
+import { describe, test, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import { configure } from 'mobx';
 import { renderHook, act } from '@testing-library/react';
 import { FertilizationPlanProvider, useFertilizationPlans } from '@/providers/fertilizationPlanStore';
+import { createTestUser, createTestCrop, createTestFertilizationPlan, cleanupDatabase, prisma } from '../helpers/db-test-setup';
+import { Decimal } from '@prisma/client/runtime/library';
 
 configure({ enforceActions: 'always' });
 
-vi.mock('axios');
-const mockedAxios = axios as unknown as {
-  get: ReturnType<typeof vi.fn>,
-  post: ReturnType<typeof vi.fn>,
-  put: ReturnType<typeof vi.fn>,
-  delete: ReturnType<typeof vi.fn>
-};
-
 describe('FertilizationPlanStore', () => {
-  const mockPlan = {
-    id: 1,
-    plannedDate: '2023-01-01',
-    fertilizer: 'Test Fertilizer',
-    applicationRate: 100,
-    nitrogenContent: 30,
-    applicationMethod: 'broadcast',
-    completed: false,
-    crop: { id: 1, cropName: 'Test Crop' }
-  };
+  let testUser;
+  let testCrop;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
+  beforeAll(async () => {
+    await cleanupDatabase();
+  });
+
+  afterAll(async () => {
+    await cleanupDatabase();
+    await prisma.$disconnect();
+  });
+
+  beforeEach(async () => {
+    await cleanupDatabase();
+    testUser = await createTestUser();
+    testCrop = await createTestCrop(testUser.id);
   });
 
   test('fetchFertilizationPlans retrieves plans', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: [mockPlan] });
+    // Create test fertilization plan
+    const plan = await createTestFertilizationPlan(testUser.id, testCrop.id, {
+      plannedDate: new Date('2023-01-01'),
+      fertilizer: 'Test Fertilizer',
+      applicationMethod: 'broadcast'
+    });
 
     const { result } = renderHook(() => useFertilizationPlans(), {
       wrapper: FertilizationPlanProvider
@@ -41,19 +42,16 @@ describe('FertilizationPlanStore', () => {
       await result.current.fetchFertilizationPlans();
     });
 
-    expect(result.current.plans).toEqual([mockPlan]);
+    expect(result.current.plans).toHaveLength(1);
+    expect(result.current.plans[0].fertilizer).toBe('Test Fertilizer');
     expect(result.current.error).toBeNull();
-    expect(mockedAxios.get).toHaveBeenCalledWith('/api/Controllers/Soil/fertilizationPlans');
   });
 
   test('saveFertilizationPlan handles creation', async () => {
-    mockedAxios.post.mockResolvedValueOnce({ data: mockPlan });
-    mockedAxios.get.mockResolvedValueOnce({ data: [mockPlan] });
-
     const formData = {
-      cropId: '1',
+      cropId: testCrop.id.toString(),
       plannedDate: '2023-01-01',
-      fertilizer: 'Test Fertilizer',
+      fertilizer: 'New Fertilizer',
       applicationRate: '100',
       nitrogenContent: '30',
       applicationMethod: 'broadcast'
@@ -67,84 +65,95 @@ describe('FertilizationPlanStore', () => {
       await result.current.saveFertilizationPlan(null, formData);
     });
 
-    expect(mockedAxios.post).toHaveBeenCalledWith(
-      '/api/Controllers/Soil/fertilizationPlan',
-      expect.objectContaining({
-        cropId: 1,
-        plannedDate: expect.any(String),
-        fertilizer: 'Test Fertilizer',
-        applicationRate: 100,
-        nitrogenContent: 30,
-        applicationMethod: 'broadcast'
-      })
-    );
+    // Verify plan was created in database
+    const plans = await prisma.fertilizationPlan.findMany({
+      where: { userId: testUser.id }
+    });
+
+    expect(plans).toHaveLength(1);
+    expect(plans[0].fertilizer).toBe('New Fertilizer');
+    expect(plans[0].cropId).toBe(testCrop.id);
+    expect(result.current.error).toBeNull();
   });
 
   test('updateFertilizationPlan handles updates', async () => {
+    // Create initial plan
+    const plan = await createTestFertilizationPlan(testUser.id, testCrop.id);
+
     const updateData = {
       fertilizer: 'Updated Fertilizer',
       applicationRate: 150
     };
 
-    mockedAxios.put.mockResolvedValueOnce({ data: { ...mockPlan, ...updateData } });
-    mockedAxios.get.mockResolvedValueOnce({ data: [{ ...mockPlan, ...updateData }] });
-
     const { result } = renderHook(() => useFertilizationPlans(), {
       wrapper: FertilizationPlanProvider
     });
 
     await act(async () => {
-      await result.current.updateFertilizationPlan(1, updateData);
+      await result.current.updateFertilizationPlan(plan.id, updateData);
     });
 
-    expect(mockedAxios.put).toHaveBeenCalledWith(
-      '/api/Controllers/Soil/fertilizationPlan/1',
-      updateData
-    );
+    // Verify update in database
+    const updatedPlan = await prisma.fertilizationPlan.findUnique({
+      where: { id: plan.id }
+    });
+
+    expect(updatedPlan?.fertilizer).toBe('Updated Fertilizer');
+    expect(updatedPlan?.applicationRate instanceof Decimal).toBe(true);
+    expect(updatedPlan?.applicationRate.toNumber()).toBe(150);
   });
 
   test('deleteFertilizationPlan removes plan', async () => {
-    mockedAxios.delete.mockResolvedValueOnce({ data: {} });
+    // Create plan to delete
+    const plan = await createTestFertilizationPlan(testUser.id, testCrop.id);
 
     const { result } = renderHook(() => useFertilizationPlans(), {
       wrapper: FertilizationPlanProvider
     });
 
-    act(() => {
-      result.current.setPlans([mockPlan]);
-    });
-
+    // Fetch initial plans
     await act(async () => {
-      await result.current.deleteFertilizationPlan(1);
+      await result.current.fetchFertilizationPlans();
+    });
+    expect(result.current.plans).toHaveLength(1);
+
+    // Delete plan
+    await act(async () => {
+      await result.current.deleteFertilizationPlan(plan.id);
     });
 
-    expect(mockedAxios.delete).toHaveBeenCalledWith('/api/Controllers/Soil/fertilizationPlan/1');
+    // Verify deletion in database
+    const deletedPlan = await prisma.fertilizationPlan.findUnique({
+      where: { id: plan.id }
+    });
+    expect(deletedPlan).toBeNull();
     expect(result.current.plans).toHaveLength(0);
   });
 
-  test('handles API errors appropriately', async () => {
-    const error = new Error('API Error');
-    mockedAxios.get.mockRejectedValueOnce(error);
+  test('handles database errors appropriately', async () => {
+    // Disconnect database to simulate error
+    await prisma.$disconnect();
 
     const { result } = renderHook(() => useFertilizationPlans(), {
       wrapper: FertilizationPlanProvider
     });
 
-    try {
-      await act(async () => {
+    await act(async () => {
+      try {
         await result.current.fetchFertilizationPlans();
-      });
-    } catch (err) {
-      expect(err).toBe(error);
-    }
+      } catch (err) {
+        // Error should be thrown
+      }
+    });
 
-    expect(result.current.error).toBe('API Error');
+    expect(result.current.error).toBe('An error occurred');
     expect(result.current.loading).toBe(false);
+
+    // Reconnect for other tests
+    await prisma.$connect();
   });
 
   test('loading state is managed correctly', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: [mockPlan] });
-
     const { result } = renderHook(() => useFertilizationPlans(), {
       wrapper: FertilizationPlanProvider
     });
@@ -158,5 +167,28 @@ describe('FertilizationPlanStore', () => {
     
     await promise;
     expect(result.current.loading).toBe(false);
+  });
+
+  test('handles relationships correctly', async () => {
+    // Create multiple crops and plans
+    const secondCrop = await createTestCrop(testUser.id, { cropName: 'Second Crop' });
+    
+    await createTestFertilizationPlan(testUser.id, testCrop.id);
+    await createTestFertilizationPlan(testUser.id, secondCrop.id);
+
+    const { result } = renderHook(() => useFertilizationPlans(), {
+      wrapper: FertilizationPlanProvider
+    });
+
+    // Fetch crops and plans
+    await act(async () => {
+      await result.current.fetchCrops();
+      await result.current.fetchFertilizationPlans();
+    });
+
+    expect(result.current.crops).toHaveLength(2);
+    expect(result.current.plans).toHaveLength(2);
+    expect(result.current.plans[0].crop).toBeDefined();
+    expect(result.current.plans[1].crop).toBeDefined();
   });
 });

@@ -17,7 +17,7 @@ export default function PostForm({ post, onCancel, onSuccess }: PostFormProps) {
         title: post?.title || '',
         brief: post?.brief || '',
         description: post?.description || '',
-        image: post?.imageUrl || ''
+        imageUrl: post?.imageUrl || ''
     });
     const { createPost, updatePost } = usePostContext();
 
@@ -27,7 +27,7 @@ export default function PostForm({ post, onCancel, onSuccess }: PostFormProps) {
                 title: post.title,
                 brief: post.brief || '',
                 description: post.description || '',
-                image: post.imageUrl || ''
+                imageUrl: post.imageUrl || ''
             });
         }
     }, [post]);
@@ -45,7 +45,7 @@ export default function PostForm({ post, onCancel, onSuccess }: PostFormProps) {
             } else {
                 await createPost(formData);
             }
-            setFormData({ title: '', brief: '', description: '', image: '' });
+            setFormData({ title: '', brief: '', description: '', imageUrl: '' });
             if (onSuccess) {
                 await onSuccess(formData); // Pass formData to onSuccess
             }
@@ -93,7 +93,7 @@ export default function PostForm({ post, onCancel, onSuccess }: PostFormProps) {
                     <FileBase
                         multiple={false}
                         onDone={({ base64 }: { base64: string }) => 
-                            setFormData({...formData, image: base64})}
+                            setFormData({...formData, imageUrl: base64})}
                     />
                 </div>
             </Form.Group>
