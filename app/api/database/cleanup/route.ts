@@ -18,26 +18,32 @@ export async function POST() {
     }
 
     // Delete everything in the correct order to respect foreign key constraints
-    
-    // 1. Delete all rotation plans
+
+    // 1. Delete all fertilization plans (references User and Crop)
+    await prisma.fertilizationPlan.deleteMany();
+
+    // 2. Delete all soil tests (references User)
+    await prisma.soilTest.deleteMany();
+
+    // 3. Delete all rotation plans
     await prisma.rotationPlan.deleteMany();
 
-    // 2. Delete all user crop selections
+    // 4. Delete all user crop selections
     await prisma.userCropSelection.deleteMany();
 
-    // 3. Delete all rotations
+    // 5. Delete all rotations
     await prisma.rotation.deleteMany();
 
-    // 4. Delete all posts
+    // 6. Delete all posts
     await prisma.post.deleteMany();
 
-    // 5. Delete all crop details
+    // 7. Delete all crop details
     await prisma.cropDetail.deleteMany();
 
-    // 6. Delete all crops
+    // 8. Delete all crops
     await prisma.crop.deleteMany();
 
-    // 7. Delete all users except target user
+    // 9. Delete all users except target user
     await prisma.user.deleteMany({
       where: {
         NOT: { id: targetUser.id }

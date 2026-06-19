@@ -21,42 +21,20 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe('RotationStore Integration', () => {
   const mockRotation = {
-    _id: '1',
+    id: 1,
+    userId: 'db-user-id',
+    rotationName: 'Test Rotation',
     fieldSize: 100,
     numberOfDivisions: 4,
-    rotationName: 'Test Rotation',
-    crops: [] as {
-      _id: string;
-      cropName: string;
-      cropType: string;
-      cropVariety: string;
-      plantingDate: string;
-      harvestingDate: string;
-      description: string;
-      imageUrl: string;
-      soilType: string;
-      fertilizers: string[];
-      pests: string[];
-      diseases: string[];
-      selectare: boolean;
-      user: string;
-      ItShouldNotBeRepeatedForXYears: number;
-      nitrogenSupply: number;
-      nitrogenDemand: number;
-      residualNitrogen: number;
-    }[],
-    maxYears: 3,
-    ResidualNitrogenSupply: 50,
-    rotationPlan: [] as {
+    rotationPlans: [] as {
+      id: number;
+      rotationId: number;
       year: number;
-      rotationItems: {
-        division: number;
-        cropName: string;
-        plantingDate: string;
-        harvestingDate: string;
-        divisionSize: number;
-        nitrogenBalance: number;
-      }[];
+      division: number;
+      cropId: number;
+      divisionSize: number;
+      nitrogenBalance: number;
+      crop: any;
     }[]
   };
 
@@ -65,7 +43,7 @@ describe('RotationStore Integration', () => {
   });
 
   test('fetches rotations successfully', async () => {
-    const mockResponse = { status: 200, data: [mockRotation] };
+    const mockResponse = { status: 200, data: { data: [mockRotation] } };
     mockedAxios.get.mockResolvedValueOnce(mockResponse);
 
     const { result } = renderHook(() => useGlobalContextRotation(), { wrapper });
@@ -102,29 +80,28 @@ describe('RotationStore Integration', () => {
   test('handles nitrogen balance updates', async () => {
     const updatedRotation = {
       ...mockRotation,
-      rotationPlan: [{
+      rotationPlans: [{
+        id: 1,
+        rotationId: 1,
         year: 2023,
-        rotationItems: [{
-          division: 1,
-          cropName: 'Test Crop',
-          plantingDate: '2023-01-01',
-          harvestingDate: '2023-12-31',
-          divisionSize: 25,
-          nitrogenBalance: 60
-        }]
+        division: 1,
+        cropId: 1,
+        divisionSize: 25,
+        nitrogenBalance: 60,
+        crop: { cropName: 'Test Crop' }
       }]
     };
 
     mockedAxios.put.mockResolvedValueOnce({
       status: 200,
-      data: [updatedRotation]
+      data: { message: 'Nitrogen balance updated successfully', data: updatedRotation }
     });
 
     const { result } = renderHook(() => useGlobalContextRotation(), { wrapper });
 
     await act(async () => {
       await result.current.updateNitrogenBalanceAndRegenerateRotation({
-        rotationName: 'Test Rotation',
+        id: 1,
         year: 2023,
         division: 1,
         nitrogenBalance: 60
@@ -138,7 +115,7 @@ describe('RotationStore Integration', () => {
     expect(mockedAxios.put).toHaveBeenCalledWith(
       expect.stringContaining('/updateNitrogenBalance/rotation/'),
       {
-        rotationName: 'Test Rotation',
+        id: 1,
         year: 2023,
         division: 1,
         nitrogenBalance: 60

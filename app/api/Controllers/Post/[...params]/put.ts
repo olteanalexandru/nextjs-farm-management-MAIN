@@ -54,7 +54,8 @@ export const PUT = withApiAuthRequired(async function PUT(
       data: {
         title: updateData.title,
         brief: updateData.brief,
-        description: updateData.description
+        description: updateData.description,
+        imageUrl: updateData.imageUrl
       },
       include: {
         user: {

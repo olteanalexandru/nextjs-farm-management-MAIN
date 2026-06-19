@@ -154,17 +154,14 @@ export function PostProvider({ children }: ProviderProps) {
     setLoading(true);
     try {
       const response = await axios.get<ApiResponse<Post>>(
-        `${API_URL}/post/id/${id}`,
+        `${API_URL}/post/${id}`,
         axiosConfig
       );
 
       if (response.data.error) {
         setError(response.data.error);
-      } else if (response.data.posts) {
-        const post = Array.isArray(response.data.posts) 
-          ? response.data.posts[0] 
-          : response.data.posts;
-        setData([post]);
+      } else if (response.data.data) {
+        setData([response.data.data]);
       }
     } catch (error) {
       handleApiError(error);

@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl';
 
 interface RotationData {
   rotationName: string;
-  fieldSize: number;
+  fieldSize: number | string;
   numberOfDivisions: number;
   rotationPlans: Array<{
     year: number;

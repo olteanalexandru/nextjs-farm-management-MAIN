@@ -25,7 +25,7 @@ export const POST = withApiAuthRequired(async function POST(
 
     // Get the user from our database using Auth0 ID
     const dbUser = await prisma.user.findUnique({
-      where: { auth0Id: auth0User.id }
+      where: { auth0Id: auth0User.auth0Id }
     });
 
     if (!dbUser) {
