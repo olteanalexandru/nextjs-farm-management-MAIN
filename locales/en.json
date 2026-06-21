@@ -201,7 +201,21 @@
     "analysis": "Soil Analysis",
     "recommendations": "Recommendations",
     "history": "History",
-    "addNewRecord": "Add New Record" 
+    "addNewRecord": "Add New Record",
+    "fertilizationRecommendations": "Fertilization Recommendations",
+    "chooseCrop": "Choose a crop",
+    "selectField": "Select Field",
+    "chooseField": "Choose a field",
+    "generateRecommendation": "Generate Recommendation",
+    "recommendationResults": "Recommendation Results",
+    "recommendedFertilizer": "Recommended Fertilizer",
+    "timing": "Timing",
+    "additionalNotes": "Additional Notes",
+    "aiAgronomistNotes": "AI Agronomist Notes",
+    "getAiNotes": "Get AI Notes",
+    "generating": "Generating...",
+    "risksToWatch": "Risks to Watch",
+    "practicalTips": "Practical Tips"
   },
   "Recomandari": {
     "hello": "Hello",

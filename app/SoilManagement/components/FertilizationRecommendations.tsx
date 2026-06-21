@@ -33,6 +33,12 @@ interface RecommendationProps {
   }) => void;
 }
 
+interface AiInsight {
+  summary: string;
+  risks: string[];
+  tips: string[];
+}
+
 export default function FertilizationRecommendations({ onRecommendationSelect }: RecommendationProps) {
   const t = useTranslations('SoilManagement');
   const [crops, setCrops] = useState<Crop[]>([]);
@@ -42,6 +48,11 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recommendation, setRecommendation] = useState<any>(null);
+  const [activeCropId, setActiveCropId] = useState<number | null>(null);
+  const [activeSoilTestId, setActiveSoilTestId] = useState<number | null>(null);
+  const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
+  const [aiInsightLoading, setAiInsightLoading] = useState(false);
+  const [aiInsightError, setAiInsightError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -52,10 +63,10 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
 
   const fetchCrops = async () => {
     try {
-      const response = await fetch('/api/Controllers/Crop/crops/retrieve/all');
+      const response = await fetch('/api/Controllers/Crop/crops/all');
       if (!response.ok) throw new Error('Failed to fetch crops');
       const data = await response.json();
-      setCrops(data);
+      setCrops(data.crops || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     }
@@ -89,6 +100,10 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
     );
 
     setRecommendation(recommendation);
+    setActiveCropId(crop.id);
+    setActiveSoilTestId(soilTest.id);
+    setAiInsight(null);
+    setAiInsightError(null);
 
     if (onRecommendationSelect) {
       onRecommendationSelect({
@@ -96,6 +111,31 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
         applicationRate: recommendation.applicationRate,
         applicationMethod: recommendation.applicationMethod,
       });
+    }
+  };
+
+  const handleAiInsight = async () => {
+    if (!activeCropId || !activeSoilTestId) return;
+
+    setAiInsightLoading(true);
+    setAiInsightError(null);
+    setAiInsight(null);
+
+    try {
+      const response = await fetch('/api/Controllers/Soil/fertilization-insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cropId: activeCropId, soilTestId: activeSoilTestId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to generate AI notes');
+      }
+      setAiInsight(data.insight);
+    } catch (err) {
+      setAiInsightError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setAiInsightLoading(false);
     }
   };
 
@@ -189,6 +229,49 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
               <p className="mt-1 text-sm text-yellow-700">{recommendation.notes}</p>
             </div>
           )}
+
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium">{t('aiAgronomistNotes')}</h4>
+              <button
+                onClick={handleAiInsight}
+                disabled={aiInsightLoading}
+                className="bg-blue-500 text-white px-3 py-1.5 text-sm rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {aiInsightLoading ? t('generating') : t('getAiNotes')}
+              </button>
+            </div>
+
+            {aiInsightError && (
+              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">{aiInsightError}</div>
+            )}
+
+            {aiInsight && (
+              <div className="bg-blue-50 p-4 rounded-md space-y-3 text-sm">
+                <p className="text-blue-900">{aiInsight.summary}</p>
+                {aiInsight.risks.length > 0 && (
+                  <div>
+                    <p className="font-medium text-blue-800">{t('risksToWatch')}</p>
+                    <ul className="list-disc list-inside text-blue-700">
+                      {aiInsight.risks.map((risk, i) => (
+                        <li key={i}>{risk}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiInsight.tips.length > 0 && (
+                  <div>
+                    <p className="font-medium text-blue-800">{t('practicalTips')}</p>
+                    <ul className="list-disc list-inside text-blue-700">
+                      {aiInsight.tips.map((tip, i) => (
+                        <li key={i}>{tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -5,7 +5,7 @@ import { prisma } from 'app/lib/prisma';
 import { ApiResponse, RecommendationResponse } from 'app/types/api';
 import { toDecimal, transformCropWithDetails } from '../utils/helpers';
 import { sanitizeCropNameQuery } from 'app/lib/ai/cropNameValidation';
-import { checkAiLookupRateLimit, logAiLookup } from 'app/lib/ai/rateLimit';
+import { checkAiRateLimit, logAiUsage } from 'app/lib/ai/rateLimit';
 import { lookupCropWithAi } from 'app/lib/ai/cropLookup';
 
 export const POST = withApiAuthRequired(async function POST(request: NextRequest) {
@@ -37,9 +37,9 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
       return Response.json(response);
     }
 
-    const rateLimit = await checkAiLookupRateLimit(user.id);
+    const rateLimit = await checkAiRateLimit(user.id, 'CROP_LOOKUP');
     if (!rateLimit.allowed) {
-      await logAiLookup(user.id, query, 'RATE_LIMITED');
+      await logAiUsage(user.id, 'CROP_LOOKUP', query, 'RATE_LIMITED');
       const response: ApiResponse = { error: rateLimit.reason, status: 429 };
       return Response.json(response, { status: 429 });
     }
@@ -49,13 +49,13 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
       aiResult = await lookupCropWithAi(query);
     } catch (error) {
       console.error('AI crop lookup error:', error);
-      await logAiLookup(user.id, query, 'ERROR');
+      await logAiUsage(user.id, 'CROP_LOOKUP', query, 'ERROR');
       const response: ApiResponse = { error: 'AI lookup is temporarily unavailable. Please try again later.', status: 503 };
       return Response.json(response, { status: 503 });
     }
 
     if (!aiResult) {
-      await logAiLookup(user.id, query, 'REJECTED_NOT_CROP');
+      await logAiUsage(user.id, 'CROP_LOOKUP', query, 'REJECTED');
       const response: ApiResponse = {
         error: `"${query}" doesn't look like a recognized crop. Try a different name or add it manually.`,
         status: 404
@@ -86,7 +86,7 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
       include: { details: true }
     });
 
-    await logAiLookup(user.id, query, 'SUCCESS', created.id);
+    await logAiUsage(user.id, 'CROP_LOOKUP', query, 'SUCCESS', created.id);
 
     const response: ApiResponse<RecommendationResponse[]> = {
       crops: [transformCropWithDetails(created)],

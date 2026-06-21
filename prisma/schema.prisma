@@ -180,12 +180,13 @@ model FertilizationPlan {
 model AiLookupLog {
   id        Int      @id @default(autoincrement())
   userId    String
+  feature   String   @default("CROP_LOOKUP")
   query     String
   outcome   String
   cropId    Int?
   createdAt DateTime @default(now())
 
-  @@index([userId, createdAt])
-  @@index([createdAt])
+  @@index([userId, feature, createdAt])
+  @@index([feature, createdAt])
   @@map("ai_lookup_logs")
 }

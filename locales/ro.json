@@ -145,7 +145,21 @@
     "analysis": "Analiză Sol",
     "recommendations": "Recomandări",
     "history": "Istoric",
-    "addNewRecord": "Adaugă Înregistrare Nouă"
+    "addNewRecord": "Adaugă Înregistrare Nouă",
+    "fertilizationRecommendations": "Recomandări de Fertilizare",
+    "chooseCrop": "Alegeți o cultură",
+    "selectField": "Selectați Câmpul",
+    "chooseField": "Alegeți un câmp",
+    "generateRecommendation": "Generează Recomandare",
+    "recommendationResults": "Rezultatele Recomandării",
+    "recommendedFertilizer": "Îngrășământ Recomandat",
+    "timing": "Sincronizare",
+    "additionalNotes": "Note Adiționale",
+    "aiAgronomistNotes": "Note AI de Agronomie",
+    "getAiNotes": "Obține Note AI",
+    "generating": "Se generează...",
+    "risksToWatch": "Riscuri de Urmărit",
+    "practicalTips": "Sfaturi Practice"
   },
   "Recomandari": {
     "hello": "Bună",
