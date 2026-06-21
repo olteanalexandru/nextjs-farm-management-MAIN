@@ -43,7 +43,10 @@ function CropWikiContent() {
     filters,
     fetchCrops,
     updateFilters,
-    resetFilters
+    resetFilters,
+    lookupWithAi,
+    aiLookupLoading,
+    aiLookupError
   } = useCropWiki();
 
   useEffect(() => {
@@ -77,6 +80,15 @@ function CropWikiContent() {
 
   const navigateToCrop = (crop: RecommendationResponse) => {
     router.push(`/Crop/${crop._id || crop.id}`, { scroll: false });
+  };
+
+  const handleAiLookup = async () => {
+    const term = filters.search.trim();
+    if (term.length < 2) return;
+    const crop = await lookupWithAi(term);
+    if (crop) {
+      navigateToCrop(crop as unknown as RecommendationResponse);
+    }
   };
 
   const toggleSortOrder = () => {
@@ -225,6 +237,21 @@ function CropWikiContent() {
           <Sprout className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold mb-2">No crops found</h3>
           <p className="text-gray-500">Try adjusting your filters or search term</p>
+          {filters.search.trim().length >= 2 && (
+            <div className="mt-6">
+              <Button
+                color="primary"
+                variant="flat"
+                isLoading={aiLookupLoading}
+                onClick={handleAiLookup}
+              >
+                Look up &quot;{filters.search.trim()}&quot; with AI
+              </Button>
+              {aiLookupError && (
+                <p className="text-red-500 text-sm mt-2">{aiLookupError}</p>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -250,6 +277,9 @@ function CropWikiContent() {
                   <div className="flex flex-wrap gap-2">
                     <Chip size="sm" color="primary">{crop.cropType}</Chip>
                     <Chip size="sm" color="secondary">{crop.soilType}</Chip>
+                    {crop.aiGenerated && (
+                      <Chip size="sm" color="warning" variant="flat">AI-generated</Chip>
+                    )}
                   </div>
                   {crop.description && (
                     <p className="text-sm text-gray-600 line-clamp-2">

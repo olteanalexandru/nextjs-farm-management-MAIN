@@ -48,7 +48,8 @@ model Crop {
   createdAt                     DateTime          @default(now())
   updatedAt                     DateTime          @updatedAt
   deleted                       DateTime?
-  
+  aiGenerated                   Boolean           @default(false)
+
   details                      CropDetail[]        @relation("CropDetails")
   rotationPlans               RotationPlan[]      @relation("CropRotationPlans")
   userSelections              UserCropSelection[] @relation("CropSelections")
@@ -174,4 +175,17 @@ model FertilizationPlan {
   @@index([userId, plannedDate])
   @@index([cropId])
   @@map("fertilization_plans")
+}
+
+model AiLookupLog {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  query     String
+  outcome   String
+  cropId    Int?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("ai_lookup_logs")
 }

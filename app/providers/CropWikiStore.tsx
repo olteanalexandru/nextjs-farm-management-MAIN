@@ -22,6 +22,9 @@ interface CropWikiContextType {
   fetchCrops: () => Promise<void>;
   updateFilters: (filters: Partial<CropWikiFilters>) => void;
   resetFilters: () => void;
+  lookupWithAi: (cropName: string) => Promise<Crop | null>;
+  aiLookupLoading: boolean;
+  aiLookupError: string | null;
 }
 
 const initialFilters: CropWikiFilters = {
@@ -41,6 +44,8 @@ export function CropWikiProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState<CropWikiFilters>(initialFilters);
+  const [aiLookupLoading, setAiLookupLoading] = useState(false);
+  const [aiLookupError, setAiLookupError] = useState<string | null>(null);
 
   const ITEMS_PER_PAGE = 10;
 
@@ -81,6 +86,22 @@ export function CropWikiProvider({ children }: { children: React.ReactNode }) {
     setFilters(initialFilters);
   }, []);
 
+  const lookupWithAi = useCallback(async (cropName: string): Promise<Crop | null> => {
+    setAiLookupLoading(true);
+    setAiLookupError(null);
+    try {
+      const response = await axios.post('/api/Controllers/Crop/crops/ai-lookup', { cropName });
+      const crop = response.data?.crops?.[0] ?? null;
+      return crop;
+    } catch (error: any) {
+      const message = error?.response?.data?.error || 'AI lookup failed. Please try again later.';
+      setAiLookupError(message);
+      return null;
+    } finally {
+      setAiLookupLoading(false);
+    }
+  }, []);
+
   return (
     <CropWikiContext.Provider value={{
       crops,
@@ -90,7 +111,10 @@ export function CropWikiProvider({ children }: { children: React.ReactNode }) {
       filters,
       fetchCrops,
       updateFilters,
-      resetFilters
+      resetFilters,
+      lookupWithAi,
+      aiLookupLoading,
+      aiLookupError
     }}>
       {children}
     </CropWikiContext.Provider>

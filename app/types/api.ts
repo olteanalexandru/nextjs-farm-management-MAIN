@@ -65,6 +65,7 @@ export interface Crop {
   createdAt: Date;
   updatedAt: Date;
   deleted: Date | null;
+  aiGenerated?: boolean;
   details?: CropDetail[];
   user?: {
     name: string;
@@ -118,6 +119,7 @@ export interface RecommendationResponse {
   climate?: string;
   ItShouldNotBeRepeatedForXYears?: number;
   soilResidualNitrogen?: number;
+  aiGenerated?: boolean;
 }
 
 export interface CropUpdate {
@@ -357,6 +359,7 @@ export function transformPrismaCrop(prismaCrop: any): Crop {
     createdAt: prismaCrop.createdAt,
     updatedAt: prismaCrop.updatedAt,
     deleted: prismaCrop.deleted,
+    aiGenerated: Boolean(prismaCrop.aiGenerated),
     details: prismaCrop.details,
     user: prismaCrop.user ? {
       name: prismaCrop.user.name,
