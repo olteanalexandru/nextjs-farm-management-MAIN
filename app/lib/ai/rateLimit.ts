@@ -2,13 +2,15 @@ import { prisma } from 'app/lib/prisma';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export type AiFeature = 'CROP_LOOKUP' | 'FERTILIZATION_INSIGHT';
+export type AiFeature = 'CROP_LOOKUP' | 'FERTILIZATION_INSIGHT' | 'ROTATION_INSIGHT' | 'PEST_DIAGNOSIS';
 
 export type AiUsageOutcome = 'SUCCESS' | 'REJECTED' | 'RATE_LIMITED' | 'ERROR';
 
 const DEFAULT_LIMITS: Record<AiFeature, { user: number; global: number }> = {
   CROP_LOOKUP: { user: 15, global: 100 },
-  FERTILIZATION_INSIGHT: { user: 30, global: 200 }
+  FERTILIZATION_INSIGHT: { user: 30, global: 200 },
+  ROTATION_INSIGHT: { user: 30, global: 200 },
+  PEST_DIAGNOSIS: { user: 20, global: 150 }
 };
 
 function getLimit(feature: AiFeature, scope: 'USER' | 'GLOBAL'): number {

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Camera, Home, Repeat, Users, Settings, LogOut, LogIn, Database, Leaf } from 'lucide-react';
+import { Camera, Home, Repeat, Users, Settings, LogOut, LogIn, Database, Leaf, Bug } from 'lucide-react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import React from 'react';
 import { LanguageSwitch } from './LanguageSwitch';
@@ -29,6 +29,7 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
     { name: t('Navigation.cropRotation'), href: '/Rotatie', icon: Repeat, farmerOnly: true },
     { name: t('Navigation.cropDatabase'), href: '/CropWiki', icon: Database },
     { name: t('Navigation.soilManagement'), href: '/SoilManagement', icon: Leaf, farmerOnly: true },
+    { name: t('Navigation.pestDiagnosis'), href: '/PestDiagnosis', icon: Bug, farmerOnly: true },
     { name: t('Navigation.dashboard'), href: '/dashboard', icon: Camera },
     { name: t('Navigation.users'), href: '/Login/Register', icon: Users, adminOnly: true },
   ];
