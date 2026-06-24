@@ -37,7 +37,7 @@ export function Hero() {
           <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
             <div className="text-green-600 text-3xl mb-4">🌡️</div>
             <h4 className="text-xl font-semibold text-gray-900 mb-2">
-              <Link href="/Recomandari" className="hover:text-green-600 transition-colors">
+              <Link href="/SoilManagement" className="hover:text-green-600 transition-colors">
                 Weather Insights
               </Link>
             </h4>

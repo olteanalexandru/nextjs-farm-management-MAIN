@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { FertilizationService } from '../services/fertilizationService';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import WeatherWidget from '../../components/WeatherWidget';
 
 interface Crop {
   id: number;
@@ -186,6 +187,8 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
           </select>
         </div>
       </div>
+
+      {selectedField && <WeatherWidget fieldLocation={selectedField} />}
 
       <div className="flex justify-end">
         <button

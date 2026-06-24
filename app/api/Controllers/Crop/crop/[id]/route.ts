@@ -228,6 +228,15 @@ export const DELETE = withApiAuthRequired(async function DELETE(
       prisma.rotationPlan.deleteMany({
         where: { cropId }
       }),
+      // Delete related harvest records
+      prisma.harvestRecord.deleteMany({
+        where: { cropId }
+      }),
+      // Detach related financial records (preserve financial history)
+      prisma.financialRecord.updateMany({
+        where: { cropId },
+        data: { cropId: null }
+      }),
       // Finally delete the crop
       prisma.crop.delete({
         where: { id: cropId }

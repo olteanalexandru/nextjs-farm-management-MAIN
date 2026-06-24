@@ -22,6 +22,8 @@ model User {
   cropSelections UserCropSelection[] @relation("UserSelections")
   soilTests      SoilTest[]        @relation("UserSoilTests")
   fertilizationPlans FertilizationPlan[] @relation("UserFertilizationPlans")
+  harvestRecords HarvestRecord[]   @relation("UserHarvestRecords")
+  financialRecords FinancialRecord[] @relation("UserFinancialRecords")
 
   @@index([auth0Id])
   @@index([email])
@@ -54,6 +56,8 @@ model Crop {
   rotationPlans               RotationPlan[]      @relation("CropRotationPlans")
   userSelections              UserCropSelection[] @relation("CropSelections")
   fertilizationPlans         FertilizationPlan[] @relation("CropFertilizationPlans")
+  harvestRecords              HarvestRecord[]     @relation("CropHarvestRecords")
+  financialRecords            FinancialRecord[]   @relation("CropFinancialRecords")
 
   @@index([userId])
   @@index([cropName])
@@ -102,6 +106,7 @@ model RotationPlan {
   directlyUpdated Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  harvestRecords  HarvestRecord[] @relation("RotationPlanHarvestRecords")
 
   @@map("rotation_plans")
 }
@@ -189,4 +194,49 @@ model AiLookupLog {
   @@index([userId, feature, createdAt])
   @@index([feature, createdAt])
   @@map("ai_lookup_logs")
+}
+
+model HarvestRecord {
+  id             Int           @id @default(autoincrement())
+  userId         String
+  user           User          @relation("UserHarvestRecords", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cropId         Int
+  crop           Crop          @relation("CropHarvestRecords", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rotationPlanId Int?
+  rotationPlan   RotationPlan? @relation("RotationPlanHarvestRecords", fields: [rotationPlanId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  harvestDate    DateTime
+  fieldLocation  String?
+  divisionSize   Decimal?      @db.Decimal(10,2)
+  actualYield    Decimal       @db.Decimal(10,2)
+  yieldUnit      String        @default("kg")
+  qualityGrade   String?
+  notes          String?       @db.Text
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([userId, harvestDate])
+  @@index([cropId])
+  @@index([rotationPlanId])
+  @@map("harvest_records")
+}
+
+model FinancialRecord {
+  id          Int       @id @default(autoincrement())
+  userId      String
+  user        User      @relation("UserFinancialRecords", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cropId      Int?
+  crop        Crop?     @relation("CropFinancialRecords", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  type        String
+  category    String
+  amount      Decimal   @db.Decimal(12,2)
+  currency    String    @default("EUR")
+  recordDate  DateTime
+  description String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, recordDate])
+  @@index([userId, type])
+  @@index([cropId])
+  @@map("financial_records")
 }

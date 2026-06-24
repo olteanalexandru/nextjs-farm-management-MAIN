@@ -217,18 +217,6 @@
     "risksToWatch": "Risks to Watch",
     "practicalTips": "Practical Tips"
   },
-  "Recomandari": {
-    "hello": "Hello",
-    "recommendationsBasedOnCropRotation": "Recommendations based on crop rotation:",
-    "division": "Division",
-    "crop": "Crop",
-    "plantingDate": "Planting Date",
-    "harvestingDate": "Harvesting Date",
-    "divisionSize": "Division Size",
-    "nitrogenBalance": "Nitrogen Balance",
-    "recommendations": "Recommendations",
-    "year": "Year"
-  },
   "Dashboard": {
     "loading": "Loading...",
     "accessDenied": "Access Denied",
@@ -244,6 +232,8 @@
     "cropDatabase": "Crop Database",
     "soilManagement": "Soil Management",
     "pestDiagnosis": "Pest & Disease Diagnosis",
+    "harvestTracking": "Harvest & Yield",
+    "financeTracking": "Finance",
     "dashboard": "Dashboard",
     "users": "Users"
   },

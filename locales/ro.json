@@ -161,18 +161,6 @@
     "risksToWatch": "Riscuri de Urmărit",
     "practicalTips": "Sfaturi Practice"
   },
-  "Recomandari": {
-    "hello": "Bună",
-    "recommendationsBasedOnCropRotation": "Recomandări bazate pe rotația culturilor:",
-    "division": "Diviziune",
-    "crop": "Cultură",
-    "plantingDate": "Data Plantării",
-    "harvestingDate": "Data Recoltării",
-    "divisionSize": "Dimensiunea Diviziunii",
-    "nitrogenBalance": "Bilanț de Azot",
-    "recommendations": "Recomandări",
-    "year": "An"
-  },
   "Dashboard": {
     "loading": "Se încarcă...",
     "accessDenied": "Acces Refuzat",
@@ -205,6 +193,8 @@
     "cropDatabase": "Bază de Date Culturi",
     "soilManagement": "Managementul Solului",
     "pestDiagnosis": "Diagnostic Dăunători și Boli",
+    "harvestTracking": "Recoltă și Producție",
+    "financeTracking": "Finanțe",
     "dashboard": "Panou de Control",
     "users": "Utilizatori"
   },

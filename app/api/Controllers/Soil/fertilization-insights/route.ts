@@ -6,6 +6,7 @@ import { ApiResponse } from 'app/types/api';
 import { checkAiRateLimit, logAiUsage } from 'app/lib/ai/rateLimit';
 import { generateFertilizationInsight } from 'app/lib/ai/fertilizationInsights';
 import { FertilizationService } from 'app/SoilManagement/services/fertilizationService';
+import { getWeatherForLocation, isWeatherConfigured, summarizeForecast } from 'app/lib/weather/openWeather';
 
 export const POST = withApiAuthRequired(async function POST(request: NextRequest) {
   try {
@@ -64,6 +65,22 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
     const recommendation = FertilizationService.getFertilizerRecommendation(cropForCalc, soilTestForCalc, season);
     const nitrogenRequirement = FertilizationService.calculateNitrogenRequirement(cropForCalc, soilTestForCalc, season);
 
+    let weatherContext: { description: string; temperatureC: number; forecastSummary: string } | undefined;
+    if (isWeatherConfigured()) {
+      try {
+        const weather = await getWeatherForLocation(soilTest.fieldLocation);
+        if (weather) {
+          weatherContext = {
+            description: weather.current.description,
+            temperatureC: weather.current.temperatureC,
+            forecastSummary: summarizeForecast(weather.forecast)
+          };
+        }
+      } catch (error) {
+        console.error('Weather lookup error:', error);
+      }
+    }
+
     let insight;
     try {
       insight = await generateFertilizationInsight({
@@ -82,7 +99,8 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
           applicationMethod: recommendation.applicationMethod,
           timing: recommendation.timing
         },
-        notes: soilTest.notes || undefined
+        notes: soilTest.notes || undefined,
+        weather: weatherContext
       });
     } catch (error) {
       console.error('AI fertilization insight error:', error);
