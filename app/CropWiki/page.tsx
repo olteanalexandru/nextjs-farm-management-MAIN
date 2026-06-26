@@ -3,6 +3,10 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCropWiki } from '../providers/CropWikiStore';
+import { useUserContext } from '../providers/UserStore';
+import PremiumBadge from '../components/premium/PremiumBadge';
+import UpgradePrompt from '../components/premium/UpgradePrompt';
+import UsageMeter from '../components/premium/UsageMeter';
 import { RecommendationResponse } from '../types/api';
 import {
   Input,
@@ -46,8 +50,11 @@ function CropWikiContent() {
     resetFilters,
     lookupWithAi,
     aiLookupLoading,
-    aiLookupError
+    aiLookupError,
+    aiLookupUpgradeRecommended
   } = useCropWiki();
+  const { isPremium, billing } = useUserContext();
+  const cropLookupUsage = billing?.usage.find((u) => u.feature === 'CROP_LOOKUP');
 
   useEffect(() => {
     // Initialize filters from URL params
@@ -238,17 +245,30 @@ function CropWikiContent() {
           <h3 className="text-lg font-semibold mb-2">No crops found</h3>
           <p className="text-gray-500">Try adjusting your filters or search term</p>
           {filters.search.trim().length >= 2 && (
-            <div className="mt-6">
-              <Button
-                color="primary"
-                variant="flat"
-                isLoading={aiLookupLoading}
-                onClick={handleAiLookup}
-              >
-                Look up &quot;{filters.search.trim()}&quot; with AI
-              </Button>
-              {aiLookupError && (
+            <div className="mt-6 flex flex-col items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Button
+                  color="primary"
+                  variant="flat"
+                  isLoading={aiLookupLoading}
+                  onClick={handleAiLookup}
+                >
+                  Look up &quot;{filters.search.trim()}&quot; with AI
+                </Button>
+                {!isPremium && <PremiumBadge />}
+              </div>
+              {cropLookupUsage && (
+                <div className="w-full max-w-xs">
+                  <UsageMeter label="Daily AI uses" used={cropLookupUsage.used} limit={cropLookupUsage.limit} />
+                </div>
+              )}
+              {aiLookupError && !aiLookupUpgradeRecommended && (
                 <p className="text-red-500 text-sm mt-2">{aiLookupError}</p>
+              )}
+              {aiLookupError && aiLookupUpgradeRecommended && (
+                <div className="w-full max-w-md">
+                  <UpgradePrompt message={aiLookupError} />
+                </div>
               )}
             </div>
           )}

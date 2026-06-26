@@ -29,10 +29,10 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
       return Response.json(response, { status: 400 });
     }
 
-    const rateLimit = await checkAiRateLimit(user.id, 'PEST_DIAGNOSIS');
+    const rateLimit = await checkAiRateLimit(user.id, 'PEST_DIAGNOSIS', user.subscriptionTier === 'PREMIUM' ? 'PREMIUM' : 'FREE');
     if (!rateLimit.allowed) {
       await logAiUsage(user.id, 'PEST_DIAGNOSIS', symptomDescription, 'RATE_LIMITED');
-      const response: ApiResponse = { error: rateLimit.reason, status: 429 };
+      const response: ApiResponse = { error: rateLimit.reason, status: 429, upgradeRecommended: rateLimit.upgradeRecommended };
       return Response.json(response, { status: 429 });
     }
 

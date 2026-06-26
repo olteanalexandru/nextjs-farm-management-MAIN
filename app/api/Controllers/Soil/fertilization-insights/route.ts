@@ -38,10 +38,10 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
       return Response.json(response, { status: 404 });
     }
 
-    const rateLimit = await checkAiRateLimit(user.id, 'FERTILIZATION_INSIGHT');
+    const rateLimit = await checkAiRateLimit(user.id, 'FERTILIZATION_INSIGHT', user.subscriptionTier === 'PREMIUM' ? 'PREMIUM' : 'FREE');
     if (!rateLimit.allowed) {
       await logAiUsage(user.id, 'FERTILIZATION_INSIGHT', `crop:${cropId}`, 'RATE_LIMITED', cropId);
-      const response: ApiResponse = { error: rateLimit.reason, status: 429 };
+      const response: ApiResponse = { error: rateLimit.reason, status: 429, upgradeRecommended: rateLimit.upgradeRecommended };
       return Response.json(response, { status: 429 });
     }
 

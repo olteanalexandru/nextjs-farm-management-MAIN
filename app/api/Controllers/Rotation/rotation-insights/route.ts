@@ -41,10 +41,10 @@ export const POST = async function POST(request: NextRequest) {
       return Response.json(response, { status: 404 });
     }
 
-    const rateLimit = await checkAiRateLimit(dbUser.id, 'ROTATION_INSIGHT');
+    const rateLimit = await checkAiRateLimit(dbUser.id, 'ROTATION_INSIGHT', dbUser.subscriptionTier === 'PREMIUM' ? 'PREMIUM' : 'FREE');
     if (!rateLimit.allowed) {
       await logAiUsage(dbUser.id, 'ROTATION_INSIGHT', `rotation:${rotationId}`, 'RATE_LIMITED');
-      const response: ApiResponse = { error: rateLimit.reason, status: 429 };
+      const response: ApiResponse = { error: rateLimit.reason, status: 429, upgradeRecommended: rateLimit.upgradeRecommended };
       return Response.json(response, { status: 429 });
     }
 

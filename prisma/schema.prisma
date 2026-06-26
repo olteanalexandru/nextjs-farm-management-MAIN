@@ -13,7 +13,12 @@ model User {
   name           String
   email          String            @unique
   picture        String?           @db.Text
-  roleType       String            @default("FARMER") 
+  roleType       String            @default("FARMER")
+  subscriptionTier             String    @default("FREE")
+  subscriptionStatus           String?
+  stripeCustomerId             String?   @unique
+  stripeSubscriptionId         String?   @unique
+  subscriptionCurrentPeriodEnd DateTime?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   crops          Crop[]            @relation("UserCrops")

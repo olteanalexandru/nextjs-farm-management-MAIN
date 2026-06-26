@@ -1,6 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useUserContext } from '../providers/UserStore';
+import PremiumBadge from '../components/premium/PremiumBadge';
+import UpgradePrompt from '../components/premium/UpgradePrompt';
+import UsageMeter from '../components/premium/UsageMeter';
 
 interface DiagnosisCandidate {
   name: string;
@@ -22,16 +26,21 @@ const LIKELIHOOD_STYLES: Record<string, string> = {
 };
 
 export default function PestDiagnosisPage() {
+  const { isPremium, billing, refreshBilling } = useUserContext();
   const [cropName, setCropName] = useState('');
   const [symptomDescription, setSymptomDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [upgradeRecommended, setUpgradeRecommended] = useState(false);
   const [result, setResult] = useState<DiagnosisResult | null>(null);
+
+  const usage = billing?.usage.find((u) => u.feature === 'PEST_DIAGNOSIS');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setUpgradeRecommended(false);
     setResult(null);
 
     try {
@@ -42,6 +51,7 @@ export default function PestDiagnosisPage() {
       });
       const data = await response.json();
       if (!response.ok) {
+        setUpgradeRecommended(Boolean(data?.upgradeRecommended));
         throw new Error(data?.error || 'Failed to generate diagnosis');
       }
       setResult(data.result);
@@ -49,14 +59,23 @@ export default function PestDiagnosisPage() {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+      refreshBilling();
     }
   };
 
   return (
     <div className="p-6 space-y-6 max-w-3xl mx-auto">
       <div className="border-b pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Pest & Disease Diagnosis</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900">Pest & Disease Diagnosis</h1>
+          {!isPremium && <PremiumBadge />}
+        </div>
         <p className="mt-2 text-gray-600">Describe what you&apos;re seeing on your crop and get AI-assisted suggestions.</p>
+        {usage && (
+          <div className="mt-3 max-w-xs">
+            <UsageMeter label="Daily AI uses" used={usage.used} limit={usage.limit} />
+          </div>
+        )}
       </div>
 
       <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm p-4 rounded-md">
@@ -95,9 +114,10 @@ export default function PestDiagnosisPage() {
           />
         </div>
 
-        {error && (
+        {error && !upgradeRecommended && (
           <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">{error}</div>
         )}
+        {error && upgradeRecommended && <UpgradePrompt message={error} />}
 
         <div className="flex justify-end">
           <button

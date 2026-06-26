@@ -5,6 +5,10 @@ import { useTranslations } from 'next-intl';
 import { FertilizationService } from '../services/fertilizationService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import WeatherWidget from '../../components/WeatherWidget';
+import { useUserContext } from '../../providers/UserStore';
+import PremiumBadge from '../../components/premium/PremiumBadge';
+import UpgradePrompt from '../../components/premium/UpgradePrompt';
+import UsageMeter from '../../components/premium/UsageMeter';
 
 interface Crop {
   id: number;
@@ -42,6 +46,7 @@ interface AiInsight {
 
 export default function FertilizationRecommendations({ onRecommendationSelect }: RecommendationProps) {
   const t = useTranslations('SoilManagement');
+  const { isPremium, billing, refreshBilling } = useUserContext();
   const [crops, setCrops] = useState<Crop[]>([]);
   const [soilTests, setSoilTests] = useState<SoilTest[]>([]);
   const [selectedCrop, setSelectedCrop] = useState<string>('');
@@ -54,6 +59,9 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
   const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
   const [aiInsightLoading, setAiInsightLoading] = useState(false);
   const [aiInsightError, setAiInsightError] = useState<string | null>(null);
+  const [upgradeRecommended, setUpgradeRecommended] = useState(false);
+
+  const fertilizationUsage = billing?.usage.find((u) => u.feature === 'FERTILIZATION_INSIGHT');
 
   useEffect(() => {
     Promise.all([
@@ -120,6 +128,7 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
 
     setAiInsightLoading(true);
     setAiInsightError(null);
+    setUpgradeRecommended(false);
     setAiInsight(null);
 
     try {
@@ -130,6 +139,7 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
       });
       const data = await response.json();
       if (!response.ok) {
+        setUpgradeRecommended(Boolean(data?.upgradeRecommended));
         throw new Error(data?.error || 'Failed to generate AI notes');
       }
       setAiInsight(data.insight);
@@ -137,6 +147,7 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
       setAiInsightError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setAiInsightLoading(false);
+      refreshBilling();
     }
   };
 
@@ -235,7 +246,10 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
 
           <div className="border-t pt-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium">{t('aiAgronomistNotes')}</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium">{t('aiAgronomistNotes')}</h4>
+                {!isPremium && <PremiumBadge />}
+              </div>
               <button
                 onClick={handleAiInsight}
                 disabled={aiInsightLoading}
@@ -245,9 +259,14 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
               </button>
             </div>
 
-            {aiInsightError && (
+            {fertilizationUsage && (
+              <UsageMeter label="Daily AI uses" used={fertilizationUsage.used} limit={fertilizationUsage.limit} />
+            )}
+
+            {aiInsightError && !upgradeRecommended && (
               <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">{aiInsightError}</div>
             )}
+            {aiInsightError && upgradeRecommended && <UpgradePrompt message={aiInsightError} />}
 
             {aiInsight && (
               <div className="bg-blue-50 p-4 rounded-md space-y-3 text-sm">

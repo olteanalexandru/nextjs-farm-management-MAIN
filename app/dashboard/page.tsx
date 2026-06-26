@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from 'react';
+import Link from 'next/link';
+import { Sparkles } from 'lucide-react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useUserContext } from '../providers/UserStore';
 import { useGlobalContextCrop } from '../providers/culturaStore';
@@ -8,6 +10,7 @@ import DashboardLayout from '../components/dashboard/DashboardLayout';
 import { StatsGrid, StatItem } from '../components/dashboard/DashboardStats';
 import AdminDashboard from '../components/AdminDashboard';
 import FarmerDashboard from '../components/FarmerDashboard';
+import PremiumBadge from '../components/premium/PremiumBadge';
 import { useTranslations } from 'next-intl';
 
 let Spinner = () => null;
@@ -15,7 +18,7 @@ let Spinner = () => null;
 export default function Dashboard() {
   const t = useTranslations('Dashboard');
   const { user, isLoading: isUserLoading } = useUser();
-  const { data: userData, isUserLoggedIn } = useUserContext();
+  const { data: userData, isUserLoggedIn, isPremium, billing } = useUserContext();
   const { getCrops } = useGlobalContextCrop();
 
   useEffect(() => {
@@ -64,15 +67,38 @@ export default function Dashboard() {
       subtitle={`${t('loggedInAs')} ${userData.roleType}`}
     >
       <StatsGrid>
-        <StatItem 
+        <StatItem
           label={t('role')}
           value={userData.roleType}
           icon={<svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>}
         />
-        {/* Add more stats as needed */}
       </StatsGrid>
+
+      <div className="mt-6 bg-white border rounded-lg shadow p-5 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-gray-500">Your Plan</span>
+          {isPremium ? (
+            <PremiumBadge />
+          ) : (
+            <span className="text-sm font-medium text-gray-900">Free</span>
+          )}
+          {billing?.currentPeriodEnd && (
+            <span className="text-xs text-gray-400">
+              Renews {new Date(billing.currentPeriodEnd).toLocaleDateString()}
+            </span>
+          )}
+        </div>
+        {!isPremium && (
+          <Link
+            href="/Premium"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-md hover:bg-amber-100"
+          >
+            <Sparkles className="w-4 h-4" /> Upgrade for higher AI limits
+          </Link>
+        )}
+      </div>
 
       <div className="mt-8">
         <DashboardComponent />

@@ -149,6 +149,7 @@ export interface ApiResponse<T = any> {
   error?: string;
   status?: number;
   message?: string;
+  upgradeRecommended?: boolean;
 }
 
 export function isValidDetailType(type: string): type is DetailType {
