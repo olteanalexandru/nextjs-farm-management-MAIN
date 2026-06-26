@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import axios from 'axios';
 import { Crop } from 'app/types/api';
+import { useUserContext } from './UserStore';
 
 interface CropWikiFilters {
   search: string;
@@ -22,6 +23,10 @@ interface CropWikiContextType {
   fetchCrops: () => Promise<void>;
   updateFilters: (filters: Partial<CropWikiFilters>) => void;
   resetFilters: () => void;
+  lookupWithAi: (cropName: string) => Promise<Crop | null>;
+  aiLookupLoading: boolean;
+  aiLookupError: string | null;
+  aiLookupUpgradeRecommended: boolean;
 }
 
 const initialFilters: CropWikiFilters = {
@@ -36,11 +41,15 @@ const initialFilters: CropWikiFilters = {
 const CropWikiContext = createContext<CropWikiContextType | null>(null);
 
 export function CropWikiProvider({ children }: { children: React.ReactNode }) {
+  const { refreshBilling } = useUserContext();
   const [crops, setCrops] = useState<Crop[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState<CropWikiFilters>(initialFilters);
+  const [aiLookupLoading, setAiLookupLoading] = useState(false);
+  const [aiLookupError, setAiLookupError] = useState<string | null>(null);
+  const [aiLookupUpgradeRecommended, setAiLookupUpgradeRecommended] = useState(false);
 
   const ITEMS_PER_PAGE = 10;
 
@@ -81,6 +90,25 @@ export function CropWikiProvider({ children }: { children: React.ReactNode }) {
     setFilters(initialFilters);
   }, []);
 
+  const lookupWithAi = useCallback(async (cropName: string): Promise<Crop | null> => {
+    setAiLookupLoading(true);
+    setAiLookupError(null);
+    setAiLookupUpgradeRecommended(false);
+    try {
+      const response = await axios.post('/api/Controllers/Crop/crops/ai-lookup', { cropName });
+      const crop = response.data?.crops?.[0] ?? null;
+      return crop;
+    } catch (error: any) {
+      const message = error?.response?.data?.error || 'AI lookup failed. Please try again later.';
+      setAiLookupError(message);
+      setAiLookupUpgradeRecommended(Boolean(error?.response?.data?.upgradeRecommended));
+      return null;
+    } finally {
+      setAiLookupLoading(false);
+      refreshBilling();
+    }
+  }, [refreshBilling]);
+
   return (
     <CropWikiContext.Provider value={{
       crops,
@@ -90,7 +118,11 @@ export function CropWikiProvider({ children }: { children: React.ReactNode }) {
       filters,
       fetchCrops,
       updateFilters,
-      resetFilters
+      resetFilters,
+      lookupWithAi,
+      aiLookupLoading,
+      aiLookupError,
+      aiLookupUpgradeRecommended
     }}>
       {children}
     </CropWikiContext.Provider>

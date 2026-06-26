@@ -11,8 +11,24 @@ interface UserData {
   email: string;
   picture?: string | null;
   roleType: string;
+  subscriptionTier: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FeatureUsage {
+  feature: string;
+  used: number;
+  limit: number;
+}
+
+export interface BillingInfo {
+  tier: 'FREE' | 'PREMIUM';
+  status: string | null;
+  currentPeriodEnd: string | null;
+  checkoutAvailable: boolean;
+  portalAvailable: boolean;
+  usage: FeatureUsage[];
 }
 
 interface UserContextType {
@@ -25,6 +41,12 @@ interface UserContextType {
   fermierUsers: any[];
   login: () => void;
   logout: () => void;
+  isPremium: boolean;
+  billing: BillingInfo | null;
+  billingLoading: boolean;
+  refreshBilling: () => Promise<void>;
+  startCheckout: () => Promise<string>;
+  openBillingPortal: () => Promise<string>;
 }
 
 const API_URL = '/api/Controllers/User';
@@ -35,6 +57,7 @@ const initialUserData: UserData = {
   name: '',
   email: '',
   roleType: '',
+  subscriptionTier: 'FREE',
   createdAt: '',
   updatedAt: '',
   picture: null,
@@ -48,6 +71,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [fermierUsers, setFermierUsers] = useState<any[]>([]);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [billing, setBilling] = useState<BillingInfo | null>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
 
   useEffect(() => {
     const syncUser = async () => {
@@ -68,19 +93,22 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             name: user.name ?? '',
             email: user.email ?? '',
             roleType: userData.roleType,
+            subscriptionTier: userData.subscriptionTier ?? 'FREE',
             createdAt: userData.createdAt,
             updatedAt: userData.updatedAt,
             picture: user.picture ?? null
           });
           setIsUserLoggedIn(true);
-          
+
           if (userData.roleType === 'ADMIN') {
             await fetchFermierUsers();
           }
+          await refreshBilling();
         } else {
           setData(initialUserData);
           setIsUserLoggedIn(false);
           setFermierUsers([]);
+          setBilling(null);
         }
       } catch (error) {
         console.error('Error syncing user:', error);
@@ -122,6 +150,36 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshBilling = async () => {
+    setBillingLoading(true);
+    try {
+      const response = await axios.get('/api/Controllers/Billing/status');
+      setBilling({
+        tier: response.data.tier === 'PREMIUM' ? 'PREMIUM' : 'FREE',
+        status: response.data.status ?? null,
+        currentPeriodEnd: response.data.currentPeriodEnd ?? null,
+        checkoutAvailable: Boolean(response.data.checkoutAvailable),
+        portalAvailable: Boolean(response.data.portalAvailable),
+        usage: response.data.usage ?? []
+      });
+    } catch (error) {
+      console.error('Error fetching billing status:', error);
+      setBilling(null);
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const startCheckout = async (): Promise<string> => {
+    const response = await axios.post('/api/Controllers/Billing/checkout');
+    return response.data.url;
+  };
+
+  const openBillingPortal = async (): Promise<string> => {
+    const response = await axios.post('/api/Controllers/Billing/portal');
+    return response.data.url;
+  };
+
   const deleteUser = async (userId: string) => {
     try {
       const response = await axios.delete(`${API_URL}/${userId}`);
@@ -143,7 +201,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     deleteUser,
     fermierUsers,
     login: () => window.location.href = '/api/auth/login',
-    logout: () => window.location.href = '/api/auth/logout'
+    logout: () => window.location.href = '/api/auth/logout',
+    isPremium: data.subscriptionTier === 'PREMIUM',
+    billing,
+    billingLoading,
+    refreshBilling,
+    startCheckout,
+    openBillingPortal
   };
 
   return (

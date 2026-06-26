@@ -4,13 +4,17 @@ import { useState, useEffect } from 'react';
 import CropForm from '../Crud/CropForm';
 import Pagination from './Pagination';
 import { useGlobalContextCrop } from '../providers/culturaStore';
+import { useUserContext } from '../providers/UserStore';
 import ActionCard from './ActionCard';
 import CropCard from './CropCard';
 import CropDetails from './CropDetails';
+import FarmAnalytics from './FarmAnalytics';
+import PremiumBadge from './premium/PremiumBadge';
 import { RecommendationResponse } from '../types/api';
 
 export default function FarmerDashboard() {
   const { crops, isLoading, getAllCrops, selectare } = useGlobalContextCrop();
+  const { isPremium } = useUserContext();
   const [currentPage, setCurrentPage] = useState(1);
   const [showAddCrop, setShowAddCrop] = useState(false);
   const itemsPerPage = 4;
@@ -51,19 +55,23 @@ export default function FarmerDashboard() {
         <p className="mt-2 text-gray-600">Manage your crops and plan rotations</p>
       </div>
 
+      {/* Farm Analytics Section */}
+      <FarmAnalytics />
+
       {/* Quick Actions Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <ActionCard
           title="Crop Rotation Planner"
           description="Plan and optimize your crop rotations"
           link="/Rotatie"
+          badge={!isPremium && <PremiumBadge />}
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           }
         />
-        
+
         <ActionCard
           title="Add New Crop"
           description="Add a new crop to your inventory"
@@ -76,12 +84,59 @@ export default function FarmerDashboard() {
         />
 
         <ActionCard
-          title="View Recommendations"
-          description="Get personalized crop recommendations"
-          link="/Recomandari"
+          title="AI Crop Encyclopedia"
+          description="Look up any crop's growing requirements with AI"
+          link="/CropWiki"
+          badge={!isPremium && <PremiumBadge />}
+          icon={
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          }
+        />
+
+        <ActionCard
+          title="Fertilization Recommendations"
+          description="Get personalized fertilization plans and AI agronomist notes"
+          link="/SoilManagement"
+          badge={!isPremium && <PremiumBadge />}
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          }
+        />
+
+        <ActionCard
+          title="Pest & Disease Diagnosis"
+          description="Describe symptoms and get AI-assisted diagnosis suggestions"
+          link="/PestDiagnosis"
+          badge={!isPremium && <PremiumBadge />}
+          icon={
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          }
+        />
+
+        <ActionCard
+          title="Log a Harvest"
+          description="Record yield and track harvest history"
+          link="/Harvest"
+          icon={
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          }
+        />
+
+        <ActionCard
+          title="Track Finances"
+          description="Log costs and revenue, see profit and loss"
+          link="/Finance"
+          icon={
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           }
         />

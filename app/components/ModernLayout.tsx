@@ -2,12 +2,14 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Camera, Home, Repeat, Users, Settings, LogOut, LogIn, Database, Leaf } from 'lucide-react';
+import { Camera, Home, Repeat, Users, Settings, LogOut, LogIn, Database, Leaf, Bug, Wheat, Coins, Sparkles } from 'lucide-react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import React from 'react';
 import { LanguageSwitch } from './LanguageSwitch';
 import { useTranslations } from 'next-intl';
 import Cookies from 'js-cookie';
+import { useUserContext } from '../providers/UserStore';
+import PremiumBadge from './premium/PremiumBadge';
 
 interface UserProfile {
   name: string;
@@ -21,6 +23,7 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
   const { user, isLoading } = useUser();
+  const { isPremium } = useUserContext();
   const currentLanguage = Cookies.get('language') as 'en' | 'ro' || 'en';
 
   const navigationItems = [
@@ -29,7 +32,11 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
     { name: t('Navigation.cropRotation'), href: '/Rotatie', icon: Repeat, farmerOnly: true },
     { name: t('Navigation.cropDatabase'), href: '/CropWiki', icon: Database },
     { name: t('Navigation.soilManagement'), href: '/SoilManagement', icon: Leaf, farmerOnly: true },
+    { name: t('Navigation.pestDiagnosis'), href: '/PestDiagnosis', icon: Bug, farmerOnly: true },
+    { name: t('Navigation.harvestTracking'), href: '/Harvest', icon: Wheat, farmerOnly: true },
+    { name: t('Navigation.financeTracking'), href: '/Finance', icon: Coins, farmerOnly: true },
     { name: t('Navigation.dashboard'), href: '/dashboard', icon: Camera },
+    { name: 'Premium', href: '/Premium', icon: Sparkles },
     { name: t('Navigation.users'), href: '/Login/Register', icon: Users, adminOnly: true },
   ];
 
@@ -63,14 +70,23 @@ const ModernLayout = ({ children }: { children: React.ReactNode }) => {
             <LanguageSwitch />
               {!isLoading && user ? (
                 <div className="hidden md:flex items-center space-x-4">
-             
+                  {isPremium ? (
+                    <PremiumBadge />
+                  ) : (
+                    <Link
+                      href="/Premium"
+                      className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 border border-amber-200 hover:bg-amber-100"
+                    >
+                      <Sparkles className="w-3 h-3" /> Upgrade
+                    </Link>
+                  )}
                   <div className="flex flex-col items-end">
                     <span className="text-sm font-medium text-gray-900">{user.name}</span>
                     <span className="text-xs text-gray-500">{user.email}</span>
                   </div>
-                  <img 
-                    src={user.picture || '/default-profile.png'} 
-                    alt="Profile" 
+                  <img
+                    src={user.picture || '/default-profile.png'}
+                    alt="Profile"
                     className="h-10 w-10 rounded-full border-2 border-gray-200 object-cover"
                   />
                 </div>

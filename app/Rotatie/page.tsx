@@ -7,6 +7,7 @@ import CropCard from '../components/CropCard';
 import RotatieForm from './RotatieForm';
 import RotationChart from './Components/RotationChart';
 import RotationDetails from './Components/RotationDetails';
+import RotationHealthAdvisor from './Components/RotationHealthAdvisor';
 import { getCropsRepeatedBySelection } from './Components/helperFunctions';
 import { useGlobalContextRotation } from '../providers/rotationStore';
 
@@ -304,6 +305,7 @@ export default function RotationPage() {
             }}
             isUpdating={isUpdating}
           />
+          <RotationHealthAdvisor rotationId={rotationData.id} />
           <button
             onClick={() => {
               setRotationData(null);
@@ -399,6 +401,7 @@ export default function RotationPage() {
                       onDelete={() => handleDeleteRotation((rotationData as RotationData).id)}
                       isUpdating={isUpdating}
                     />
+                    <RotationHealthAdvisor rotationId={(rotationData as RotationData).id} />
                   </>
                 )}
               </div>

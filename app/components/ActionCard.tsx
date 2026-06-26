@@ -6,9 +6,10 @@ interface ActionCardProps {
   icon?: React.ReactNode;
   link?: string;
   action?: () => void;
+  badge?: React.ReactNode;
 }
 
-const ActionCard: React.FC<ActionCardProps> = ({ title, description, icon, link, action }) => {
+const ActionCard: React.FC<ActionCardProps> = ({ title, description, icon, link, action, badge }) => {
   const handleClick = () => {
     if (action) {
       action();
@@ -26,13 +27,16 @@ const ActionCard: React.FC<ActionCardProps> = ({ title, description, icon, link,
         ${(link || action) ? 'cursor-pointer hover:shadow-lg hover:translate-y-[-2px]' : ''}
       `}
     >
-      <div className="flex items-center mb-4">
-        {icon && (
-          <div className="mr-3 text-indigo-600">
-            {icon}
-          </div>
-        )}
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          {icon && (
+            <div className="mr-3 text-indigo-600">
+              {icon}
+            </div>
+          )}
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        </div>
+        {badge}
       </div>
       <p className="text-gray-600">{description}</p>
     </div>

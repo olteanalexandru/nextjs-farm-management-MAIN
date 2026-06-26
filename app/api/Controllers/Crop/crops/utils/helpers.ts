@@ -25,6 +25,7 @@ export function toDecimal(value: number | null | undefined): Decimal {
       nitrogenSupply: Number(crop.nitrogenSupply) || 0,
       nitrogenDemand: Number(crop.nitrogenDemand) || 0,
       soilResidualNitrogen: crop.soilResidualNitrogen ? Number(crop.soilResidualNitrogen) : undefined,
+      aiGenerated: Boolean(crop.aiGenerated),
       fertilizers: crop.details
         ?.filter((d: any) => d.detailType === 'FERTILIZER')
         .map((d: any) => d.value) || [],
