@@ -29,7 +29,7 @@ interface RotationPlan {
 interface RotationData {
   id: number;
   rotationName: string;
-  fieldSize: number;
+  fieldSize: number | string;
   numberOfDivisions: number;
   rotationPlans: RotationPlan[];
 }
@@ -196,7 +196,7 @@ export default function RotationPage() {
     setIsUpdating(true);
     try {
       await updateDivisionSizeAndRedistribute({
-        rotationName: rotationData.rotationName,
+        id: rotationData.id,
         division: parseInt(division),
         newDivisionSize: value
       });
@@ -215,7 +215,7 @@ export default function RotationPage() {
     setIsUpdating(true);
     try {
       await updateNitrogenBalanceAndRegenerateRotation({
-        rotationName: rotationData.rotationName,
+        id: rotationData.id,
         year: year,
         division: parseInt(division),
         nitrogenBalance: value

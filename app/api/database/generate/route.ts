@@ -291,12 +291,58 @@ export async function POST() {
       )
     );
 
+    // Create soil tests for the user's fields
+    const FIELD_LOCATIONS = ['North Field', 'South Field', 'East Field', 'West Field'];
+    const TEXTURES = ['Clay', 'Sandy', 'Loam', 'Silt'];
+    const soilTests = await Promise.all(
+      FIELD_LOCATIONS.map((location, index) =>
+        prisma.soilTest.create({
+          data: {
+            userId: user.id,
+            testDate: new Date(Date.now() - (index + 1) * 30 * 24 * 60 * 60 * 1000),
+            fieldLocation: location,
+            pH: new Decimal((6 + Math.random() * 1.5).toFixed(2)),
+            organicMatter: new Decimal((2 + Math.random() * 3).toFixed(2)),
+            nitrogen: new Decimal((20 + Math.random() * 60).toFixed(2)),
+            phosphorus: new Decimal((10 + Math.random() * 40).toFixed(2)),
+            potassium: new Decimal((100 + Math.random() * 150).toFixed(2)),
+            texture: TEXTURES[index % TEXTURES.length],
+            notes: `Routine soil test for ${location}`
+          }
+        })
+      )
+    );
+
+    // Create fertilization plans tied to crops
+    const FERTILIZERS = ['Urea', 'NPK 20-20-20', 'Ammonium Nitrate'];
+    const APPLICATION_METHODS = ['broadcast', 'banding', 'foliar'];
+    const fertilizationPlans = await Promise.all(
+      crops.slice(0, 3).map((crop, index) =>
+        prisma.fertilizationPlan.create({
+          data: {
+            userId: user.id,
+            cropId: crop.id,
+            plannedDate: new Date(Date.now() + (index + 1) * 14 * 24 * 60 * 60 * 1000),
+            fertilizer: FERTILIZERS[index % FERTILIZERS.length],
+            applicationRate: new Decimal((100 + Math.random() * 100).toFixed(2)),
+            nitrogenContent: new Decimal((20 + Math.random() * 30).toFixed(2)),
+            applicationMethod: APPLICATION_METHODS[index % APPLICATION_METHODS.length],
+            completed: index === 0,
+            completedDate: index === 0 ? new Date() : null
+          }
+        })
+      )
+    );
+
     return NextResponse.json({
       message: 'Dummy data generated successfully',
       stats: {
         users: createdUsers.length,
         recommendations: recommendations.length,
-        // ... add other stats
+        crops: crops.length,
+        rotations: rotations.length,
+        soilTests: soilTests.length,
+        fertilizationPlans: fertilizationPlans.length
       }
     });
   } catch (error) {

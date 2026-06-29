@@ -28,33 +28,30 @@ interface Crop {
   residualNitrogen: number;
 }
 
-interface RotationItem {
-  division: number;
-  cropName: string;
-  plantingDate: string;
-  harvestingDate: string;
-  divisionSize: number;
-  nitrogenBalance: number;
-}
-
-interface RotationPlan {
+interface RotationPlanRecord {
+  id: number;
+  rotationId: number;
   year: number;
-  rotationItems: RotationItem[];
+  division: number;
+  cropId: number;
+  divisionSize: number | string;
+  nitrogenBalance: number | string;
+  plantingDate?: string;
+  harvestingDate?: string;
+  crop: any;
 }
 
-interface CropRotation {
-  _id: string;
-  fieldSize: number;
-  numberOfDivisions: number;
+interface RotationRecord {
+  id: number;
+  userId: string;
   rotationName: string;
-  crops: Crop[];
-  maxYears: number;
-  ResidualNitrogenSupply: number;
-  rotationPlan: RotationPlan[];
+  fieldSize: number | string;
+  numberOfDivisions: number;
+  rotationPlans: RotationPlanRecord[];
 }
 
 interface RotationContextState {
-  cropRotation: CropRotation[];
+  cropRotation: RotationRecord[];
   isLoading: boolean;
   error: string | null;
   isSuccess: boolean;
@@ -69,20 +66,20 @@ interface RotationContextType extends RotationContextState {
     crops: Crop[];
     maxYears: number;
     ResidualNitrogenSupply: number;
-  }) => Promise<void>;
-  getCropRotation: () => Promise<void>;
+  }) => Promise<RotationRecord | undefined>;
+  getCropRotation: () => Promise<RotationRecord[] | undefined>;
   deleteCropRotation: (id: string) => Promise<void>;
   updateNitrogenBalanceAndRegenerateRotation: (data: {
-    rotationName: string;
+    id: number;
     year: number;
     division: number;
     nitrogenBalance: number;
-  }) => Promise<void>;
+  }) => Promise<RotationRecord | undefined>;
   updateDivisionSizeAndRedistribute: (data: {
-    rotationName: string;
+    id: number;
     division: number;
     newDivisionSize: number;
-  }) => Promise<void>;
+  }) => Promise<RotationRecord | undefined>;
 }
 
 const initialState: RotationContextState = {
@@ -103,13 +100,13 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
   const [state, setState] = useState<RotationContextState>(initialState);
   const { user } = useUser();
 
-  const setLoading = (isLoading: boolean) => 
+  const setLoading = (isLoading: boolean) =>
     setState(prev => ({ ...prev, isLoading }));
 
-  const setError = (error: string | null) => 
+  const setError = (error: string | null) =>
     setState(prev => ({ ...prev, error, isSuccess: false, message: error || '' }));
 
-  const setSuccess = (message: string) => 
+  const setSuccess = (message: string) =>
     setState(prev => ({ ...prev, isSuccess: true, error: null, message }));
 
   const handleApiError = (error: unknown) => {
@@ -119,30 +116,21 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     setLoading(false);
   };
 
-  const generateCropRotation = async (params: {
-    fieldSize: number;
-    numberOfDivisions: number;
-    rotationName: string;
-    crops: Crop[];
-    maxYears: number;
-    ResidualNitrogenSupply: number;
-  }) => {
+  const getCropRotation = async (): Promise<RotationRecord[] | undefined> => {
     if (!user?.sub) return;
     setLoading(true);
     try {
-      const response = await axios.post<CropRotation[]>(
-        `${API_URL_ROTATION}/generateRotation/rotation/${user.sub}`,
-        params
+      const response = await axios.get<{ data: RotationRecord[] }>(
+        `${API_URL_ROTATION}/getRotation/rotation/${user.sub}`
       );
-      if (response.status === 200 || response.status === 201) {
+      if (response.status === 200 || response.status === 203) {
+        const rotations = response.data.data;
         setState(prev => ({
           ...prev,
-          cropRotation: response.data,
-          error: null,
-          isSuccess: true,
-          message: 'Crop rotation generated successfully'
+          cropRotation: rotations,
+          error: null
         }));
-        await getCropRotation();
+        return rotations;
       }
     } catch (error) {
       handleApiError(error);
@@ -151,21 +139,26 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     }
   };
 
-  
-
-  const getCropRotation = async () => {
+  const generateCropRotation = async (params: {
+    fieldSize: number;
+    numberOfDivisions: number;
+    rotationName: string;
+    crops: Crop[];
+    maxYears: number;
+    ResidualNitrogenSupply: number;
+  }): Promise<RotationRecord | undefined> => {
     if (!user?.sub) return;
     setLoading(true);
     try {
-      const response = await axios.get<CropRotation[]>(
-        `${API_URL_ROTATION}/getRotation/rotation/${user.sub}`
+      const response = await axios.post<{ message: string; data: RotationRecord }>(
+        `${API_URL_ROTATION}/generateRotation/rotation/${user.sub}`,
+        params
       );
-      if (response.status === 200 || response.status === 203) {
-        setState(prev => ({
-          ...prev,
-          cropRotation: response.data,
-          error: null
-        }));
+      if (response.status === 200 || response.status === 201) {
+        const rotation = response.data.data;
+        setSuccess('Crop rotation generated successfully');
+        await getCropRotation();
+        return rotation;
       }
     } catch (error) {
       handleApiError(error);
@@ -182,12 +175,12 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     setLoading(true);
     try {
       const response = await axios.delete(
-        `${API_URL_ROTATION}/deleteRotation/${user.sub}/${id}`
+        `${API_URL_ROTATION}/deleteRotation/${id}`
       );
       if (response.status === 200) {
         setSuccess('Crop rotation deleted successfully');
         // Refresh the rotation list
-        getCropRotation();
+        await getCropRotation();
       }
     } catch (error) {
       handleApiError(error);
@@ -197,26 +190,22 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
   };
 
   const updateNitrogenBalanceAndRegenerateRotation = async (data: {
-    rotationName: string;
+    id: number;
     year: number;
     division: number;
     nitrogenBalance: number;
-  }) => {
+  }): Promise<RotationRecord | undefined> => {
     if (!user?.sub) return;
     setLoading(true);
     try {
-      const response = await axios.put<CropRotation[]>(
+      const response = await axios.put<{ message: string; data: RotationRecord }>(
         `${API_URL_ROTATION}/updateNitrogenBalance/rotation/${user.sub}`,
         data
       );
       if (response.status === 200) {
-        setState(prev => ({
-          ...prev,
-          cropRotation: response.data,
-          isSuccess: true,
-          message: 'Nitrogen Balance and Crop Rotation updated successfully',
-          error: null
-        }));
+        const rotation = response.data.data;
+        setSuccess('Nitrogen Balance and Crop Rotation updated successfully');
+        return rotation;
       }
     } catch (error) {
       handleApiError(error);
@@ -226,25 +215,21 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
   };
 
   const updateDivisionSizeAndRedistribute = async (data: {
-    rotationName: string;
+    id: number;
     division: number;
     newDivisionSize: number;
-  }) => {
+  }): Promise<RotationRecord | undefined> => {
     if (!user?.sub) return;
     setLoading(true);
     try {
-      const response = await axios.put<CropRotation[]>(
+      const response = await axios.put<{ message: string; data: RotationRecord }>(
         `${API_URL_ROTATION}/updateDivisionSizeAndRedistribute/rotation/${user.sub}`,
         data
       );
       if (response.status === 200) {
-        setState(prev => ({
-          ...prev,
-          cropRotation: response.data,
-          isSuccess: true,
-          message: 'Division Size and Crop Rotation updated successfully',
-          error: null
-        }));
+        const rotation = response.data.data;
+        setSuccess('Division Size and Crop Rotation updated successfully');
+        return rotation;
       }
     } catch (error) {
       handleApiError(error);
