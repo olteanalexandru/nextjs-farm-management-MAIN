@@ -38,7 +38,18 @@ interface FertilizationPlanFormData {
   notes?: string;
 }
 
-const FertilizationPlans = observer(() => {
+interface RecommendationPrefill {
+  cropId: number;
+  fertilizer: string;
+  applicationRate: number;
+  applicationMethod: string;
+}
+
+interface FertilizationPlansProps {
+  prefill?: RecommendationPrefill | null;
+}
+
+const FertilizationPlans = observer(({ prefill }: FertilizationPlansProps) => {
   const t = useTranslations('SoilManagement');
   const [form] = Form.useForm();
   const [showForm, setShowForm] = useState(false);
@@ -49,6 +60,18 @@ const FertilizationPlans = observer(() => {
     fertilizationStore.fetchFertilizationPlans();
     fertilizationStore.fetchCrops();
   }, [fertilizationStore]);
+
+  useEffect(() => {
+    if (!prefill) return;
+    setEditingPlan(null);
+    form.setFieldsValue({
+      cropId: prefill.cropId.toString(),
+      fertilizer: prefill.fertilizer,
+      applicationRate: prefill.applicationRate,
+      applicationMethod: prefill.applicationMethod,
+    });
+    setShowForm(true);
+  }, [prefill, form]);
 
   const handleSubmit = async (values: any) => {
     const formData: FertilizationPlanFormData = {

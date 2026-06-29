@@ -36,6 +36,10 @@ export async function PUT(
     if (action === 'updateDivisionSizeAndRedistribute') {
       const { id, division, newDivisionSize } = await request.json();
 
+      if (!Number.isFinite(Number(newDivisionSize))) {
+        return Response.json({ error: 'Invalid division size format' }, { status: 400 });
+      }
+
       const rotationRecord = await prisma.rotation.findUnique({
         where: { id: parseInt(id) }
       });

@@ -25,7 +25,7 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
     }
 
     const [crop, soilTest] = await Promise.all([
-      prisma.crop.findFirst({ where: { id: cropId, deleted: null } }),
+      prisma.crop.findFirst({ where: { id: cropId, userId: user.id, deleted: null } }),
       prisma.soilTest.findFirst({ where: { id: soilTestId, userId: user.id } })
     ]);
 

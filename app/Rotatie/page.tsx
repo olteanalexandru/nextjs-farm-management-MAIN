@@ -109,33 +109,8 @@ export default function RotationPage() {
     setShowRotationForm(true);
   };
 
-  const handleRotationGenerated = (plan: RotationData) => {
-    console.log('Received rotation plan:', plan); // Debug log
-
-    if (!plan) {
-      console.error('No plan data received');
-      return;
-    }
-
-    setRotationPlan(plan);
-    setRotationData(plan);
-
-    if (plan.rotationPlans) {
-      console.log('Processing rotation plans:', plan.rotationPlans); // Debug log
-      const transformedChartData = plan.rotationPlans.map(rp => ({
-        year: rp.year,
-        division: rp.division,
-        cropName: rp.crop.cropName,
-        divisionSize: parseFloat(rp.divisionSize.toString()),
-        nitrogenBalance: parseFloat(rp.nitrogenBalance.toString())
-      }));
-      console.log('Transformed chart data:', transformedChartData); // Debug log
-      setChartData(transformedChartData);
-    }
-  };
-
-  // Add handlers for viewing and deleting rotations
-  const handleViewRotation = (rotation: RotationData) => {
+  // Applies a rotation (freshly generated, loaded, or updated) to the on-screen chart/details/edit state
+  const applyRotationView = (rotation: RotationData) => {
     setRotationData(rotation);
     const transformedChartData = rotation.rotationPlans.map(rp => ({
       year: rp.year,
@@ -145,17 +120,28 @@ export default function RotationPage() {
       nitrogenBalance: parseFloat(rp.nitrogenBalance.toString())
     }));
     setChartData(transformedChartData);
-    
-    // Initialize division size and nitrogen balance values
     setDivisionSizeValues(rotation.rotationPlans.map(rp => rp.divisionSize.toString()));
-    
-    // Initialize nitrogen balance map
-    const initialNitrogenMap: NitrogenBalanceMap = {};
+
+    const updatedNitrogenMap: NitrogenBalanceMap = {};
     rotation.rotationPlans.forEach(rp => {
-      initialNitrogenMap[`${rp.year}-${rp.division}`] = rp.nitrogenBalance.toString();
+      updatedNitrogenMap[`${rp.year}-${rp.division}`] = rp.nitrogenBalance.toString();
     });
-    setNitrogenBalanceMap(initialNitrogenMap);
-    
+    setNitrogenBalanceMap(updatedNitrogenMap);
+  };
+
+  const handleRotationGenerated = (plan: RotationData) => {
+    if (!plan) {
+      console.error('No plan data received');
+      return;
+    }
+
+    setRotationPlan(plan);
+    applyRotationView(plan);
+  };
+
+  // Add handlers for viewing and deleting rotations
+  const handleViewRotation = (rotation: RotationData) => {
+    applyRotationView(rotation);
     setShowRotationForm(false);
   };
 
@@ -169,13 +155,6 @@ export default function RotationPage() {
       alert('Failed to delete rotation');
     }
   };
-
-  // Add debug log for render
-  console.log('Current state:', {
-    rotationData,
-    chartData,
-    showRotationForm
-  });
 
   // Add these handlers
   const handleDivisionSizeChange = (index: number, value: string) => {
@@ -195,13 +174,18 @@ export default function RotationPage() {
     if (!rotationData) return;
     setIsUpdating(true);
     try {
-      await updateDivisionSizeAndRedistribute({
+      const updated = await updateDivisionSizeAndRedistribute({
         rotationName: rotationData.rotationName,
         division: parseInt(division),
         newDivisionSize: value
       });
-      // Refresh rotation data through getCropRotation
-      await getCropRotation();
+      if (updated) {
+        applyRotationView(updated);
+      }
+      const rotations = await getCropRotation();
+      if (Array.isArray(rotations)) {
+        setExistingRotations(rotations);
+      }
     } catch (error) {
       console.error('Error updating division size:', error);
       alert('Failed to update division size');
@@ -214,14 +198,19 @@ export default function RotationPage() {
     if (!rotationData) return;
     setIsUpdating(true);
     try {
-      await updateNitrogenBalanceAndRegenerateRotation({
+      const updated = await updateNitrogenBalanceAndRegenerateRotation({
         rotationName: rotationData.rotationName,
         year: year,
         division: parseInt(division),
         nitrogenBalance: value
       });
-      // Refresh rotation data through getCropRotation
-      await getCropRotation();
+      if (updated) {
+        applyRotationView(updated);
+      }
+      const rotations = await getCropRotation();
+      if (Array.isArray(rotations)) {
+        setExistingRotations(rotations);
+      }
     } catch (error) {
       console.error('Error updating nitrogen balance:', error);
       alert('Failed to update nitrogen balance and recalculate rotation');
@@ -378,32 +367,6 @@ export default function RotationPage() {
                   )}
                   onRotationGenerated={handleRotationGenerated}
                 />
-
-                {/* Add debug display */}
-                <div className="text-sm text-gray-500">
-                  {rotationData ? 'Rotation data available' : 'No rotation data'}
-                </div>
-
-                {rotationData && (
-                  <>
-                    <RotationChart 
-                      chartData={chartData} 
-                    />
-                    <RotationDetails
-                      rotation={rotationData}
-                      planIndex={0}
-                      divisionSizeValues={(rotationData as RotationData).rotationPlans?.map(rp => rp.divisionSize.toString()) || []}
-                      nitrogenBalanceMap={nitrogenBalanceMap}
-                      onDivisionSizeChange={handleDivisionSizeChange}
-                      onNitrogenBalanceChange={handleNitrogenBalanceChange}
-                      onDivisionSizeSubmit={handleDivisionSizeSubmit}
-                      onNitrogenBalanceSubmit={handleNitrogenBalanceSubmit}
-                      onDelete={() => handleDeleteRotation((rotationData as RotationData).id)}
-                      isUpdating={isUpdating}
-                    />
-                    <RotationHealthAdvisor rotationId={(rotationData as RotationData).id} />
-                  </>
-                )}
               </div>
             )}
           </>

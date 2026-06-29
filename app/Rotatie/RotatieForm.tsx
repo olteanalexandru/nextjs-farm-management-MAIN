@@ -40,13 +40,15 @@ const CropRotationForm: React.FC<CropRotationFormProps> = ({ filteredCrops, onRo
   const [numberOfDivisions, setNumberOfDivisions] = useState('');
   const [rotationName, setRotationName] = useState('');
   const [maxYears, setMaxYears] = useState('');
-  const [ResidualNitrogenSupply, setResidualNitrogenSupply] = useState(''); 
+  const [ResidualNitrogenSupply, setResidualNitrogenSupply] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const { generateCropRotation } = useGlobalContextRotation();
+  const { generateCropRotation, error } = useGlobalContextRotation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setSubmitError(null);
+
     try {
       const formData = {
         fieldSize: parseFloat(fieldSize),
@@ -57,20 +59,21 @@ const CropRotationForm: React.FC<CropRotationFormProps> = ({ filteredCrops, onRo
         ResidualNitrogenSupply: parseFloat(ResidualNitrogenSupply) || 500
       };
 
-      console.log('Sending data:', formData); // Debug log
-
       const data = await generateCropRotation(formData);
-      console.log('API Response:', data);
-  
       onRotationGenerated(data);
-    } catch (error) {
-      console.error('Error generating rotation:', error);
-      // Add error handling UI feedback here
+    } catch (err) {
+      console.error('Error generating rotation:', err);
+      setSubmitError(err instanceof Error ? err.message : 'Failed to generate crop rotation. Please try again.');
     }
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      {(submitError || error) && (
+        <div className="alert alert-danger" role="alert">
+          {submitError || error}
+        </div>
+      )}
       <div className="form-group">
         <label htmlFor="fieldSize">
           {t('fieldSize')}*:

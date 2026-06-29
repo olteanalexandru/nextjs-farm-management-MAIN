@@ -32,6 +32,7 @@ interface SoilTest {
 
 interface RecommendationProps {
   onRecommendationSelect?: (recommendation: {
+    cropId: number;
     fertilizer: string;
     applicationRate: number;
     applicationMethod: string;
@@ -116,6 +117,7 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
 
     if (onRecommendationSelect) {
       onRecommendationSelect({
+        cropId: crop.id,
         fertilizer: recommendation.fertilizer,
         applicationRate: recommendation.applicationRate,
         applicationMethod: recommendation.applicationMethod,

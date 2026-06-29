@@ -69,20 +69,20 @@ interface RotationContextType extends RotationContextState {
     crops: Crop[];
     maxYears: number;
     ResidualNitrogenSupply: number;
-  }) => Promise<void>;
-  getCropRotation: () => Promise<void>;
+  }) => Promise<any>;
+  getCropRotation: () => Promise<any>;
   deleteCropRotation: (id: string) => Promise<void>;
   updateNitrogenBalanceAndRegenerateRotation: (data: {
     rotationName: string;
     year: number;
     division: number;
     nitrogenBalance: number;
-  }) => Promise<void>;
+  }) => Promise<any>;
   updateDivisionSizeAndRedistribute: (data: {
     rotationName: string;
     division: number;
     newDivisionSize: number;
-  }) => Promise<void>;
+  }) => Promise<any>;
 }
 
 const initialState: RotationContextState = {
@@ -130,19 +130,21 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     if (!user?.sub) return;
     setLoading(true);
     try {
-      const response = await axios.post<CropRotation[]>(
+      const response = await axios.post<any>(
         `${API_URL_ROTATION}/generateRotation/rotation/${user.sub}`,
         params
       );
       if (response.status === 200 || response.status === 201) {
+        const rotation = response.data?.data ?? response.data;
         setState(prev => ({
           ...prev,
-          cropRotation: response.data,
+          cropRotation: rotation,
           error: null,
           isSuccess: true,
           message: 'Crop rotation generated successfully'
         }));
         await getCropRotation();
+        return rotation;
       }
     } catch (error) {
       handleApiError(error);
@@ -157,15 +159,17 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     if (!user?.sub) return;
     setLoading(true);
     try {
-      const response = await axios.get<CropRotation[]>(
+      const response = await axios.get<any>(
         `${API_URL_ROTATION}/getRotation/rotation/${user.sub}`
       );
       if (response.status === 200 || response.status === 203) {
+        const rotations = response.data?.data ?? response.data;
         setState(prev => ({
           ...prev,
-          cropRotation: response.data,
+          cropRotation: rotations,
           error: null
         }));
+        return rotations;
       }
     } catch (error) {
       handleApiError(error);
@@ -205,18 +209,20 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     if (!user?.sub) return;
     setLoading(true);
     try {
-      const response = await axios.put<CropRotation[]>(
+      const response = await axios.put<any>(
         `${API_URL_ROTATION}/updateNitrogenBalance/rotation/${user.sub}`,
         data
       );
       if (response.status === 200) {
+        const rotation = response.data?.data ?? response.data;
         setState(prev => ({
           ...prev,
-          cropRotation: response.data,
+          cropRotation: rotation,
           isSuccess: true,
           message: 'Nitrogen Balance and Crop Rotation updated successfully',
           error: null
         }));
+        return rotation;
       }
     } catch (error) {
       handleApiError(error);
@@ -233,18 +239,20 @@ export const GlobalContextProvider = ({ children }: ProviderProps) => {
     if (!user?.sub) return;
     setLoading(true);
     try {
-      const response = await axios.put<CropRotation[]>(
+      const response = await axios.put<any>(
         `${API_URL_ROTATION}/updateDivisionSizeAndRedistribute/rotation/${user.sub}`,
         data
       );
       if (response.status === 200) {
+        const rotation = response.data?.data ?? response.data;
         setState(prev => ({
           ...prev,
-          cropRotation: response.data,
+          cropRotation: rotation,
           isSuccess: true,
           message: 'Division Size and Crop Rotation updated successfully',
           error: null
         }));
+        return rotation;
       }
     } catch (error) {
       handleApiError(error);

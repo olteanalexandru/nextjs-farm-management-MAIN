@@ -7,16 +7,20 @@ import FertilizationPlans from './FertilizationPlans';
 import SoilTestCharts from './SoilTestCharts';
 import FertilizationRecommendations from './FertilizationRecommendations';
 
+interface RecommendationPrefill {
+  cropId: number;
+  fertilizer: string;
+  applicationRate: number;
+  applicationMethod: string;
+}
+
 export default function SoilManagementDashboard() {
   const [activeTab, setActiveTab] = useState<'tests' | 'plans' | 'charts' | 'recommendations'>('tests');
+  const [recommendationPrefill, setRecommendationPrefill] = useState<RecommendationPrefill | null>(null);
   const t = useTranslations('SoilManagement');
 
-  const handleRecommendationSelect = (recommendation: {
-    fertilizer: string;
-    applicationRate: number;
-    applicationMethod: string;
-  }) => {
-    // Switch to plans tab and pass recommendation data
+  const handleRecommendationSelect = (recommendation: RecommendationPrefill) => {
+    setRecommendationPrefill(recommendation);
     setActiveTab('plans');
   };
 
@@ -73,7 +77,7 @@ export default function SoilManagementDashboard() {
         {activeTab === 'recommendations' && (
           <FertilizationRecommendations onRecommendationSelect={handleRecommendationSelect} />
         )}
-        {activeTab === 'plans' && <FertilizationPlans />}
+        {activeTab === 'plans' && <FertilizationPlans prefill={recommendationPrefill} />}
       </div>
     </div>
   );

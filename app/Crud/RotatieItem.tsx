@@ -74,9 +74,9 @@ function Pagination({ itemsPerPage, totalItems, paginate, currentPage }) {
       <ul className='pagination'>
         {pageNumbers.map(number => (
           <li key={number} className={`page-item ${currentPage === number ? 'active' : ''}`}>
-            <a onClick={() => paginate(number)} className='page-link'>
+            <button onClick={() => paginate(number)} className='page-link'>
               {number}
-            </a>
+            </button>
           </li>
         ))}
       </ul>

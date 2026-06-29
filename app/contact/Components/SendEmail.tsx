@@ -1,6 +1,9 @@
 import emailjs from '@emailjs/browser';
 
-export default function sendEmail(form: React.MutableRefObject<HTMLFormElement>) {
+export default function sendEmail(
+  form: React.MutableRefObject<HTMLFormElement>,
+  onResult?: (success: boolean) => void
+) {
   return (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -9,9 +12,11 @@ export default function sendEmail(form: React.MutableRefObject<HTMLFormElement>)
       .then(
         (result) => {
           console.log(result.text);
+          onResult?.(true);
         },
         (error) => {
           console.log(error.text);
+          onResult?.(false);
         }
       );
   };
