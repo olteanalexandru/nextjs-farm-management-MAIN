@@ -40,14 +40,14 @@ export default function RotationDetails({
   onDelete,
   isUpdating
 }: RotationDetailsProps) {
-  const t = useTranslations('RotatieDashboard');
+  const t = useTranslations('RotationDashboard');
 
   if (!rotation) {
-    return <Alert variant="warning">{t('No rotation details available')}</Alert>;
+    return <Alert variant="warning">{t('noRotationDetails')}</Alert>;
   }
 
   if (!rotation.rotationPlans || rotation.rotationPlans.length === 0) {
-    return <Alert variant="info">{t('No rotation plans available')}</Alert>;
+    return <Alert variant="info">{t('noRotationPlans')}</Alert>;
   }
 
   // Group rotation plans by year
@@ -80,10 +80,10 @@ export default function RotationDetails({
         <h2 className="text-xl font-semibold mb-2">{rotation.rotationName}</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="font-medium">{t('Field Size')}:</span> {rotation.fieldSize} ha
+            <span className="font-medium">{t('fieldSize')}:</span> {rotation.fieldSize} ha
           </div>
           <div>
-            <span className="font-medium">{t('Number of Divisions')}:</span> {rotation.numberOfDivisions}
+            <span className="font-medium">{t('divisionCount')}:</span> {rotation.numberOfDivisions}
           </div>
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function RotationDetails({
       {Object.entries(plansByYear).map(([year, plans]) => (
         <div key={year} className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-medium mb-4">
-            {t('anul')} {year}
+            {t('year')} {year}
             {parseInt(year) > Math.min(...Object.keys(plansByYear).map(Number)) && (
               <span className="text-sm text-gray-500 ml-2">
                 (Values will be recalculated for following years)

@@ -92,6 +92,7 @@
   "SoilManagement": {
     "title": "Gestionarea Solului",
     "soilTests": "Teste Sol",
+    "analytics": "Analiză",
     "fertilizationPlans": "Planuri de Fertilizare",
     "addNewTest": "Adaugă Test Nou",
     "addNewPlan": "Adaugă Plan Nou",
@@ -184,7 +185,21 @@
     "soilType": "Tip Sol",
     "nitrogenSupply": "Aprovizionare cu Azot",
     "nitrogenDemand": "Cerere de Azot",
-    "timesInRotation": "Frecvența în Rotație"
+    "timesInRotation": "Frecvența în Rotație",
+    "loading": "Se încarcă",
+    "year": "anul",
+    "cropName": "Numele Culturii",
+    "plantingDate": "Data Plantării",
+    "harvestDate": "Data Recoltării",
+    "nitrogenBalance": "Balanță de Azot",
+    "additionalNitrogen": "Azot Suplimentar",
+    "deleteRotation": "Șterge Rotația",
+    "notANumber": "Nu este un Număr",
+    "annualEvolution": "evoluție anuală",
+    "crop": "Cultură",
+    "divisionSize": "Dimensiune Diviziune",
+    "actions": "Acțiuni",
+    "delete": "Șterge"
   },
   "Navigation": {
     "home": "Acasă",

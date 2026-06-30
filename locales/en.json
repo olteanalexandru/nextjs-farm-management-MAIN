@@ -148,6 +148,7 @@
   "SoilManagement": {
     "title": "Soil Management",
     "soilTests": "Soil Tests",
+    "analytics": "Analytics",
     "fertilizationPlans": "Fertilization Plans",
     "addNewTest": "Add New Test",
     "addNewPlan": "Add New Plan",

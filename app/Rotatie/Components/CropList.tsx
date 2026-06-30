@@ -10,7 +10,7 @@ interface CropListProps {
 }
 
 const CropList = ({ selectedCrops, onSelectionCount, selectedCounts }: CropListProps) => {
-  const t = useTranslations('RotatieDashboard');
+  const t = useTranslations('RotationDashboard');
   const [visible, setVisible] = useState(6);
 
   const showMore = () => {
@@ -23,9 +23,9 @@ const CropList = ({ selectedCrops, onSelectionCount, selectedCounts }: CropListP
 
   return (
     <>
-      <h3>{t('Culturi selectate')}</h3>
+      <h3>{t('selectedCrops')}</h3>
       {selectedCrops.length === 0 ? (
-        <Alert variant="info">{t('Nicio cultura selectata')}</Alert>
+        <Alert variant="info">{t('noCropsSelected')}</Alert>
       ) : (
         <Row>
           {selectedCrops.slice(0, visible).map((crop) => (
@@ -34,12 +34,12 @@ const CropList = ({ selectedCrops, onSelectionCount, selectedCounts }: CropListP
                 <Card.Body>
                   <Card.Title>{crop.cropName}</Card.Title>
                   <Card.Text>
-                    <div>{t('Soil Type')}: {crop.soilType}</div>
-                    <div>{t('Nitrogen Supply')}: {crop.nitrogenSupply}</div>
-                    <div>{t('Nitrogen Demand')}: {crop.nitrogenDemand}</div>
+                    <div>{t('soilType')}: {crop.soilType}</div>
+                    <div>{t('nitrogenSupply')}: {crop.nitrogenSupply}</div>
+                    <div>{t('nitrogenDemand')}: {crop.nitrogenDemand}</div>
                   </Card.Text>
                   <div className="mt-3">
-                    <label className="d-block mb-2">{t('Times in Rotation')}:</label>
+                    <label className="d-block mb-2">{t('timesInRotation')}:</label>
                     <input
                       type="number"
                       min="0"
@@ -58,7 +58,7 @@ const CropList = ({ selectedCrops, onSelectionCount, selectedCounts }: CropListP
       {selectedCrops.length > visible && (
         <div className="text-center mt-3">
           <button className="btn btn-primary" onClick={showMore}>
-            {t('Vezi mai mult')}
+            {t('seeMore')}
           </button>
         </div>
       )}
