@@ -30,13 +30,18 @@ export const GET = withApiAuthRequired(async function GET(request: NextRequest) 
     const yieldByCropYear = Array.from(byCropYear.values()).sort((a, b) => a.year - b.year);
 
     const totalHarvests = records.length;
-    const totalYield = records.reduce((sum, r) => sum + Number(r.actualYield), 0);
     const distinctCrops = new Set(records.map(r => r.cropId)).size;
+
+    // Group totals by unit to avoid mixing incompatible units (kg, tonnes, etc.)
+    const totalYieldByUnit = records.reduce<Record<string, number>>((acc, r) => {
+      acc[r.yieldUnit] = (acc[r.yieldUnit] ?? 0) + Number(r.actualYield);
+      return acc;
+    }, {});
 
     return Response.json({
       summary: {
         totalHarvests,
-        totalYield,
+        totalYieldByUnit,
         distinctCrops,
         yieldByCropYear,
       },

@@ -11,9 +11,8 @@ import { StatsGrid, StatItem } from '../components/dashboard/DashboardStats';
 import AdminDashboard from '../components/AdminDashboard';
 import FarmerDashboard from '../components/FarmerDashboard';
 import PremiumBadge from '../components/premium/PremiumBadge';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { useTranslations } from 'next-intl';
-
-let Spinner = () => null;
 
 export default function Dashboard() {
   const t = useTranslations('Dashboard');
@@ -31,7 +30,7 @@ export default function Dashboard() {
     return (
       <DashboardLayout title={t('loading')}>
         <div className="flex justify-center items-center h-64">
-          <Spinner />
+          <LoadingSpinner />
         </div>
       </DashboardLayout>
     );

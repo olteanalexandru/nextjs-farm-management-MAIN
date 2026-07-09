@@ -41,10 +41,19 @@ interface MonthBreakdown {
   expense: number;
 }
 
-interface FinancialSummary {
-  totalRevenue: number;
-  totalExpense: number;
+interface CurrencyBreakdown {
+  currency: string;
+  revenue: number;
+  expense: number;
   netProfit: number;
+}
+
+interface FinancialSummary {
+  totalRevenue: number | null;
+  totalExpense: number | null;
+  netProfit: number | null;
+  multipleCurrencies: boolean;
+  byCurrency: CurrencyBreakdown[];
   byCrop: CropBreakdown[];
   byMonth: MonthBreakdown[];
 }
@@ -201,22 +210,49 @@ export default function FinancePage() {
       {error && <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">{error}</div>}
 
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-sm text-gray-500">Total Revenue</p>
-            <p className="text-2xl font-bold text-green-600">€{summary.totalRevenue.toFixed(2)}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-sm text-gray-500">Total Expenses</p>
-            <p className="text-2xl font-bold text-red-600">€{summary.totalExpense.toFixed(2)}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <p className="text-sm text-gray-500">Net Profit</p>
-            <p className={`text-2xl font-bold ${summary.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              €{summary.netProfit.toFixed(2)}
+        summary.multipleCurrencies ? (
+          <div className="space-y-3">
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+              Records use multiple currencies — totals are shown per currency below.
             </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {summary.byCurrency.map((c) => (
+                <div key={c.currency} className="bg-white p-4 rounded-lg shadow">
+                  <p className="text-xs font-medium text-gray-400 uppercase mb-2">{c.currency}</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Revenue</span>
+                    <span className="text-green-600 font-medium">{c.revenue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Expenses</span>
+                    <span className="text-red-600 font-medium">{c.expense.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold mt-1 pt-1 border-t">
+                    <span className="text-gray-700">Net</span>
+                    <span className={c.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}>{c.netProfit.toFixed(2)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <p className="text-sm text-gray-500">Total Revenue</p>
+              <p className="text-2xl font-bold text-green-600">{summary.byCurrency[0]?.currency ?? 'EUR'} {(summary.totalRevenue ?? 0).toFixed(2)}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow">
+              <p className="text-sm text-gray-500">Total Expenses</p>
+              <p className="text-2xl font-bold text-red-600">{summary.byCurrency[0]?.currency ?? 'EUR'} {(summary.totalExpense ?? 0).toFixed(2)}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow">
+              <p className="text-sm text-gray-500">Net Profit</p>
+              <p className={`text-2xl font-bold ${(summary.netProfit ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {summary.byCurrency[0]?.currency ?? 'EUR'} {(summary.netProfit ?? 0).toFixed(2)}
+              </p>
+            </div>
+          </div>
+        )
       )}
 
       {summary && summary.byCrop.length > 0 && (

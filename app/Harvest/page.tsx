@@ -40,7 +40,7 @@ interface YieldByCropYear {
 
 interface HarvestSummary {
   totalHarvests: number;
-  totalYield: number;
+  totalYieldByUnit: Record<string, number>;
   distinctCrops: number;
   yieldByCropYear: YieldByCropYear[];
 }
@@ -211,7 +211,13 @@ export default function HarvestPage() {
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <p className="text-sm text-gray-500">Total Yield Recorded</p>
-            <p className="text-2xl font-bold text-gray-900">{summary.totalYield.toFixed(1)}</p>
+            {Object.entries(summary.totalYieldByUnit).length > 0 ? (
+              Object.entries(summary.totalYieldByUnit).map(([unit, total]) => (
+                <p key={unit} className="text-xl font-bold text-gray-900">{total.toFixed(1)} {unit}</p>
+              ))
+            ) : (
+              <p className="text-2xl font-bold text-gray-900">—</p>
+            )}
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <p className="text-sm text-gray-500">Distinct Crops Harvested</p>

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from 'app/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
 import { v4 as uuidv4 } from 'uuid';
-
-const prisma = new PrismaClient();
 
 type RoleType = 'ADMIN' | 'FARMER';
 
@@ -166,11 +164,34 @@ export async function DELETE(
             );
         }
 
-        const deletedUser = await prisma.user.delete({
-            where: { id: userId }
-        });
+        // Collect this user's crop IDs to remove cross-user FK references
+        const userCrops = await prisma.crop.findMany({ where: { userId }, select: { id: true } });
+        const cropIds = userCrops.map(c => c.id);
 
-        return NextResponse.json({ user: deletedUser });
+        // Delete all records that directly reference this user (user-owned data)
+        await prisma.financialRecord.deleteMany({ where: { userId } });
+        await prisma.harvestRecord.deleteMany({ where: { userId } });
+        await prisma.fertilizationPlan.deleteMany({ where: { userId } });
+        // Rotations cascade (DB-level Cascade) to RotationPlan; RotationPlan.onDelete=SetNull on HarvestRecord
+        await prisma.rotation.deleteMany({ where: { userId } });
+        await prisma.soilTest.deleteMany({ where: { userId } });
+        await prisma.userCropSelection.deleteMany({ where: { userId } });
+
+        // Remove any other users' references to this user's crops
+        if (cropIds.length > 0) {
+          await prisma.rotationPlan.deleteMany({ where: { cropId: { in: cropIds } } });
+          await prisma.financialRecord.deleteMany({ where: { cropId: { in: cropIds } } });
+          await prisma.harvestRecord.deleteMany({ where: { cropId: { in: cropIds } } });
+          await prisma.fertilizationPlan.deleteMany({ where: { cropId: { in: cropIds } } });
+          await prisma.userCropSelection.deleteMany({ where: { cropId: { in: cropIds } } });
+          await prisma.cropDetail.deleteMany({ where: { cropId: { in: cropIds } } });
+        }
+
+        await prisma.crop.deleteMany({ where: { userId } });
+        await prisma.post.deleteMany({ where: { userId } });
+        await prisma.user.delete({ where: { id: userId } });
+
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error:', error);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });

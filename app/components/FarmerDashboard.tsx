@@ -23,12 +23,6 @@ export default function FarmerDashboard() {
     getAllCrops();
   }, [getAllCrops]); // Add proper dependency
 
-  useEffect(() => {
-    if (crops && crops.length > 0) {
-      console.log('Current crops:', crops); // Debug log for crops data
-    }
-  }, [crops]);
-
   // Filter out any undefined or null values
   const validCrops = crops?.filter(crop => crop && crop.cropName) || [];
   const totalPages = Math.ceil(validCrops.length / itemsPerPage);

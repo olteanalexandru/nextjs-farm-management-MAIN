@@ -1,9 +1,7 @@
 import { NextRequest } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { ApiResponse, Post, PostUpdate, transformPrismaPost } from 'app/types/api';
+import { prisma } from 'app/lib/prisma';
+import { Post, PostUpdate, transformPrismaPost } from 'app/types/api';
 import { getSession } from '@auth0/nextjs-auth0';
-
-const prisma = new PrismaClient();
 
 async function authenticateUser(request: NextRequest) {
   try {
@@ -160,9 +158,41 @@ export async function DELETE(
     return Response.json({ success: true });
   } catch (error) {
     console.error('DELETE request error:', error);
-    return Response.json({ 
+    return Response.json({
       error: 'Internal server error',
       status: 500
     }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await authenticateUser(request);
+    if (session instanceof Response) return session;
+
+    const currentUser = await prisma.user.findUnique({
+      where: { auth0Id: session.user.sub }
+    });
+
+    if (!currentUser || currentUser.roleType !== 'ADMIN') {
+      return Response.json({ error: 'Unauthorized — admin only' }, { status: 403 });
+    }
+
+    const postId = parseInt(params.id);
+    const post = await prisma.post.findUnique({ where: { id: postId }, select: { published: true } });
+    if (!post) return Response.json({ error: 'Post not found' }, { status: 404 });
+
+    const updated = await prisma.post.update({
+      where: { id: postId },
+      data: { published: !post.published },
+    });
+
+    return Response.json({ data: transformPrismaPost(updated) });
+  } catch (error) {
+    console.error('PATCH publish error:', error);
+    return Response.json({ error: 'Internal server error', status: 500 }, { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { observer } from 'mobx-react';
 import { Form, Input, Button, Table, Select, DatePicker, Alert, Modal } from 'antd';
@@ -39,6 +39,7 @@ const SoilTests = observer(() => {
   const t = useTranslations('SoilManagement');
   const [form] = Form.useForm();
   const soilTestStore = useSoilTests();
+  const [editingTest, setEditingTest] = useState<SoilTest | null>(null);
 
   useEffect(() => {
     soilTestStore.fetchSoilTests();
@@ -58,7 +59,8 @@ const SoilTests = observer(() => {
     };
 
     try {
-      await soilTestStore.saveSoilTest(null, formData);
+      await soilTestStore.saveSoilTest(editingTest, formData);
+      setEditingTest(null);
       form.resetFields();
     } catch (error) {
       console.error('Failed to save soil test:', error);
@@ -122,6 +124,7 @@ const SoilTests = observer(() => {
             type="link"
             icon={<EditOutlined />}
             onClick={() => {
+              setEditingTest(record);
               form.setFieldsValue({
                 ...record,
                 testDate: dayjs(record.testDate),
@@ -149,7 +152,7 @@ const SoilTests = observer(() => {
 
       <div className={styles.header}>
         <h2>{t('soilTests')}</h2>
-        <Button type="primary" onClick={() => form.resetFields()}>
+        <Button type="primary" onClick={() => { setEditingTest(null); form.resetFields(); }}>
           {t('addNewTest')}
         </Button>
       </div>
@@ -242,7 +245,7 @@ const SoilTests = observer(() => {
 
         <Form.Item>
           <Button type="primary" htmlType="submit">
-            {form.getFieldValue('id') ? t('updateTest') : t('addTest')}
+            {editingTest ? t('updateTest') : t('addTest')}
           </Button>
         </Form.Item>
       </Form>

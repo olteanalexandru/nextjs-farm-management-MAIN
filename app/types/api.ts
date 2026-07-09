@@ -164,6 +164,8 @@ export function transformPrismaPost(prismaPost: any): Post {
     brief: prismaPost.brief,
     description: prismaPost.description,
     imageUrl: prismaPost.imageUrl,
+    author: prismaPost.author ?? undefined,
+    tags: prismaPost.tags ?? undefined,
     published: prismaPost.published,
     createdAt: prismaPost.createdAt,
     updatedAt: prismaPost.updatedAt,

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "app/lib/prisma";
 import { getSession } from "@auth0/nextjs-auth0";
-
-const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
@@ -107,8 +105,16 @@ export async function POST(
       case "soilTest":
         const newSoilTest = await prisma.soilTest.create({
           data: {
-            ...data,
             userId: user.id,
+            testDate: new Date(data.testDate),
+            fieldLocation: String(data.fieldLocation),
+            pH: Number(data.pH),
+            organicMatter: Number(data.organicMatter),
+            nitrogen: Number(data.nitrogen),
+            phosphorus: Number(data.phosphorus),
+            potassium: Number(data.potassium),
+            texture: String(data.texture),
+            notes: data.notes != null ? String(data.notes) : null,
           },
         });
         return NextResponse.json(newSoilTest);
@@ -116,8 +122,14 @@ export async function POST(
       case "fertilizationPlan":
         const newFertilizationPlan = await prisma.fertilizationPlan.create({
           data: {
-            ...data,
             userId: user.id,
+            cropId: Number(data.cropId),
+            plannedDate: new Date(data.plannedDate),
+            fertilizer: String(data.fertilizer),
+            applicationRate: Number(data.applicationRate),
+            nitrogenContent: Number(data.nitrogenContent),
+            applicationMethod: String(data.applicationMethod),
+            notes: data.notes != null ? String(data.notes) : null,
           },
         });
         return NextResponse.json(newFertilizationPlan);
@@ -167,21 +179,35 @@ export async function PUT(
     switch (action) {
       case "soilTest":
         const updatedSoilTest = await prisma.soilTest.update({
-          where: {
-            id: parseInt(id),
-            userId: user.id,
+          where: { id: parseInt(id), userId: user.id },
+          data: {
+            ...(data.testDate != null && { testDate: new Date(data.testDate) }),
+            ...(data.fieldLocation != null && { fieldLocation: String(data.fieldLocation) }),
+            ...(data.pH != null && { pH: Number(data.pH) }),
+            ...(data.organicMatter != null && { organicMatter: Number(data.organicMatter) }),
+            ...(data.nitrogen != null && { nitrogen: Number(data.nitrogen) }),
+            ...(data.phosphorus != null && { phosphorus: Number(data.phosphorus) }),
+            ...(data.potassium != null && { potassium: Number(data.potassium) }),
+            ...(data.texture != null && { texture: String(data.texture) }),
+            ...(data.notes !== undefined && { notes: data.notes != null ? String(data.notes) : null }),
           },
-          data,
         });
         return NextResponse.json(updatedSoilTest);
 
       case "fertilizationPlan":
         const updatedFertilizationPlan = await prisma.fertilizationPlan.update({
-          where: {
-            id: parseInt(id),
-            userId: user.id,
+          where: { id: parseInt(id), userId: user.id },
+          data: {
+            ...(data.cropId != null && { cropId: Number(data.cropId) }),
+            ...(data.plannedDate != null && { plannedDate: new Date(data.plannedDate) }),
+            ...(data.fertilizer != null && { fertilizer: String(data.fertilizer) }),
+            ...(data.applicationRate != null && { applicationRate: Number(data.applicationRate) }),
+            ...(data.nitrogenContent != null && { nitrogenContent: Number(data.nitrogenContent) }),
+            ...(data.applicationMethod != null && { applicationMethod: String(data.applicationMethod) }),
+            ...(data.notes !== undefined && { notes: data.notes != null ? String(data.notes) : null }),
+            ...(data.completed !== undefined && { completed: Boolean(data.completed) }),
+            ...(data.completedDate !== undefined && { completedDate: data.completedDate != null ? new Date(data.completedDate) : null }),
           },
-          data,
         });
         return NextResponse.json(updatedFertilizationPlan);
 

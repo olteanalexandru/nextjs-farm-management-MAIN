@@ -16,6 +16,16 @@ export default function PostList({ posts, onDelete }: PostListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const { deletePost, updatePost } = usePostContext();
 
+  const handlePublishToggle = async (post: Post) => {
+    try {
+      await fetch(`/api/Controllers/Post/post/${post.id}`, { method: 'PATCH' });
+      if (onDelete) await onDelete();
+    } catch (error) {
+      console.error('Error toggling publish:', error);
+      alert('Failed to toggle publish status');
+    }
+  };
+
   // Filter posts based on search query
   const filteredPosts = useMemo(() => {
     return posts.filter(post => 
@@ -72,7 +82,13 @@ export default function PostList({ posts, onDelete }: PostListProps) {
               <>
                 <div className="flex justify-between items-start mb-4">
                   <h4 className="font-medium">{post.title}</h4>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => handlePublishToggle(post)}
+                      className={`px-2 py-1 text-sm rounded ${post.published ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-green-500 text-white hover:bg-green-600'}`}
+                    >
+                      {post.published ? 'Unpublish' : 'Publish'}
+                    </button>
                     <button
                       onClick={() => setEditingId(typeof post.id === 'string' ? parseInt(post.id) : post.id)}
                       className="px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"

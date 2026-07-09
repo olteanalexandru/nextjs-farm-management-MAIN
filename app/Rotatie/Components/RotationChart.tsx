@@ -3,7 +3,6 @@ import { Typography, Spin, Alert } from 'antd';
 import { useTranslations } from 'next-intl';
 
 const { Title } = Typography;
-const colors = ['8884d8', '82ca9d', 'ffc658', 'a4de6c', 'd0ed57', 'ffc658', '00c49f', 'ff7300', 'ff8042'];
 
 interface ChartData {
   year: number;
@@ -46,20 +45,12 @@ const RotationChart: React.FC<RotationChartProps> = ({ chartData }) => {
           <YAxis label={{ value: t('nitrogenBalance'), angle: -90, position: 'insideLeft' }} />
           <Tooltip />
           <Legend />
-          {chartData[0] && Object.keys(chartData[0]).map((key, i) => {
-            if (key !== 'year') {
-              return (
-                <Line
-                  key={key}
-                  type="monotone"
-                  dataKey={key}
-                  stroke={`#${colors[i % colors.length]}`}
-                  activeDot={{ r: 8 }}
-                />
-              );
-            }
-            return null;
-          })}
+          <Line
+            type="monotone"
+            dataKey="nitrogenBalance"
+            stroke="#22c55e"
+            activeDot={{ r: 8 }}
+          />
         </LineChart>
       </ResponsiveContainer>
       <div>
