@@ -19,6 +19,8 @@ export interface PestDiagnosisResult {
 export interface PestDiagnosisInput {
   cropName?: string;
   symptomDescription: string;
+  imageBase64?: string;
+  imageMimeType?: string;
 }
 
 const responseSchema = {
@@ -63,10 +65,22 @@ export async function diagnosePestOrDisease(
   const client = getOpenAIClient();
   const model = process.env.OPENAI_PEST_DIAGNOSIS_MODEL || 'gpt-4o-mini';
 
-  const userContent = JSON.stringify({
+  const textContent = JSON.stringify({
     cropName: (input.cropName || 'UNKNOWN').slice(0, 60),
     symptomDescription: input.symptomDescription.slice(0, 800)
   });
+
+  type MessageContent = string | Array<{ type: string; text?: string; image_url?: { url: string; detail: string } }>;
+  let userContent: MessageContent;
+
+  if (input.imageBase64 && input.imageMimeType) {
+    userContent = [
+      { type: 'text', text: textContent },
+      { type: 'image_url', image_url: { url: `data:${input.imageMimeType};base64,${input.imageBase64}`, detail: 'low' } }
+    ];
+  } else {
+    userContent = textContent;
+  }
 
   const completion = await client.chat.completions.create({
     model,
@@ -75,7 +89,7 @@ export async function diagnosePestOrDisease(
     response_format: { type: 'json_schema', json_schema: responseSchema } as any,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userContent }
+      { role: 'user', content: userContent as any }
     ]
   });
 

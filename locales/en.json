@@ -84,6 +84,13 @@
     "loadMore": "Load More",
     "confirmDelete": "Are you sure you want to delete this post?"
   },
+  "Postari": {
+    "title": "Posts",
+    "noPostsAvailable": "No posts available",
+    "loading": "Loading...",
+    "loadMore": "Load More",
+    "Sterge": "Delete"
+  },
   "Common": {
     "loading": "Loading...",
     "error": "An error occurred",

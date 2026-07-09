@@ -30,6 +30,8 @@ export default function PestDiagnosisPage() {
   const { isPremium, billing, refreshBilling } = useUserContext();
   const [cropName, setCropName] = useState('');
   const [symptomDescription, setSymptomDescription] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [upgradeRecommended, setUpgradeRecommended] = useState(false);
@@ -37,6 +39,15 @@ export default function PestDiagnosisPage() {
   const [historyKey, setHistoryKey] = useState(0);
 
   const usage = billing?.usage.find((u) => u.feature === 'PEST_DIAGNOSIS');
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setImageFile(file);
+    if (!file) { setImagePreview(null); return; }
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,10 +57,18 @@ export default function PestDiagnosisPage() {
     setResult(null);
 
     try {
+      let imageBase64: string | undefined;
+      let imageMimeType: string | undefined;
+      if (imageFile) {
+        const buffer = await imageFile.arrayBuffer();
+        imageBase64 = Buffer.from(buffer).toString('base64');
+        imageMimeType = imageFile.type;
+      }
+
       const response = await fetch('/api/Controllers/Diagnosis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cropName, symptomDescription }),
+        body: JSON.stringify({ cropName, symptomDescription, imageBase64, imageMimeType }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -115,6 +134,29 @@ export default function PestDiagnosisPage() {
             required
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Attach a photo (optional)
+          </label>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleImageChange}
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+          />
+          {imagePreview && (
+            <div className="mt-2 relative inline-block">
+              <img src={imagePreview} alt="Preview" className="h-32 w-auto rounded-md border border-gray-200 object-cover" />
+              <button
+                type="button"
+                onClick={() => { setImageFile(null); setImagePreview(null); }}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center"
+                aria-label="Remove image"
+              >×</button>
+            </div>
+          )}
         </div>
 
         {error && !upgradeRecommended && (

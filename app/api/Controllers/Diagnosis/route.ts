@@ -29,6 +29,16 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
       return Response.json(response, { status: 400 });
     }
 
+    const imageBase64 = body?.imageBase64 ? String(body.imageBase64) : undefined;
+    const imageMimeType = body?.imageMimeType ? String(body.imageMimeType) : undefined;
+    const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (imageBase64 && imageMimeType && !VALID_IMAGE_TYPES.includes(imageMimeType)) {
+      return Response.json({ error: 'Unsupported image type. Use JPEG, PNG, WebP, or GIF.', status: 400 }, { status: 400 });
+    }
+    if (imageBase64 && imageBase64.length > 2_000_000) {
+      return Response.json({ error: 'Image too large. Please use an image under 1.5 MB.', status: 400 }, { status: 400 });
+    }
+
     const rateLimit = await checkAiRateLimit(user.id, 'PEST_DIAGNOSIS', user.subscriptionTier === 'PREMIUM' ? 'PREMIUM' : 'FREE');
     if (!rateLimit.allowed) {
       await logAiUsage(user.id, 'PEST_DIAGNOSIS', symptomDescription, 'RATE_LIMITED');
@@ -40,7 +50,9 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
     try {
       result = await diagnosePestOrDisease({
         cropName: cropName || undefined,
-        symptomDescription
+        symptomDescription,
+        imageBase64,
+        imageMimeType,
       });
     } catch (error) {
       console.error('AI pest diagnosis error:', error);

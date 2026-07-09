@@ -71,6 +71,13 @@
     "loadMore": "Încarcă mai mult",
     "confirmDelete": "Sigur doriți să ștergeți această postare?"
   },
+  "Postari": {
+    "title": "Postări",
+    "noPostsAvailable": "Nu există postări disponibile",
+    "loading": "Se încarcă...",
+    "loadMore": "Încarcă mai mult",
+    "Sterge": "Șterge"
+  },
   "Common": {
     "loading": "Se încarcă...",
     "error": "A apărut o eroare",
