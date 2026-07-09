@@ -11,23 +11,27 @@ export const GET = withApiAuthRequired(async function GET(
 ) {
   try {
     const user = await getCurrentUser(request);
-    
-    const [crops, selections] = await Promise.all([
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, Number(searchParams.get('page') ?? '1'));
+    const limit = Math.min(200, Math.max(1, Number(searchParams.get('limit') ?? '100')));
+    const skip = (page - 1) * limit;
+
+    const where = { cropType: { not: 'RECOMMENDATION' }, deleted: null };
+
+    const [crops, total, selections] = await Promise.all([
       prisma.crop.findMany({
-        where: {
-          cropType: {
-            not: 'RECOMMENDATION'
-          },
-          deleted: null
-        },
+        where,
         include: {
           details: true,
           user: true
         },
         orderBy: {
           createdAt: 'desc'
-        }
+        },
+        skip,
+        take: limit
       }),
+      prisma.crop.count({ where }),
       prisma.userCropSelection.findMany({
         where: { userId: user.id }
       })
@@ -52,9 +56,12 @@ export const GET = withApiAuthRequired(async function GET(
       isOwnCrop: crop.userId === user.id
     }));
   
-    return Response.json({ 
+    return Response.json({
       crops: transformedCrops,
       selections,
+      total,
+      page,
+      limit,
       status: 200
     });
   } catch (error) {

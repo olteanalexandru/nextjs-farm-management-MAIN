@@ -1,29 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-interface WeatherSnapshot {
-  location: string;
-  temperatureC: number;
-  feelsLikeC: number;
-  humidity: number;
-  windSpeedMs: number;
-  description: string;
-  icon: string;
-}
-
-interface WeatherForecastDay {
-  date: string;
-  minTempC: number;
-  maxTempC: number;
-  precipitationMm: number;
-  description: string;
-}
-
-interface WeatherData {
-  current: WeatherSnapshot;
-  forecast: WeatherForecastDay[];
-}
+import type { WeatherData } from 'app/lib/weather/openWeather';
 
 export default function WeatherWidget({ fieldLocation }: { fieldLocation: string }) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -58,7 +36,15 @@ export default function WeatherWidget({ fieldLocation }: { fieldLocation: string
 
   if (!fieldLocation || loading) return null;
   if (!configured) return null;
-  if (error) return null;
+
+  if (error) {
+    return (
+      <div className="bg-gray-50 text-gray-500 p-3 rounded-md text-sm">
+        Weather unavailable for &quot;{fieldLocation}&quot;.
+      </div>
+    );
+  }
+
   if (!weather) {
     return (
       <div className="bg-gray-50 text-gray-500 p-3 rounded-md text-sm">
@@ -70,10 +56,21 @@ export default function WeatherWidget({ fieldLocation }: { fieldLocation: string
   return (
     <div className="bg-sky-50 p-4 rounded-md space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-sky-900">{weather.current.location}</p>
+        <div className="flex items-center gap-2">
+          {weather.current.icon && (
+            <img
+              src={`https://openweathermap.org/img/wn/${weather.current.icon}@2x.png`}
+              alt={weather.current.description}
+              width={40}
+              height={40}
+              className="shrink-0"
+            />
+          )}
+          <p className="text-sm font-medium text-sky-900">{weather.current.location}</p>
+        </div>
         <p className="text-sm text-sky-700 capitalize">{weather.current.description}</p>
       </div>
-      <div className="flex items-center gap-4 text-sm text-sky-800">
+      <div className="flex flex-wrap items-center gap-4 text-sm text-sky-800">
         <span>{weather.current.temperatureC}°C (feels {weather.current.feelsLikeC}°C)</span>
         <span>Humidity {weather.current.humidity}%</span>
         <span>Wind {weather.current.windSpeedMs} m/s</span>

@@ -39,34 +39,29 @@ export async function GET(
     const [action] = params.params;
 
     if (action === 'getRotation') {
-      console.log('Fetching rotations for user ID:', dbUser.id); // Debug log
+      const { searchParams } = new URL(request.url);
+      const page = Math.max(1, Number(searchParams.get('page') ?? '1'));
+      const limit = Math.min(50, Math.max(1, Number(searchParams.get('limit') ?? '20')));
+      const skip = (page - 1) * limit;
 
-      const rotations = await prisma.rotation.findMany({
-        where: {
-          userId: dbUser.id // Use the database user ID instead of Auth0 ID
-        },
-        include: {
-          rotationPlans: {
-            include: {
-              crop: {
-                include: {
-                  details: true
-                }
-              }
-            },
-            orderBy: [
-              { year: 'asc' },
-              { division: 'asc' }
-            ]
-          }
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
+      const where = { userId: dbUser.id };
+      const [rotations, total] = await Promise.all([
+        prisma.rotation.findMany({
+          where,
+          include: {
+            rotationPlans: {
+              include: { crop: { include: { details: true } } },
+              orderBy: [{ year: 'asc' }, { division: 'asc' }]
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit
+        }),
+        prisma.rotation.count({ where })
+      ]);
 
-      console.log('Found rotations:', rotations.length); // Debug log
-      return Response.json({ data: rotations }, { status: 200 });
+      return Response.json({ data: rotations, total, page, limit }, { status: 200 });
     }
 
     return Response.json({ error: 'Invalid route' }, { status: 400 });
