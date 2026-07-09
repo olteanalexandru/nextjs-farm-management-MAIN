@@ -176,6 +176,13 @@ export async function DELETE(
         await prisma.rotation.deleteMany({ where: { userId } });
         await prisma.soilTest.deleteMany({ where: { userId } });
         await prisma.userCropSelection.deleteMany({ where: { userId } });
+        await prisma.farmEvent.deleteMany({ where: { userId } });
+        await prisma.inventoryTransaction.deleteMany({ where: { userId } });
+        await prisma.inventoryItem.deleteMany({ where: { userId } });
+        await prisma.irrigationEvent.deleteMany({ where: { userId } });
+        await prisma.equipmentMaintenanceLog.deleteMany({ where: { userId } });
+        await prisma.equipment.deleteMany({ where: { userId } });
+        await prisma.subsidyRecord.deleteMany({ where: { userId } });
 
         // Remove any other users' references to this user's crops
         if (cropIds.length > 0) {
