@@ -6,9 +6,19 @@ import { prisma } from 'app/lib/prisma';
 export const GET = withApiAuthRequired(async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser(request);
+    const { searchParams } = new URL(request.url);
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+
+    const dateFilter = startDate || endDate ? {
+      recordDate: {
+        ...(startDate ? { gte: new Date(startDate) } : {}),
+        ...(endDate ? { lte: new Date(endDate) } : {}),
+      }
+    } : {};
 
     const records = await prisma.financialRecord.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, ...dateFilter },
       include: { crop: { select: { cropName: true } } },
     });
 

@@ -80,6 +80,16 @@ export default function FinancePage() {
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const buildQuery = (extra = '') => {
+    const params = new URLSearchParams();
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    const qs = params.toString();
+    return qs ? `${extra}?${qs}` : extra;
+  };
 
   const loadAll = async () => {
     setLoading(true);
@@ -87,8 +97,8 @@ export default function FinancePage() {
     try {
       const [cropsRes, recordsRes, summaryRes] = await Promise.all([
         fetch('/api/Controllers/Crop/crops/all'),
-        fetch('/api/Controllers/Finance'),
-        fetch('/api/Controllers/Finance/summary'),
+        fetch(buildQuery('/api/Controllers/Finance')),
+        fetch(buildQuery('/api/Controllers/Finance/summary')),
       ]);
 
       const cropsData = await cropsRes.json();
@@ -111,6 +121,7 @@ export default function FinancePage() {
 
   useEffect(() => {
     loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resetForm = () => {
@@ -205,6 +216,28 @@ export default function FinancePage() {
       <div className="border-b pb-4">
         <h1 className="text-2xl font-bold text-gray-900">Financial Tracking</h1>
         <p className="mt-2 text-gray-600">Track costs and revenue, and monitor profit and loss per crop.</p>
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">From</label>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+              className="border rounded px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+              className="border rounded px-2 py-1 text-sm" />
+          </div>
+          <button onClick={loadAll}
+            className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+            Apply
+          </button>
+          {(startDate || endDate) && (
+            <button onClick={() => { setStartDate(''); setEndDate(''); }}
+              className="px-3 py-1.5 border text-sm rounded text-gray-600 hover:bg-gray-50">
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">{error}</div>}

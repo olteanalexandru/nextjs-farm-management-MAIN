@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
   Line,
   LineChart,
@@ -15,6 +17,15 @@ import {
 interface NitrogenTrendPoint {
   year: number;
   avgNitrogenBalance: number;
+}
+
+interface CropProfit {
+  cropName: string;
+  totalRevenue: number;
+  totalExpense: number;
+  netProfit: number;
+  harvestCount: number;
+  totalYield: number;
 }
 
 interface FarmAnalyticsData {
@@ -31,6 +42,9 @@ interface FarmAnalyticsData {
   totalExpense: number;
   netProfit: number;
   nitrogenBalanceTrend: NitrogenTrendPoint[];
+  profitByCrop: CropProfit[];
+  soilHealthTrend: { month: string; avgPH: number }[];
+  yieldTrend: { month: string; totalYield: number }[];
 }
 
 function StatCard({ label, value, link }: { label: string; value: string; link?: string }) {
@@ -111,6 +125,72 @@ export default function FarmAnalytics() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      )}
+
+      {data.soilHealthTrend.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="font-medium text-gray-900 mb-4">Soil pH Trend (Last 12 Months)</h3>
+          <div style={{ width: '100%', height: 200 }}>
+            <ResponsiveContainer>
+              <LineChart data={data.soilHealthTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis domain={[4, 9]} />
+                <Tooltip />
+                <Line type="monotone" dataKey="avgPH" stroke="#0891b2" name="Avg pH" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {data.yieldTrend.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="font-medium text-gray-900 mb-4">Yield Trend (Last 12 Months)</h3>
+          <div style={{ width: '100%', height: 200 }}>
+            <ResponsiveContainer>
+              <BarChart data={data.yieldTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="totalYield" fill="#16a34a" name="Total Yield" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {data.profitByCrop.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow overflow-x-auto">
+          <h3 className="font-medium text-gray-900 mb-4">Profitability by Crop</h3>
+          <table className="min-w-full text-sm divide-y divide-gray-200">
+            <thead>
+              <tr className="text-left text-xs text-gray-500 uppercase">
+                <th className="pb-2 pr-4">Crop</th>
+                <th className="pb-2 pr-4">Revenue</th>
+                <th className="pb-2 pr-4">Expense</th>
+                <th className="pb-2 pr-4">Net Profit</th>
+                <th className="pb-2 pr-4">Harvests</th>
+                <th className="pb-2">Total Yield</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {data.profitByCrop.map(row => (
+                <tr key={row.cropName}>
+                  <td className="py-2 pr-4 font-medium text-gray-900">{row.cropName}</td>
+                  <td className="py-2 pr-4 text-green-700">{row.totalRevenue.toFixed(2)}</td>
+                  <td className="py-2 pr-4 text-red-700">{row.totalExpense.toFixed(2)}</td>
+                  <td className={`py-2 pr-4 font-semibold ${row.netProfit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    {row.netProfit >= 0 ? '+' : ''}{row.netProfit.toFixed(2)}
+                  </td>
+                  <td className="py-2 pr-4 text-gray-700">{row.harvestCount}</td>
+                  <td className="py-2 text-gray-700">{row.totalYield}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
