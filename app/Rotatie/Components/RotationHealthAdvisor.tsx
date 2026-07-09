@@ -5,6 +5,7 @@ import { useUserContext } from '../../providers/UserStore';
 import PremiumBadge from '../../components/premium/PremiumBadge';
 import UpgradePrompt from '../../components/premium/UpgradePrompt';
 import UsageMeter from '../../components/premium/UsageMeter';
+import AiHistoryPanel from '../../components/AiHistoryPanel';
 
 interface RotationInsight {
   summary: string;
@@ -22,6 +23,7 @@ export default function RotationHealthAdvisor({ rotationId }: RotationHealthAdvi
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [upgradeRecommended, setUpgradeRecommended] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
 
   const usage = billing?.usage.find((u) => u.feature === 'ROTATION_INSIGHT');
 
@@ -48,6 +50,7 @@ export default function RotationHealthAdvisor({ rotationId }: RotationHealthAdvi
     } finally {
       setLoading(false);
       refreshBilling();
+      setHistoryKey(k => k + 1);
     }
   };
 
@@ -73,6 +76,8 @@ export default function RotationHealthAdvisor({ rotationId }: RotationHealthAdvi
         <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">{error}</div>
       )}
       {error && upgradeRecommended && <UpgradePrompt message={error} />}
+
+      <AiHistoryPanel feature="ROTATION_INSIGHT" refreshKey={historyKey} />
 
       {insight && (
         <div className="bg-blue-50 p-4 rounded-md space-y-3 text-sm">

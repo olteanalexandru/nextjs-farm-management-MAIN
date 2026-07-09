@@ -55,7 +55,8 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
       return Response.json(response, { status: 503 });
     }
 
-    await logAiUsage(user.id, 'PEST_DIAGNOSIS', symptomDescription, result.isAgricultural ? 'SUCCESS' : 'REJECTED');
+    const diagnosisOutcome = result.isAgricultural ? 'SUCCESS' : 'REJECTED';
+    await logAiUsage(user.id, 'PEST_DIAGNOSIS', symptomDescription, diagnosisOutcome, undefined, result.isAgricultural ? JSON.stringify(result) : undefined);
 
     return Response.json({ result, status: 200 });
   } catch (error) {

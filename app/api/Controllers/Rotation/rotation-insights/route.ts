@@ -78,7 +78,7 @@ export const POST = async function POST(request: NextRequest) {
       return Response.json(response, { status: 503 });
     }
 
-    await logAiUsage(dbUser.id, 'ROTATION_INSIGHT', `rotation:${rotationId}`, 'SUCCESS');
+    await logAiUsage(dbUser.id, 'ROTATION_INSIGHT', `rotation:${rotationId}`, 'SUCCESS', undefined, JSON.stringify(insight));
 
     return Response.json({ insight, status: 200 });
   } catch (error) {

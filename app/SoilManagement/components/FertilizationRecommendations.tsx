@@ -9,6 +9,7 @@ import { useUserContext } from '../../providers/UserStore';
 import PremiumBadge from '../../components/premium/PremiumBadge';
 import UpgradePrompt from '../../components/premium/UpgradePrompt';
 import UsageMeter from '../../components/premium/UsageMeter';
+import AiHistoryPanel from '../../components/AiHistoryPanel';
 
 interface Crop {
   id: number;
@@ -61,6 +62,7 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
   const [aiInsightLoading, setAiInsightLoading] = useState(false);
   const [aiInsightError, setAiInsightError] = useState<string | null>(null);
   const [upgradeRecommended, setUpgradeRecommended] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
 
   const fertilizationUsage = billing?.usage.find((u) => u.feature === 'FERTILIZATION_INSIGHT');
 
@@ -150,6 +152,7 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
     } finally {
       setAiInsightLoading(false);
       refreshBilling();
+      setHistoryKey(k => k + 1);
     }
   };
 
@@ -298,6 +301,7 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
           </div>
         </div>
       )}
+      <AiHistoryPanel feature="FERTILIZATION_INSIGHT" refreshKey={historyKey} />
     </div>
   );
 }

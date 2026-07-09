@@ -218,13 +218,14 @@ model FertilizationPlan {
 }
 
 model AiLookupLog {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  feature   String   @default("CROP_LOOKUP")
-  query     String
-  outcome   String
-  cropId    Int?
-  createdAt DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  userId       String
+  feature      String   @default("CROP_LOOKUP")
+  query        String
+  outcome      String
+  cropId       Int?
+  responseJson String?  @db.Text
+  createdAt    DateTime @default(now())
 
   @@index([userId, feature, createdAt])
   @@index([feature, createdAt])

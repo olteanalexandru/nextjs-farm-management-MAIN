@@ -5,6 +5,7 @@ import { useUserContext } from '../providers/UserStore';
 import PremiumBadge from '../components/premium/PremiumBadge';
 import UpgradePrompt from '../components/premium/UpgradePrompt';
 import UsageMeter from '../components/premium/UsageMeter';
+import AiHistoryPanel from '../components/AiHistoryPanel';
 
 interface DiagnosisCandidate {
   name: string;
@@ -33,6 +34,7 @@ export default function PestDiagnosisPage() {
   const [error, setError] = useState<string | null>(null);
   const [upgradeRecommended, setUpgradeRecommended] = useState(false);
   const [result, setResult] = useState<DiagnosisResult | null>(null);
+  const [historyKey, setHistoryKey] = useState(0);
 
   const usage = billing?.usage.find((u) => u.feature === 'PEST_DIAGNOSIS');
 
@@ -60,6 +62,7 @@ export default function PestDiagnosisPage() {
     } finally {
       setLoading(false);
       refreshBilling();
+      setHistoryKey(k => k + 1);
     }
   };
 
@@ -129,6 +132,8 @@ export default function PestDiagnosisPage() {
           </button>
         </div>
       </form>
+
+      <AiHistoryPanel feature="PEST_DIAGNOSIS" refreshKey={historyKey} />
 
       {result && (
         <div className="bg-white p-6 rounded-lg shadow space-y-4">

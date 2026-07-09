@@ -72,7 +72,8 @@ export async function logAiUsage(
   feature: AiFeature,
   query: string,
   outcome: AiUsageOutcome,
-  cropId?: number
+  cropId?: number,
+  responseJson?: string
 ): Promise<void> {
   await prisma.aiLookupLog.create({
     data: {
@@ -80,7 +81,8 @@ export async function logAiUsage(
       feature,
       query: query.slice(0, 100),
       outcome,
-      cropId
+      cropId,
+      responseJson: responseJson ?? null
     }
   });
 }

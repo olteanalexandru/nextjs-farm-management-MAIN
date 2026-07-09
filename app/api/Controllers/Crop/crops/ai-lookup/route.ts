@@ -86,7 +86,7 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
       include: { details: true }
     });
 
-    await logAiUsage(user.id, 'CROP_LOOKUP', query, 'SUCCESS', created.id);
+    await logAiUsage(user.id, 'CROP_LOOKUP', query, 'SUCCESS', created.id, JSON.stringify({ cropName: aiResult.cropName, cropType: aiResult.cropType, description: aiResult.description }));
 
     const response: ApiResponse<RecommendationResponse[]> = {
       crops: [transformCropWithDetails(created)],

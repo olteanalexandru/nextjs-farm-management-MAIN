@@ -115,7 +115,7 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
       return Response.json(response, { status: 503 });
     }
 
-    await logAiUsage(user.id, 'FERTILIZATION_INSIGHT', `crop:${cropId}`, 'SUCCESS', cropId);
+    await logAiUsage(user.id, 'FERTILIZATION_INSIGHT', `crop:${cropId}`, 'SUCCESS', cropId, JSON.stringify(insight));
 
     return Response.json({ insight, status: 200 });
   } catch (error) {
