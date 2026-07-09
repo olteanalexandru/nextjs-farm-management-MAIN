@@ -33,6 +33,9 @@ model User {
   farmEvents     FarmEvent[]       @relation("UserFarmEvents")
   inventoryItems InventoryItem[]   @relation("UserInventoryItems")
   inventoryTransactions InventoryTransaction[] @relation("UserInventoryTransactions")
+  irrigationEvents IrrigationEvent[] @relation("UserIrrigationEvents")
+  equipment        Equipment[]       @relation("UserEquipment")
+  maintenanceLogs  EquipmentMaintenanceLog[] @relation("UserMaintenanceLogs")
 
   @@index([auth0Id])
   @@index([email])
@@ -280,6 +283,60 @@ model FarmEvent {
   @@index([userId, date])
   @@index([userId, eventType])
   @@map("farm_events")
+}
+
+model Equipment {
+  id                Int                      @id @default(autoincrement())
+  userId            String
+  user              User                     @relation("UserEquipment", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name              String
+  equipmentType     String
+  purchaseDate      DateTime?
+  hoursUsed         Decimal?                 @db.Decimal(10,2)
+  nextServiceDueAt  DateTime?
+  notes             String?                  @db.Text
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  maintenanceLogs   EquipmentMaintenanceLog[] @relation("EquipmentLogs")
+
+  @@index([userId])
+  @@map("equipment")
+}
+
+model EquipmentMaintenanceLog {
+  id          Int       @id @default(autoincrement())
+  userId      String
+  user        User      @relation("UserMaintenanceLogs", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  equipmentId Int
+  equipment   Equipment @relation("EquipmentLogs", fields: [equipmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  logDate     DateTime
+  description String
+  cost        Decimal?  @db.Decimal(12,2)
+  hoursAtService Decimal? @db.Decimal(10,2)
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([equipmentId])
+  @@map("equipment_maintenance_logs")
+}
+
+model IrrigationEvent {
+  id           Int       @id @default(autoincrement())
+  userId       String
+  user         User      @relation("UserIrrigationEvents", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fieldId      Int?
+  eventDate    DateTime
+  durationMin  Int?
+  volumeM3     Decimal?  @db.Decimal(10,3)
+  method       String
+  waterSource  String?
+  notes        String?   @db.Text
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, eventDate])
+  @@map("irrigation_events")
 }
 
 model InventoryItem {
