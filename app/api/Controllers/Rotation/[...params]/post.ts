@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from 'app/lib/prisma';
 import { RotationInput, RotationPlanInput } from '../interfaces';
 import { Decimal } from '@prisma/client/runtime/library';
 import authenticateUser from './authenticatedUser';
@@ -11,7 +11,6 @@ import {
   cropIsAvailable
 } from './helperFunctions';
 
-const prisma = new PrismaClient();
 
 //post routes are:
 //1. rotation/generateRotation

@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { prisma } from 'app/lib/prisma';
 import { getCurrentUser } from 'app/lib/auth';
 import { ApiResponse, Post, PostCreate, transformPrismaPost } from 'app/types/api';
 
-const prisma = new PrismaClient();
 
 export const POST = withApiAuthRequired(async function POST(
   request: NextRequest,

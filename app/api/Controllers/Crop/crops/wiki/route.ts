@@ -1,12 +1,11 @@
 import { NextRequest } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from 'app/lib/prisma';
 import { ApiResponse,  Crop, RecommendationResponse } from 'app/types/api';
 import {  transformCropWithDetails } from '@/api/Controllers/Crop/crops/utils/helpers';
 import {
     WikiQueryParams
      } from '@/api/Controllers/Crop/crops/wiki/types';
 
-const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,

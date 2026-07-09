@@ -1,11 +1,10 @@
 import { NextRequest } from 'next/server';
 import { withApiAuthRequired } from '@auth0/nextjs-auth0';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from 'app/lib/prisma';
 import { getCurrentUser } from 'app/lib/auth';
 import { ApiResponse } from 'app/types/api';
 import { transformCropWithDetails } from '../utils/helpers';
 
-const prisma = new PrismaClient();
 
 export const GET = withApiAuthRequired(async function GET(
   request: NextRequest
