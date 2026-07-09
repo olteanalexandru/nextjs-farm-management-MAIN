@@ -183,6 +183,7 @@ export async function DELETE(
         await prisma.equipmentMaintenanceLog.deleteMany({ where: { userId } });
         await prisma.equipment.deleteMany({ where: { userId } });
         await prisma.subsidyRecord.deleteMany({ where: { userId } });
+        await prisma.fieldObservation.deleteMany({ where: { userId } });
 
         // Remove any other users' references to this user's crops
         if (cropIds.length > 0) {

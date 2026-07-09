@@ -37,6 +37,7 @@ model User {
   equipment        Equipment[]       @relation("UserEquipment")
   maintenanceLogs  EquipmentMaintenanceLog[] @relation("UserMaintenanceLogs")
   subsidyRecords   SubsidyRecord[]   @relation("UserSubsidyRecords")
+  fieldObservations FieldObservation[] @relation("UserFieldObservations")
 
   @@index([auth0Id])
   @@index([email])
@@ -71,6 +72,7 @@ model Crop {
   fertilizationPlans         FertilizationPlan[] @relation("CropFertilizationPlans")
   harvestRecords              HarvestRecord[]     @relation("CropHarvestRecords")
   financialRecords            FinancialRecord[]   @relation("CropFinancialRecords")
+  observations                FieldObservation[]  @relation("CropObservations")
 
   @@index([userId])
   @@index([cropName])
@@ -106,6 +108,7 @@ model Field {
   soilTests      SoilTest[]       @relation("FieldSoilTests")
   harvestRecords HarvestRecord[]  @relation("FieldHarvestRecords")
   rotations      Rotation[]       @relation("FieldRotations")
+  observations   FieldObservation[] @relation("FieldObservations")
 
   @@index([userId])
   @@map("fields")
@@ -421,4 +424,24 @@ model FinancialRecord {
   @@index([userId, type])
   @@index([cropId])
   @@map("financial_records")
+}
+
+model FieldObservation {
+  id           Int       @id @default(autoincrement())
+  userId       String
+  user         User      @relation("UserFieldObservations", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  observedAt   DateTime
+  fieldId      Int?
+  field        Field?    @relation("FieldObservations", fields: [fieldId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cropId       Int?
+  crop         Crop?     @relation("CropObservations", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  category     String
+  description  String    @db.Text
+  photoUrl     String?   @db.Text
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, observedAt])
+  @@index([userId, category])
+  @@map("field_observations")
 }
