@@ -245,6 +245,7 @@ model HarvestRecord {
   harvestDate    DateTime
   fieldLocation  String?
   divisionSize   Decimal?      @db.Decimal(10,2)
+  expectedYield  Decimal?      @db.Decimal(10,2)
   actualYield    Decimal       @db.Decimal(10,2)
   yieldUnit      String        @default("kg")
   qualityGrade   String?

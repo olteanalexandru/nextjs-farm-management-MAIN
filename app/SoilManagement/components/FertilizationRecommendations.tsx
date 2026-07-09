@@ -249,6 +249,29 @@ export default function FertilizationRecommendations({ onRecommendationSelect }:
             </div>
           )}
 
+          {(recommendation.phosphorusRecommendation || recommendation.potassiumRecommendation) && (
+            <div className="space-y-3">
+              <h4 className="font-medium text-gray-900">Additional Nutrient Recommendations</h4>
+              {[recommendation.phosphorusRecommendation, recommendation.potassiumRecommendation]
+                .filter(Boolean)
+                .map((rec) => rec && (
+                  <div key={rec.nutrient} className="border rounded-md p-4 space-y-2 bg-orange-50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-orange-200 text-orange-800">{rec.nutrient}</span>
+                      <p className="font-medium text-gray-900">{rec.fertilizer}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-700">
+                      <span><span className="font-medium">Rate:</span> {rec.applicationRate.toFixed(1)} kg/ha</span>
+                      <span><span className="font-medium">Method:</span> {rec.applicationMethod}</span>
+                      <span className="col-span-2"><span className="font-medium">Timing:</span> {rec.timing}</span>
+                    </div>
+                    {rec.notes && <p className="text-xs text-orange-700">{rec.notes}</p>}
+                  </div>
+                ))
+              }
+            </div>
+          )}
+
           <div className="border-t pt-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

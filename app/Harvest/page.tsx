@@ -25,6 +25,7 @@ interface HarvestRecord {
   harvestDate: string;
   fieldLocation: string | null;
   divisionSize: number | null;
+  expectedYield: number | null;
   actualYield: number;
   yieldUnit: string;
   qualityGrade: string | null;
@@ -50,6 +51,7 @@ const EMPTY_FORM = {
   harvestDate: '',
   fieldLocation: '',
   divisionSize: '',
+  expectedYield: '',
   actualYield: '',
   yieldUnit: 'kg',
   qualityGrade: '',
@@ -110,6 +112,7 @@ export default function HarvestPage() {
       harvestDate: record.harvestDate.slice(0, 10),
       fieldLocation: record.fieldLocation || '',
       divisionSize: record.divisionSize?.toString() || '',
+      expectedYield: record.expectedYield?.toString() || '',
       actualYield: record.actualYield.toString(),
       yieldUnit: record.yieldUnit,
       qualityGrade: record.qualityGrade || '',
@@ -142,6 +145,7 @@ export default function HarvestPage() {
         harvestDate: form.harvestDate,
         fieldLocation: form.fieldLocation || undefined,
         divisionSize: form.divisionSize || undefined,
+        expectedYield: form.expectedYield || undefined,
         actualYield: form.actualYield,
         yieldUnit: form.yieldUnit,
         qualityGrade: form.qualityGrade || undefined,
@@ -297,6 +301,18 @@ export default function HarvestPage() {
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Expected Yield</label>
+            <input
+              type="number"
+              step="0.01"
+              value={form.expectedYield}
+              onChange={(e) => setForm({ ...form, expectedYield: e.target.value })}
+              placeholder="Optional target"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Actual Yield</label>
             <input
               type="number"
@@ -372,7 +388,8 @@ export default function HarvestPage() {
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Crop</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Field</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Yield</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Yield (Actual)</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Variance</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
@@ -380,7 +397,7 @@ export default function HarvestPage() {
           <tbody className="divide-y divide-gray-200">
             {records.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-500">No harvest records yet. Log your first harvest above.</td>
+                <td colSpan={7} className="px-4 py-6 text-center text-gray-500">No harvest records yet. Log your first harvest above.</td>
               </tr>
             ) : (
               records.map((record) => (
@@ -389,6 +406,13 @@ export default function HarvestPage() {
                   <td className="px-4 py-2 text-sm text-gray-700">{record.cropName}</td>
                   <td className="px-4 py-2 text-sm text-gray-700">{record.fieldLocation || '-'}</td>
                   <td className="px-4 py-2 text-sm text-gray-700">{record.actualYield} {record.yieldUnit}</td>
+                  <td className="px-4 py-2 text-sm">
+                    {record.expectedYield != null ? (() => {
+                      const pct = ((record.actualYield - record.expectedYield) / record.expectedYield) * 100;
+                      const color = pct >= 0 ? 'text-green-600' : 'text-red-600';
+                      return <span className={color}>{pct >= 0 ? '+' : ''}{pct.toFixed(1)}%</span>;
+                    })() : <span className="text-gray-400">—</span>}
+                  </td>
                   <td className="px-4 py-2 text-sm text-gray-700">{record.qualityGrade || '-'}</td>
                   <td className="px-4 py-2 text-sm space-x-2">
                     <button onClick={() => handleEdit(record)} className="text-blue-600 hover:underline">Edit</button>

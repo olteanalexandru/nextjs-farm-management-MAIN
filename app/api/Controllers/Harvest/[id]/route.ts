@@ -27,6 +27,9 @@ export const PUT = withApiAuthRequired(async function PUT(
     if (body.divisionSize !== undefined) {
       data.divisionSize = body.divisionSize !== '' ? Number(body.divisionSize) : null;
     }
+    if (body.expectedYield !== undefined) {
+      data.expectedYield = body.expectedYield !== '' ? Number(body.expectedYield) : null;
+    }
     if (body.actualYield !== undefined) {
       const actualYield = Number(body.actualYield);
       if (isNaN(actualYield) || actualYield <= 0) {
@@ -53,6 +56,7 @@ export const PUT = withApiAuthRequired(async function PUT(
         harvestDate: updated.harvestDate,
         fieldLocation: updated.fieldLocation,
         divisionSize: updated.divisionSize !== null ? Number(updated.divisionSize) : null,
+        expectedYield: updated.expectedYield !== null ? Number(updated.expectedYield) : null,
         actualYield: Number(updated.actualYield),
         yieldUnit: updated.yieldUnit,
         qualityGrade: updated.qualityGrade,
