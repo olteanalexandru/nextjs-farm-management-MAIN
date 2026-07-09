@@ -14,6 +14,10 @@ interface SoilTest {
   nitrogen: number;
   phosphorus: number;
   potassium: number;
+  calcium?: number | null;
+  magnesium?: number | null;
+  sulfur?: number | null;
+  cec?: number | null;
   texture: string;
   notes?: string;
 }
@@ -26,6 +30,10 @@ interface SoilTestFormData {
   nitrogen: string;
   phosphorus: string;
   potassium: string;
+  calcium?: string;
+  magnesium?: string;
+  sulfur?: string;
+  cec?: string;
   texture: string;
   notes?: string;
 }
@@ -88,6 +96,10 @@ class SoilTestStore {
         nitrogen: parseFloat(formData.nitrogen),
         phosphorus: parseFloat(formData.phosphorus),
         potassium: parseFloat(formData.potassium),
+        calcium: formData.calcium ? parseFloat(formData.calcium) : null,
+        magnesium: formData.magnesium ? parseFloat(formData.magnesium) : null,
+        sulfur: formData.sulfur ? parseFloat(formData.sulfur) : null,
+        cec: formData.cec ? parseFloat(formData.cec) : null,
         texture: formData.texture,
         notes: formData.notes,
       });

@@ -216,7 +216,12 @@
     "getAiNotes": "Get AI Notes",
     "generating": "Generating...",
     "risksToWatch": "Risks to Watch",
-    "practicalTips": "Practical Tips"
+    "practicalTips": "Practical Tips",
+    "calcium": "Calcium (ppm)",
+    "magnesium": "Magnesium (ppm)",
+    "sulfur": "Sulfur (ppm)",
+    "cec": "CEC (meq/100g)",
+    "secondaryNutrients": "Secondary Nutrients"
   },
   "Dashboard": {
     "loading": "Loading...",

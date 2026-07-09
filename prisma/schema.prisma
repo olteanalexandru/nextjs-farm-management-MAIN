@@ -192,6 +192,10 @@ model SoilTest {
   nitrogen        Decimal   @db.Decimal(10,2)
   phosphorus      Decimal   @db.Decimal(10,2)
   potassium       Decimal   @db.Decimal(10,2)
+  calcium         Decimal?  @db.Decimal(10,2)
+  magnesium       Decimal?  @db.Decimal(10,2)
+  sulfur          Decimal?  @db.Decimal(10,2)
+  cec             Decimal?  @db.Decimal(8,2)
   texture         String
   notes           String?   @db.Text
   createdAt       DateTime  @default(now())

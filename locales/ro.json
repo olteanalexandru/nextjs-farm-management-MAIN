@@ -160,7 +160,12 @@
     "getAiNotes": "Obține Note AI",
     "generating": "Se generează...",
     "risksToWatch": "Riscuri de Urmărit",
-    "practicalTips": "Sfaturi Practice"
+    "practicalTips": "Sfaturi Practice",
+    "calcium": "Calciu (ppm)",
+    "magnesium": "Magneziu (ppm)",
+    "sulfur": "Sulf (ppm)",
+    "cec": "CEC (meq/100g)",
+    "secondaryNutrients": "Nutrienți Secundari"
   },
   "Dashboard": {
     "loading": "Se încarcă...",

@@ -126,8 +126,9 @@ async function buildPdf(reportId: string): Promise<void> {
   }
 
   if (reportId === 'soil') {
-    const res = await fetch('/api/Controllers/Soil/getAll');
-    const { soilTests = [] } = await res.json();
+    const res = await fetch('/api/Controllers/Soil/soilTests');
+    const soilTestsRaw = await res.json();
+    const soilTests: any[] = Array.isArray(soilTestsRaw) ? soilTestsRaw : (soilTestsRaw.soilTests ?? []);
 
     let y = header('Soil Test History', generated);
     y = sectionTitle(y, `${soilTests.length} tests recorded`);
@@ -151,9 +152,16 @@ async function buildPdf(reportId: string): Promise<void> {
         `OM: ${Number(t.organicMatter).toFixed(2)}%`,
         `Texture: ${t.texture}`,
       ];
+      const cols2 = [
+        t.calcium != null ? `Ca: ${Number(t.calcium).toFixed(2)} mg/kg` : '',
+        t.magnesium != null ? `Mg: ${Number(t.magnesium).toFixed(2)} mg/kg` : '',
+        t.sulfur != null ? `S: ${Number(t.sulfur).toFixed(2)} mg/kg` : '',
+        t.cec != null ? `CEC: ${Number(t.cec).toFixed(2)} meq/100g` : '',
+      ].filter(Boolean);
       doc.text(cols.slice(0, 3).join('   '), margin + 2, y);
       y += 5;
       doc.text(cols.slice(3).join('   '), margin + 2, y);
+      if (cols2.length > 0) { y += 5; doc.text(cols2.join('   '), margin + 2, y); }
       y += 5;
       if (t.notes) { doc.setTextColor(100, 100, 100); doc.text(t.notes, margin + 2, y); doc.setTextColor(0, 0, 0); y += 5; }
       y += 3;

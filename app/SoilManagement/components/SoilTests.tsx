@@ -19,6 +19,10 @@ interface SoilTest {
   nitrogen: number;
   phosphorus: number;
   potassium: number;
+  calcium?: number | null;
+  magnesium?: number | null;
+  sulfur?: number | null;
+  cec?: number | null;
   texture: string;
   notes?: string;
 }
@@ -31,6 +35,10 @@ interface SoilTestFormData {
   nitrogen: string;
   phosphorus: string;
   potassium: string;
+  calcium?: string;
+  magnesium?: string;
+  sulfur?: string;
+  cec?: string;
   texture: string;
   notes?: string;
 }
@@ -54,6 +62,10 @@ const SoilTests = observer(() => {
       nitrogen: values.nitrogen.toString(),
       phosphorus: values.phosphorus.toString(),
       potassium: values.potassium.toString(),
+      calcium: values.calcium ? values.calcium.toString() : undefined,
+      magnesium: values.magnesium ? values.magnesium.toString() : undefined,
+      sulfur: values.sulfur ? values.sulfur.toString() : undefined,
+      cec: values.cec ? values.cec.toString() : undefined,
       texture: values.texture,
       notes: values.notes,
     };
@@ -109,6 +121,18 @@ const SoilTests = observer(() => {
       render: (_: any, record: SoilTest) => (
         `${record.nitrogen}/${record.phosphorus}/${record.potassium}`
       ),
+    },
+    {
+      title: t('secondaryNutrients'),
+      key: 'secondary',
+      render: (_: any, record: SoilTest) => {
+        const parts: string[] = [];
+        if (record.calcium != null) parts.push(`Ca:${record.calcium}`);
+        if (record.magnesium != null) parts.push(`Mg:${record.magnesium}`);
+        if (record.sulfur != null) parts.push(`S:${record.sulfur}`);
+        if (record.cec != null) parts.push(`CEC:${record.cec}`);
+        return parts.length > 0 ? parts.join(' ') : '—';
+      },
     },
     {
       title: t('texture'),
@@ -216,6 +240,22 @@ const SoilTests = observer(() => {
             label={t('potassium')}
             rules={[{ required: true }]}
           >
+            <Input type="number" step="0.01" />
+          </Form.Item>
+
+          <Form.Item name="calcium" label={t('calcium')}>
+            <Input type="number" step="0.01" />
+          </Form.Item>
+
+          <Form.Item name="magnesium" label={t('magnesium')}>
+            <Input type="number" step="0.01" />
+          </Form.Item>
+
+          <Form.Item name="sulfur" label={t('sulfur')}>
+            <Input type="number" step="0.01" />
+          </Form.Item>
+
+          <Form.Item name="cec" label={t('cec')}>
             <Input type="number" step="0.01" />
           </Form.Item>
 
