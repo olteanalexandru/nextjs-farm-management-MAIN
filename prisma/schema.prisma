@@ -30,6 +30,7 @@ model User {
   harvestRecords HarvestRecord[]   @relation("UserHarvestRecords")
   financialRecords FinancialRecord[] @relation("UserFinancialRecords")
   fields         Field[]           @relation("UserFields")
+  farmEvents     FarmEvent[]       @relation("UserFarmEvents")
 
   @@index([auth0Id])
   @@index([email])
@@ -258,6 +259,25 @@ model HarvestRecord {
   @@index([rotationPlanId])
   @@index([fieldId])
   @@map("harvest_records")
+}
+
+model FarmEvent {
+  id          Int       @id @default(autoincrement())
+  userId      String
+  user        User      @relation("UserFarmEvents", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  title       String
+  eventType   String
+  date        DateTime
+  cropId      Int?
+  fieldId     Int?
+  notes       String?   @db.Text
+  completed   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, eventType])
+  @@map("farm_events")
 }
 
 model FinancialRecord {
