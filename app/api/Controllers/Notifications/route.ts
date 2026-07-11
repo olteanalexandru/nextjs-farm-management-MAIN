@@ -33,8 +33,8 @@ async function sendEmail(to: string, subject: string, text: string): Promise<voi
   } as any);
 }
 
-function daysFromNow(date: Date): number {
-  return Math.ceil((date.getTime() - Date.now()) / 86400000);
+function daysFromNow(date: Date, now: number): number {
+  return Math.ceil((date.getTime() - now) / 86400000);
 }
 
 export async function GET(request: NextRequest) {
@@ -44,67 +44,94 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const now = new Date();
-    const in3Days = new Date(now.getTime() + 3 * 86400000);
-    const in7Days = new Date(now.getTime() + 7 * 86400000);
+    const nowDate = new Date();
+    const now = nowDate.getTime();
+    const in3Days = new Date(now + 3 * 86400000);
+    const in7Days = new Date(now + 7 * 86400000);
 
-    // Fetch users who need notifications
     const users = await prisma.user.findMany({
       select: { id: true, email: true, name: true },
     });
+
+    const userIds = users.map(u => u.id);
+
+    // Fetch all upcoming events in 3 batch queries instead of 3N
+    const [duePlans, nearHarvestCrops, dueSubsidies] = await Promise.all([
+      prisma.fertilizationPlan.findMany({
+        where: {
+          userId: { in: userIds },
+          completed: false,
+          plannedDate: { gte: nowDate, lte: in3Days },
+        },
+        include: { crop: { select: { cropName: true } } },
+      }),
+      prisma.crop.findMany({
+        where: {
+          userId: { in: userIds },
+          deleted: null,
+          harvestingDate: { gte: nowDate, lte: in7Days },
+        },
+        select: { userId: true, cropName: true, harvestingDate: true },
+      }),
+      prisma.subsidyRecord.findMany({
+        where: {
+          userId: { in: userIds },
+          status: { not: 'RECEIVED' },
+          deadline: { gte: nowDate, lte: in7Days },
+        },
+        select: { userId: true, subsidyName: true, deadline: true },
+      }),
+    ]);
+
+    // Index by userId for O(1) lookup
+    const plansByUser = new Map<string, typeof duePlans>();
+    for (const plan of duePlans) {
+      const list = plansByUser.get(plan.userId) ?? [];
+      list.push(plan);
+      plansByUser.set(plan.userId, list);
+    }
+    const harvestByUser = new Map<string, typeof nearHarvestCrops>();
+    for (const crop of nearHarvestCrops) {
+      const list = harvestByUser.get(crop.userId) ?? [];
+      list.push(crop);
+      harvestByUser.set(crop.userId, list);
+    }
+    const subsidyByUser = new Map<string, typeof dueSubsidies>();
+    for (const sub of dueSubsidies) {
+      const list = subsidyByUser.get(sub.userId) ?? [];
+      list.push(sub);
+      subsidyByUser.set(sub.userId, list);
+    }
 
     let emailsSent = 0;
     const log: string[] = [];
 
     for (const user of users) {
+      if (!user.email) {
+        log.push(`Skipped ${user.name ?? user.id}: no email address on file`);
+        continue;
+      }
+
       const alerts: string[] = [];
 
-      // Fertilization plans due within 3 days
-      const duePlans = await prisma.fertilizationPlan.findMany({
-        where: {
-          userId: user.id,
-          completed: false,
-          plannedDate: { gte: now, lte: in3Days },
-        },
-        include: { crop: { select: { cropName: true } } },
-      });
-
-      for (const plan of duePlans) {
-        const days = daysFromNow(plan.plannedDate);
+      for (const plan of plansByUser.get(user.id) ?? []) {
+        const days = daysFromNow(plan.plannedDate, now);
         alerts.push(
           `• Fertilization plan due in ${days} day(s): ${plan.fertilizer} on ${plan.crop.cropName} (${plan.plannedDate.toISOString().slice(0, 10)})`
         );
       }
 
-      // Crops with harvest date within 7 days
-      const nearHarvest = await prisma.crop.findMany({
-        where: {
-          userId: user.id,
-          deleted: null,
-          harvestingDate: { gte: now, lte: in7Days },
-        },
-      });
-
-      for (const crop of nearHarvest) {
+      for (const crop of harvestByUser.get(user.id) ?? []) {
         if (!crop.harvestingDate) continue;
-        const days = daysFromNow(crop.harvestingDate);
+        const days = daysFromNow(crop.harvestingDate, now);
         alerts.push(
           `• Harvest approaching in ${days} day(s): ${crop.cropName} (${crop.harvestingDate.toISOString().slice(0, 10)})`
         );
       }
 
-      // Subsidy deadlines within 7 days
-      const dueSubsidies = await prisma.subsidyRecord.findMany({
-        where: {
-          userId: user.id,
-          status: { not: 'RECEIVED' },
-          deadline: { gte: now, lte: in7Days },
-        },
-      });
-
-      for (const sub of dueSubsidies) {
+      for (const sub of subsidyByUser.get(user.id) ?? []) {
         if (!sub.deadline) continue;
-        const days = daysFromNow(sub.deadline);
+        const days = daysFromNow(sub.deadline, now);
         alerts.push(
           `• Subsidy deadline in ${days} day(s): ${sub.subsidyName} (${sub.deadline.toISOString().slice(0, 10)})`
         );
@@ -126,9 +153,9 @@ export async function GET(request: NextRequest) {
       try {
         await sendEmail(user.email, subject, text);
         emailsSent++;
-        log.push(`Sent to ${user.email}: ${alerts.length} alert(s)`);
+        log.push(`Sent to [user]: ${alerts.length} alert(s)`);
       } catch (err) {
-        log.push(`Failed to send to ${user.email}: ${err instanceof Error ? err.message : String(err)}`);
+        log.push(`Failed to send to [user]: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 

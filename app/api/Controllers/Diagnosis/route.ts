@@ -32,6 +32,9 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
     const imageBase64 = body?.imageBase64 ? String(body.imageBase64) : undefined;
     const imageMimeType = body?.imageMimeType ? String(body.imageMimeType) : undefined;
     const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (imageBase64 && !imageMimeType) {
+      return Response.json({ error: 'imageMimeType is required when providing an image.', status: 400 }, { status: 400 });
+    }
     if (imageBase64 && imageMimeType && !VALID_IMAGE_TYPES.includes(imageMimeType)) {
       return Response.json({ error: 'Unsupported image type. Use JPEG, PNG, WebP, or GIF.', status: 400 }, { status: 400 });
     }

@@ -73,6 +73,7 @@ model Crop {
   harvestRecords              HarvestRecord[]     @relation("CropHarvestRecords")
   financialRecords            FinancialRecord[]   @relation("CropFinancialRecords")
   observations                FieldObservation[]  @relation("CropObservations")
+  farmEvents                  FarmEvent[]         @relation("CropFarmEvents")
 
   @@index([userId])
   @@index([cropName])
@@ -105,10 +106,12 @@ model Field {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  soilTests      SoilTest[]       @relation("FieldSoilTests")
-  harvestRecords HarvestRecord[]  @relation("FieldHarvestRecords")
-  rotations      Rotation[]       @relation("FieldRotations")
-  observations   FieldObservation[] @relation("FieldObservations")
+  soilTests        SoilTest[]         @relation("FieldSoilTests")
+  harvestRecords   HarvestRecord[]    @relation("FieldHarvestRecords")
+  rotations        Rotation[]         @relation("FieldRotations")
+  observations     FieldObservation[] @relation("FieldObservations")
+  farmEvents       FarmEvent[]        @relation("FieldFarmEvents")
+  irrigationEvents IrrigationEvent[]  @relation("FieldIrrigationEvents")
 
   @@index([userId])
   @@map("fields")
@@ -282,7 +285,9 @@ model FarmEvent {
   eventType   String
   date        DateTime
   cropId      Int?
+  crop        Crop?     @relation("CropFarmEvents", fields: [cropId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   fieldId     Int?
+  field       Field?    @relation("FieldFarmEvents", fields: [fieldId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   notes       String?   @db.Text
   completed   Boolean   @default(false)
   createdAt   DateTime  @default(now())
@@ -290,6 +295,8 @@ model FarmEvent {
 
   @@index([userId, date])
   @@index([userId, eventType])
+  @@index([cropId])
+  @@index([fieldId])
   @@map("farm_events")
 }
 
@@ -354,6 +361,7 @@ model IrrigationEvent {
   userId       String
   user         User      @relation("UserIrrigationEvents", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   fieldId      Int?
+  field        Field?    @relation("FieldIrrigationEvents", fields: [fieldId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   eventDate    DateTime
   durationMin  Int?
   volumeM3     Decimal?  @db.Decimal(10,3)
@@ -364,6 +372,7 @@ model IrrigationEvent {
   updatedAt    DateTime  @updatedAt
 
   @@index([userId, eventDate])
+  @@index([fieldId])
   @@map("irrigation_events")
 }
 

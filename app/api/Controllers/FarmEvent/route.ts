@@ -64,7 +64,7 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
         cropId: body.cropId ? Number(body.cropId) : null,
         fieldId: body.fieldId ? Number(body.fieldId) : null,
         notes: body.notes ? String(body.notes) : null,
-        completed: Boolean(body.completed) ?? false
+        completed: body.completed === true
       }
     });
 

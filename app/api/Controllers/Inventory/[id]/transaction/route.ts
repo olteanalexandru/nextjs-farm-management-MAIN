@@ -12,9 +12,6 @@ export const POST = withApiAuthRequired(async function POST(
     const id = Number(params.id);
     if (isNaN(id)) return Response.json({ error: 'Invalid id' }, { status: 400 });
 
-    const item = await prisma.inventoryItem.findFirst({ where: { id, userId: user.id } });
-    if (!item) return Response.json({ error: 'Not found' }, { status: 404 });
-
     const body = await request.json();
     if (!['IN', 'OUT'].includes(body.type)) {
       return Response.json({ error: 'type must be IN or OUT' }, { status: 400 });
@@ -22,32 +19,38 @@ export const POST = withApiAuthRequired(async function POST(
     const qty = Number(body.quantity);
     if (isNaN(qty) || qty <= 0) return Response.json({ error: 'quantity must be positive' }, { status: 400 });
 
-    const newQty = body.type === 'IN'
-      ? Number(item.quantity) + qty
-      : Number(item.quantity) - qty;
+    const txType = String(body.type);
+    const txNotes = body.notes ? String(body.notes) : null;
+    const txDate = body.transDate ? new Date(body.transDate) : new Date();
+    const userId = user.id;
 
-    if (newQty < 0) {
-      return Response.json({ error: 'Insufficient stock' }, { status: 400 });
+    // Use a serializable transaction so the read and write are atomic:
+    // no concurrent OUT request can pass the stock check using a stale snapshot.
+    const result = await prisma.$transaction(async (tx) => {
+      const item = await tx.inventoryItem.findFirst({ where: { id, userId } });
+      if (!item) return { error: 'Not found' as const };
+
+      const newQty = txType === 'IN'
+        ? Number(item.quantity) + qty
+        : Number(item.quantity) - qty;
+
+      if (newQty < 0) return { error: 'Insufficient stock' as const };
+
+      const [transaction, updatedItem] = await Promise.all([
+        tx.inventoryTransaction.create({
+          data: { userId, itemId: id, type: txType, quantity: qty, notes: txNotes, transDate: txDate }
+        }),
+        tx.inventoryItem.update({ where: { id }, data: { quantity: newQty } }),
+      ]);
+      return { transaction, item: updatedItem };
+    }, { isolationLevel: 'Serializable' });
+
+    if ('error' in result) {
+      const status = result.error === 'Not found' ? 404 : 400;
+      return Response.json({ error: result.error }, { status });
     }
 
-    const [transaction, updatedItem] = await prisma.$transaction([
-      prisma.inventoryTransaction.create({
-        data: {
-          userId: user.id,
-          itemId: id,
-          type: String(body.type),
-          quantity: qty,
-          notes: body.notes ? String(body.notes) : null,
-          transDate: body.transDate ? new Date(body.transDate) : new Date(),
-        }
-      }),
-      prisma.inventoryItem.update({
-        where: { id },
-        data: { quantity: newQty }
-      })
-    ]);
-
-    return Response.json({ transaction, item: updatedItem }, { status: 201 });
+    return Response.json({ transaction: result.transaction, item: result.item }, { status: 201 });
   } catch (error) {
     console.error('POST inventory transaction error:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });

@@ -196,11 +196,12 @@ export default function CalendarPage() {
 
   async function toggleCompleted(ev: FarmEvent) {
     try {
-      await fetch(`/api/Controllers/FarmEvent/${ev.id}`, {
+      const res = await fetch(`/api/Controllers/FarmEvent/${ev.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: !ev.completed }),
       });
+      if (!res.ok) throw new Error('Failed to update event');
       await loadEvents();
     } catch {
       alert('Failed to update event');
