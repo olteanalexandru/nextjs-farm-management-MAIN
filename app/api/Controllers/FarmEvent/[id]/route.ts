@@ -34,7 +34,7 @@ export const PUT = withApiAuthRequired(async function PUT(
     if (body.cropId !== undefined) data.cropId = body.cropId ? Number(body.cropId) : null;
     if (body.fieldId !== undefined) data.fieldId = body.fieldId ? Number(body.fieldId) : null;
     if (body.notes !== undefined) data.notes = body.notes ? String(body.notes) : null;
-    if (body.completed !== undefined) data.completed = Boolean(body.completed);
+    if (body.completed !== undefined) data.completed = body.completed === true;
 
     const event = await prisma.farmEvent.update({ where: { id }, data });
     return Response.json({ event });

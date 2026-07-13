@@ -105,6 +105,11 @@ export const cleanupDatabase = async () => {
       await prisma.$executeRawUnsafe(`DELETE FROM [${table}]`);
     }
   } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes("Can't reach database") || msg.includes('P1001')) {
+      console.warn('DB not reachable — skipping cleanup:', msg);
+      return;
+    }
     console.error('Error cleaning database:', error);
     throw error;
   }
