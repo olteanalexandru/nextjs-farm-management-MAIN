@@ -31,8 +31,20 @@ export const PUT = withApiAuthRequired(async function PUT(
       data.eventType = String(body.eventType);
     }
     if (body.date !== undefined) data.date = new Date(body.date);
-    if (body.cropId !== undefined) data.cropId = body.cropId ? Number(body.cropId) : null;
-    if (body.fieldId !== undefined) data.fieldId = body.fieldId ? Number(body.fieldId) : null;
+    if (body.cropId !== undefined) {
+      if (body.cropId) {
+        const crop = await prisma.crop.findFirst({ where: { id: Number(body.cropId), userId: user.id } });
+        if (!crop) return Response.json({ error: 'Crop not found' }, { status: 404 });
+      }
+      data.cropId = body.cropId ? Number(body.cropId) : null;
+    }
+    if (body.fieldId !== undefined) {
+      if (body.fieldId) {
+        const field = await prisma.field.findFirst({ where: { id: Number(body.fieldId), userId: user.id } });
+        if (!field) return Response.json({ error: 'Field not found' }, { status: 404 });
+      }
+      data.fieldId = body.fieldId ? Number(body.fieldId) : null;
+    }
     if (body.notes !== undefined) data.notes = body.notes ? String(body.notes) : null;
     if (body.completed !== undefined) data.completed = body.completed === true;
 

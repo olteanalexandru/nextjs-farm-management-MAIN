@@ -38,8 +38,13 @@ function daysFromNow(date: Date, now: number): number {
 }
 
 export async function GET(request: NextRequest) {
-  const secret = request.nextUrl.searchParams.get('secret');
-  if (!CRON_SECRET || secret !== CRON_SECRET) {
+  // Accept Vercel's injected Authorization header OR a ?secret= query param
+  // (Vercel cron sends: Authorization: Bearer <CRON_SECRET>)
+  const authHeader = request.headers.get('authorization');
+  const querySecret = request.nextUrl.searchParams.get('secret');
+  const validBearer = CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`;
+  const validQuery = CRON_SECRET && querySecret === CRON_SECRET;
+  if (!validBearer && !validQuery) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

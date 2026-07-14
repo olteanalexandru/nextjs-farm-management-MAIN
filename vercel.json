@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/Controllers/Notifications?secret=$CRON_SECRET",
+      "path": "/api/Controllers/Notifications",
       "schedule": "0 7 * * *"
     }
   ]

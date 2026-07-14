@@ -98,7 +98,8 @@ export default function FieldsPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this field?')) return;
     try {
-      await fetch(`/api/Controllers/Field/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/Controllers/Field/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete field');
       await loadFields();
     } catch {
       setError('Failed to delete field');

@@ -55,6 +55,15 @@ export const POST = withApiAuthRequired(async function POST(request: NextRequest
       return Response.json({ error: `eventType must be one of: ${VALID_TYPES.join(', ')}` }, { status: 400 });
     }
 
+    if (body.cropId) {
+      const crop = await prisma.crop.findFirst({ where: { id: Number(body.cropId), userId: user.id } });
+      if (!crop) return Response.json({ error: 'Crop not found' }, { status: 404 });
+    }
+    if (body.fieldId) {
+      const field = await prisma.field.findFirst({ where: { id: Number(body.fieldId), userId: user.id } });
+      if (!field) return Response.json({ error: 'Field not found' }, { status: 404 });
+    }
+
     const event = await prisma.farmEvent.create({
       data: {
         userId: user.id,
